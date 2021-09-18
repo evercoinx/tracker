@@ -32,12 +32,10 @@ imports: sourceonly
 lint: sourceonly
 	flake8 $(CHECK_DIRS)
 
-runlocal: install
-	$(PKG_NAME) --loglevel debug --display :0.0
-
-runremote: install
-	$(PKG_NAME) --loglevel debug --display :10.0
+run: install
+	rm -rf screenshots/*
+	$(PKG_NAME) --loglevel info --display :10.0
 
 deploy: sourceonly
-	rsync -avh --delete $(PKG_NAME) Makefile requirements.txt requirements-prod.txt setup.py \
+	rsync -avh --delete $(PKG_NAME) screenshots Makefile requirements.txt requirements-prod.txt setup.py \
 		pi@raspberry2:~/Workspace/python/$(PKG_NAME)

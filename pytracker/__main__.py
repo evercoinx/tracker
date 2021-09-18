@@ -2,27 +2,56 @@
 import argparse
 import logging as log
 import sys
-import time
+from multiprocessing import Process, Queue
 
 import cv2
 import numpy as np
 from mss.linux import MSS as mss
 
 
+def grab(log, queue, display, area):
+    with mss(display) as sct:
+        for i in range(10):
+            screenshot = sct.grab(area)
+            queue.put(screenshot)
+            log.debug(f"screenshot {i} grabbed")
+
+    queue.put(None)
+
+
+def process(log, queue):
+    i = 0
+    out_path = "screenshots/image_{}.png"
+
+    while True:
+        screenshot = queue.get()
+        if screenshot is None:
+            log.info("job finished")
+            sys.exit(0)
+
+        img = np.asarray(screenshot)
+        gray = cv2.cvtColor(img, cv2.COLOR_BGRA2GRAY)
+        cv2.imwrite(out_path.format(i), gray)
+        i += 1
+
+        log.debug(f"image {i} saved")
+
+
 def main():
-    # Parsing passed arguments
     ap = argparse.ArgumentParser()
     ap.add_argument(
-        "-l",
         "--loglevel",
         type=str,
         default="info",
-        help="set log level: debug, info, warn, error",
+        help="log level: debug, info, warn, error",
     )
-    ap.add_argument("-d", "--display", type=str, default=":0.0", help="set display")
+    ap.add_argument("--display", type=str, default=":0.0", help="output display")
+    ap.add_argument("--top", type=int, default=0, help="top screen margin")
+    ap.add_argument("--left", type=int, default=0, help="left screen margin")
+    ap.add_argument("--width", type=int, default=800, help="screen width")
+    ap.add_argument("--height", type=int, default=600, help="screen height")
     args = ap.parse_args()
 
-    # Setting up logging
     log_level = args.loglevel.upper()
     log.basicConfig(
         level=log.getLevelName(log_level),
@@ -30,31 +59,17 @@ def main():
         datefmt="%Y-%m-%d %H:%M:%S",
     )
 
-    with mss(display=args.display) as sct:
-        # Part of the screen to capture
-        display = {"top": 100, "left": 0, "width": 800, "height": 640}
+    area = {
+        "top": args.top,
+        "left": args.left,
+        "width": args.width,
+        "height": args.height,
+    }
+    queue = Queue()
 
-        while True:
-            last_time = time.time()
-
-            # Get raw pixels from the screen, save it to a Numpy array
-            img = np.array(sct.grab(display))
-
-            # Display the picture in grayscale
-            gray = cv2.cvtColor(img, cv2.COLOR_BGRA2GRAY)
-            cv2.imshow("OpenCV/Numpy grayscale", gray)
-            # cv2.imwrite(f"file{i}.png", gray)
-
-            print("fps: {}".format(1 / (time.time() - last_time)))
-
-            # Press "q" to quit
-            key = cv2.waitKey(1) & 0xFF
-            if key == ord("q"):
-                break
-
-    # Cleaning up resources
-    cv2.destroyAllWindows()
-    sys.exit(0)
+    log.info("job started")
+    Process(target=grab, args=(log, queue, args.display, area)).start()
+    Process(target=process, args=(log, queue)).start()
 
 
 if __name__ == "__main__":
