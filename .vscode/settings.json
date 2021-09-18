@@ -1,0 +1,8 @@
+{
+    "python.defaultInterpreterPath": "~/.cache/pyenvs/pytracker/bin/python",
+    "python.formatting.provider": "black",
+    "python.formatting.blackArgs": [],
+    "python.linting.enabled": true,
+    "python.linting.flake8Enabled": true,
+    "python.sortImports.args": ["--profile", "black"],
+}
