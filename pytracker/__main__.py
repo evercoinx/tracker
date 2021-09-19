@@ -1,10 +1,9 @@
-# pyright: reportMissingImports=false
 import argparse
 import logging as log
 import multiprocessing as mp
 
-from .grabber import grab
-from .processor import process
+from .recognition import Recognition
+from .screen import Screen
 
 
 def main():
@@ -22,8 +21,8 @@ def main():
     ap.add_argument(
         "--left", type=int, default=0, help="screen x-coordinate of upper-left corner"
     )
-    ap.add_argument("--width", type=int, default=800, help="screen width")
-    ap.add_argument("--height", type=int, default=600, help="screen height")
+    ap.add_argument("--width", type=int, default=1600, help="screen width")
+    ap.add_argument("--height", type=int, default=900, help="screen height")
     args = vars(ap.parse_args())
 
     log_level = args["loglevel"].upper()
@@ -39,17 +38,18 @@ def main():
         "width": args["width"],
         "height": args["height"],
     }
-    queue = mp.Queue()
+    queue = mp.Queue(1)
+    screen = Screen("screen", log=log, queue=queue)
+    recognition = Recognition("recognition", log=log, queue=queue)
 
-    log.info("job started")
-    grabber = mp.Process(target=grab, args=(log, queue, args["display"], roi))
-    processor = mp.Process(target=process, args=(log, queue))
+    scr_proc = mp.Process(target=screen.grab, args=(args["display"], roi))
+    rec_proc = mp.Process(target=recognition.run, args=())
 
-    grabber.start()
-    processor.start()
+    scr_proc.start()
+    rec_proc.start()
 
-    grabber.join()
-    processor.join()
+    scr_proc.join()
+    rec_proc.join()
 
 
 if __name__ == "__main__":
