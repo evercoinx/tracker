@@ -1,17 +1,18 @@
 PKG_NAME = pytracker
 CHECK_DIRS = pytracker setup.py
-HOST := $(shell hostname)
+SOURCE_HOST := $(shell hostname)
+TARGET_HOST = raspberry2
 
 all: check deploy
 
 sourceonly:
-	@if [ "$(HOST)" != "fedora" ]; then \
-		echo "Invalid environment: $(HOST)"; exit 1; \
+	@if [ "$(SOURCE_HOST)" != "fedora" ]; then \
+		echo "Invalid environment: $(SOURCE_HOST)"; exit 1; \
 	fi
 
 targetonly:
-	@if [ "$(HOST)" != "raspberrypi" ]; then \
-		echo "Invalid environment: $(HOST)"; exit 1; \
+	@if [ "$(SOURCE_HOST)" != "raspberrypi" ]; then \
+		echo "Invalid environment: $(SOURCE_HOST)"; exit 1; \
 	fi
 
 installdev: sourceonly
@@ -33,9 +34,9 @@ lint: sourceonly
 	flake8 $(CHECK_DIRS)
 
 run: install
-	rm -rf screenshots/*
-	$(PKG_NAME) --loglevel info --display :10.0
+	rm -rf images/*
+	$(PKG_NAME) --loglevel debug --display :10.0
 
 deploy: sourceonly
-	rsync -avh --delete $(PKG_NAME) screenshots Makefile requirements.txt requirements-prod.txt setup.py \
-		pi@raspberry2:~/Workspace/python/$(PKG_NAME)
+	rsync -avh --delete $(PKG_NAME) images Makefile requirements.txt requirements-prod.txt setup.py \
+		pi@$(TARGET_HOST):~/Workspace/python/$(PKG_NAME)
