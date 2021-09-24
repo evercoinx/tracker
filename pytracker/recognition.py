@@ -30,7 +30,7 @@ class Recognition:
                 if all(i is not None for i in self.image_parts.values()):
                     full = self.make_full_image()
                     cv2.imwrite(output_file_path.format(img_idx), full)
-                    self.log.debug(f"{prefix} image {img_idx} saved")
+                    self.log.info(f"{prefix} image {img_idx} saved")
 
                     self.clear_image_parts()
                     img_idx += 1

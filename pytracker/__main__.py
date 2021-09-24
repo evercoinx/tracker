@@ -3,7 +3,7 @@ import logging as log
 import multiprocessing as mp
 
 from .recognition import Recognition
-from .screen import Screen, rois
+from .screen import Screen, get_rois
 
 
 def main():
@@ -15,6 +15,8 @@ def main():
         help="log level: debug, info, warn, error",
     )
     ap.add_argument("--display", type=str, default=":0.0", help="display number")
+    ap.add_argument("--width", type=int, default=1920, help="screen width")
+    ap.add_argument("--height", type=int, default=1080, help="screen height")
     args = vars(ap.parse_args())
 
     log_level = args["loglevel"].upper()
@@ -24,7 +26,9 @@ def main():
         datefmt="%Y-%m-%d %H:%M:%S",
     )
 
+    rois = get_rois(args["width"], args["height"])
     roi_count = len(rois)
+
     queue = mp.Queue(roi_count)
     events = [mp.Event() for _ in range(roi_count)]
 

@@ -1,7 +1,7 @@
 PKG_NAME = pytracker
 CHECK_DIRS = pytracker setup.py
 SOURCE_HOST := $(shell hostname)
-TARGET_HOST = raspberry2
+TARGET_HOST = raspberry3
 
 all: check deploy
 
@@ -35,7 +35,7 @@ lint: sourceonly
 
 run: install
 	rm -rf images/*
-	$(PKG_NAME) --loglevel debug --display :10.0
+	$(PKG_NAME) --loglevel info --display :10.0
 
 deploy: sourceonly
 	rsync -avh --delete $(PKG_NAME) images Makefile requirements.txt requirements-prod.txt setup.py \

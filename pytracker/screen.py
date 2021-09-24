@@ -2,32 +2,37 @@ import multiprocessing as mp
 
 from mss.linux import MSS as mss
 
-rois = (
-    {
-        "top": 0,
-        "left": 0,
-        "width": 960,
-        "height": 540,
-    },
-    {
-        "top": 0,
-        "left": 960,
-        "width": 960,
-        "height": 540,
-    },
-    {
-        "top": 540,
-        "left": 0,
-        "width": 960,
-        "height": 540,
-    },
-    {
-        "top": 540,
-        "left": 960,
-        "width": 960,
-        "height": 540,
-    },
-)
+
+def get_rois(width, height):
+    w = width // 2
+    h = height // 2
+
+    return (
+        {
+            "top": 0,
+            "left": 0,
+            "width": w,
+            "height": h,
+        },
+        {
+            "top": 0,
+            "left": w,
+            "width": w,
+            "height": h,
+        },
+        {
+            "top": h,
+            "left": 0,
+            "width": w,
+            "height": h,
+        },
+        {
+            "top": h,
+            "left": w,
+            "width": w,
+            "height": h,
+        },
+    )
 
 
 class Screen:
