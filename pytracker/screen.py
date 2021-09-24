@@ -46,7 +46,7 @@ class Screen:
                 try:
                     img = screen.grab(roi)
                     self.data_queue.put((index, img))
-                    self.log.debug(f"{prefix} image grabbed")
+                    self.log.debug(f"{prefix} image part grabbed")
 
                     self.event_queues[index].get()
                 except (KeyboardInterrupt, SystemExit):
