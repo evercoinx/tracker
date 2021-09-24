@@ -8,11 +8,11 @@ import numpy as np
 class Recognition:
     """Provides API to recognize objects in a given image"""
 
-    def __init__(self, log, data_queue, event_queues):
+    def __init__(self, log, queue, events):
         self.log = log
-        self.data_queue = data_queue
-        self.event_queues = event_queues
-        self.image_parts = {i: None for i in range(len(event_queues))}
+        self.queue = queue
+        self.events = events
+        self.image_parts = {i: None for i in range(len(events))}
 
     def run(self):
         prefix = f"{mp.current_process().name}:"
@@ -21,7 +21,7 @@ class Recognition:
 
         while True:
             try:
-                idx, img = self.data_queue.get()
+                idx, img = self.queue.get()
 
                 img = np.asarray(img, dtype=np.uint8)
                 gray = cv2.cvtColor(img, cv2.COLOR_BGRA2GRAY)
@@ -35,7 +35,7 @@ class Recognition:
                     self.clear_image_parts()
                     img_idx += 1
             except (KeyboardInterrupt, SystemExit):
-                self.data_queue.close()
+                self.queue.close()
                 self.log.warn(f"{prefix} interruption; exiting...")
                 return
 
@@ -45,6 +45,6 @@ class Recognition:
         return np.vstack([top, bottom])
 
     def clear_image_parts(self):
-        for i in range(len(self.event_queues)):
+        for i in range(len(self.events)):
             self.image_parts[i] = None
-            self.event_queues[i].put(True)
+            self.events[i].set()

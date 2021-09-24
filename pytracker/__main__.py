@@ -24,11 +24,12 @@ def main():
         datefmt="%Y-%m-%d %H:%M:%S",
     )
 
-    data_queue = mp.Queue(1)
-    event_queues = [mp.Queue(1) for _ in range(len(rois))]
+    roi_count = len(rois)
+    queue = mp.Queue(roi_count)
+    events = [mp.Event() for _ in range(roi_count)]
 
-    screen = Screen(log=log, data_queue=data_queue, event_queues=event_queues)
-    recognition = Recognition(log=log, data_queue=data_queue, event_queues=event_queues)
+    screen = Screen(log, queue, events)
+    recognition = Recognition(log, queue, events)
 
     procs = []
     for (i, roi) in enumerate(rois):

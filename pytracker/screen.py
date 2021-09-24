@@ -33,23 +33,22 @@ rois = (
 class Screen:
     """Provides API to grab a screen with a given region of interest"""
 
-    def __init__(self, log, data_queue, event_queues):
+    def __init__(self, log, queue, events):
         self.log = log
-        self.data_queue = data_queue
-        self.event_queues = event_queues
+        self.queue = queue
+        self.events = events
 
-    def grab(self, display, roi, index):
+    def grab(self, display, roi, event_index):
         prefix = f"{mp.current_process().name}{display}:"
 
         with mss(display) as screen:
             while True:
                 try:
                     img = screen.grab(roi)
-                    self.data_queue.put((index, img))
+                    self.queue.put((event_index, img))
                     self.log.debug(f"{prefix} image part grabbed")
 
-                    self.event_queues[index].get()
+                    self.events[event_index].wait()
                 except (KeyboardInterrupt, SystemExit):
-                    self.event_queues[index].close()
                     self.log.warn(f"{prefix} interruption; exiting...")
                     return
