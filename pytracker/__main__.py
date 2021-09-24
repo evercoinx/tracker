@@ -3,7 +3,7 @@ import logging as log
 import multiprocessing as mp
 
 from .recognition import Recognition
-from .screen import Screen
+from .screen import Screen, rois
 
 
 def main():
@@ -15,14 +15,6 @@ def main():
         help="log level: debug, info, warn, error",
     )
     ap.add_argument("--display", type=str, default=":0.0", help="display number")
-    ap.add_argument(
-        "--top", type=int, default=0, help="screen y-coordinate of upper-left corner"
-    )
-    ap.add_argument(
-        "--left", type=int, default=0, help="screen x-coordinate of upper-left corner"
-    )
-    ap.add_argument("--width", type=int, default=1600, help="screen width")
-    ap.add_argument("--height", type=int, default=900, help="screen height")
     args = vars(ap.parse_args())
 
     log_level = args["loglevel"].upper()
@@ -32,24 +24,27 @@ def main():
         datefmt="%Y-%m-%d %H:%M:%S",
     )
 
-    roi = {
-        "top": args["top"],
-        "left": args["left"],
-        "width": args["width"],
-        "height": args["height"],
-    }
-    queue = mp.Queue(1)
-    screen = Screen("screen", log=log, queue=queue)
-    recognition = Recognition("recognition", log=log, queue=queue)
+    data_queue = mp.Queue(1)
+    event_queues = [mp.Queue(1) for _ in range(len(rois))]
 
-    scr_proc = mp.Process(target=screen.grab, args=(args["display"], roi))
-    rec_proc = mp.Process(target=recognition.run, args=())
+    screen = Screen(log=log, data_queue=data_queue, event_queues=event_queues)
+    recognition = Recognition(log=log, data_queue=data_queue, event_queues=event_queues)
 
-    scr_proc.start()
-    rec_proc.start()
+    procs = []
+    for (i, roi) in enumerate(rois):
+        scr = mp.Process(
+            name=f"screen-{i}", target=screen.grab, args=(args["display"], roi, i)
+        )
+        procs.append(scr)
 
-    scr_proc.join()
-    rec_proc.join()
+    rec = mp.Process(name="recognition", target=recognition.run, args=())
+    procs.append(rec)
+
+    for p in procs:
+        p.start()
+
+    for p in procs:
+        p.join()
 
 
 if __name__ == "__main__":
