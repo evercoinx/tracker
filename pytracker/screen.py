@@ -6,32 +6,32 @@ from mss.linux import MSS as mss
 
 def get_rois(width, height):
     c_x = width // 2
-    c_y = height // 2
+    c_h = height // 2
 
     return (
         {
             "top": 0,
             "left": 0,
             "width": c_x,
-            "height": c_y,
+            "height": c_h,
         },
         {
             "top": 0,
             "left": c_x,
             "width": c_x,
-            "height": c_y,
+            "height": c_h,
         },
         {
-            "top": c_y,
+            "top": c_h,
             "left": 0,
             "width": c_x,
-            "height": c_y,
+            "height": c_h,
         },
         {
-            "top": c_y,
+            "top": c_h,
             "left": c_x,
             "width": c_x,
-            "height": c_y,
+            "height": c_h,
         },
     )
 

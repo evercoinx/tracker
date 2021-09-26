@@ -11,7 +11,7 @@ class Recognition:
     def __init__(self, queue, events):
         self.queue = queue
         self.events = events
-        self.image_parts = [None for i in range(len(events))]
+        self.image_parts = [None] * len(events)
 
     def run(self):
         prefix = f"{current_process().name}:"
@@ -21,12 +21,11 @@ class Recognition:
         while True:
             try:
                 idx, img = self.queue.get()
-
-                img = np.asarray(img, dtype=np.uint8)
-                gray = cv2.cvtColor(img, cv2.COLOR_BGRA2GRAY)
-                self.image_parts[idx] = gray
+                self.image_parts[idx] = img
 
                 if all(p is not None for p in self.image_parts):
+                    self.prepare_image_parts()
+
                     full = self.make_full_image()
                     cv2.imwrite(output_file_path.format(img_idx), full)
                     logging.info(f"{prefix} image {img_idx} saved")
@@ -44,7 +43,13 @@ class Recognition:
         bottom = np.hstack(self.image_parts[center:])  # type: ignore
         return np.vstack([top, bottom])
 
+    def prepare_image_parts(self):
+        for i, p in enumerate(self.image_parts):
+            arr = np.asarray(p, dtype=np.uint8)
+            gray = cv2.cvtColor(arr, cv2.COLOR_BGRA2GRAY)
+            self.image_parts[i] = gray
+
     def clear_image_parts(self):
-        for i in range(len(self.events)):
+        for i in range(len(self.image_parts)):
             self.image_parts[i] = None
             self.events[i].set()
