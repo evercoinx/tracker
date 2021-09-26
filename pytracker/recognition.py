@@ -1,4 +1,3 @@
-# pyright: reportMissingImports=false
 import multiprocessing as mp
 
 import cv2
@@ -12,7 +11,7 @@ class Recognition:
         self.log = log
         self.queue = queue
         self.events = events
-        self.image_parts = {i: None for i in range(len(events))}
+        self.image_parts = [None for i in range(len(events))]
 
     def run(self):
         prefix = f"{mp.current_process().name}:"
@@ -27,7 +26,7 @@ class Recognition:
                 gray = cv2.cvtColor(img, cv2.COLOR_BGRA2GRAY)
                 self.image_parts[idx] = gray
 
-                if all(i is not None for i in self.image_parts.values()):
+                if all(p is not None for p in self.image_parts):
                     full = self.make_full_image()
                     cv2.imwrite(output_file_path.format(img_idx), full)
                     self.log.info(f"{prefix} image {img_idx} saved")
@@ -40,8 +39,9 @@ class Recognition:
                 return
 
     def make_full_image(self):
-        top = np.hstack([self.image_parts[0], self.image_parts[1]])
-        bottom = np.hstack([self.image_parts[2], self.image_parts[3]])
+        center = len(self.image_parts) // 2
+        top = np.hstack(self.image_parts[:center])  # type: ignore
+        bottom = np.hstack(self.image_parts[center:])  # type: ignore
         return np.vstack([top, bottom])
 
     def clear_image_parts(self):

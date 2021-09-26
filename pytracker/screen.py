@@ -4,33 +4,33 @@ from mss.linux import MSS as mss
 
 
 def get_rois(width, height):
-    w = width // 2
-    h = height // 2
+    c_w = width // 2
+    c_h = height // 2
 
     return (
         {
             "top": 0,
             "left": 0,
-            "width": w,
-            "height": h,
+            "width": c_w,
+            "height": c_h,
         },
         {
             "top": 0,
-            "left": w,
-            "width": w,
-            "height": h,
+            "left": c_w,
+            "width": c_w,
+            "height": c_h,
         },
         {
-            "top": h,
+            "top": c_h,
             "left": 0,
-            "width": w,
-            "height": h,
+            "width": c_w,
+            "height": c_h,
         },
         {
-            "top": h,
-            "left": w,
-            "width": w,
-            "height": h,
+            "top": c_h,
+            "left": c_w,
+            "width": c_w,
+            "height": c_h,
         },
     )
 
@@ -43,17 +43,17 @@ class Screen:
         self.queue = queue
         self.events = events
 
-    def grab(self, display, roi, event_index):
+    def grab(self, display, roi, index):
         prefix = f"{mp.current_process().name}{display}:"
 
         with mss(display) as screen:
             while True:
                 try:
                     img = screen.grab(roi)
-                    self.queue.put((event_index, img))
+                    self.queue.put((index, img))
                     self.log.debug(f"{prefix} image part grabbed")
 
-                    self.events[event_index].wait()
+                    self.events[index].wait()
                 except (KeyboardInterrupt, SystemExit):
                     self.log.warn(f"{prefix} interruption; exiting...")
                     return
