@@ -1,6 +1,6 @@
 import argparse
-import logging as log
-import multiprocessing as mp
+import logging
+from multiprocessing import Event, Process, Queue
 
 from .recognition import Recognition
 from .screen import Screen, get_rois
@@ -20,8 +20,8 @@ def main():
     args = vars(ap.parse_args())
 
     log_level = args["loglevel"].upper()
-    log.basicConfig(
-        level=log.getLevelName(log_level),
+    logging.basicConfig(
+        level=logging.getLevelName(log_level),
         format="%(asctime)s - %(levelname)-7s - %(message)s",
         datefmt="%Y-%m-%d %H:%M:%S",
     )
@@ -29,20 +29,20 @@ def main():
     rois = get_rois(args["width"], args["height"])
     roi_count = len(rois)
 
-    queue = mp.Queue(roi_count)
-    events = [mp.Event() for _ in range(roi_count)]
+    queue = Queue(roi_count)
+    events = [Event() for _ in range(roi_count)]
 
-    screen = Screen(log, queue, events)
-    recognition = Recognition(log, queue, events)
+    screen = Screen(queue, events)
+    recognition = Recognition(queue, events)
 
     procs = []
     for (i, roi) in enumerate(rois):
-        scr = mp.Process(
+        scr = Process(
             name=f"screen-{i}", target=screen.grab, args=(args["display"], roi, i)
         )
         procs.append(scr)
 
-    rec = mp.Process(name="recognition", target=recognition.run, args=())
+    rec = Process(name="recognition", target=recognition.run, args=())
     procs.append(rec)
 
     for p in procs:

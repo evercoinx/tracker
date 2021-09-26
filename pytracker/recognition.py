@@ -1,4 +1,5 @@
-import multiprocessing as mp
+import logging
+from multiprocessing import current_process
 
 import cv2
 import numpy as np
@@ -7,14 +8,13 @@ import numpy as np
 class Recognition:
     """Provides API to recognize objects in a given image"""
 
-    def __init__(self, log, queue, events):
-        self.log = log
+    def __init__(self, queue, events):
         self.queue = queue
         self.events = events
         self.image_parts = [None for i in range(len(events))]
 
     def run(self):
-        prefix = f"{mp.current_process().name}:"
+        prefix = f"{current_process().name}:"
         output_file_path = "images/{}.png"
         img_idx = 1
 
@@ -29,13 +29,13 @@ class Recognition:
                 if all(p is not None for p in self.image_parts):
                     full = self.make_full_image()
                     cv2.imwrite(output_file_path.format(img_idx), full)
-                    self.log.info(f"{prefix} image {img_idx} saved")
+                    logging.info(f"{prefix} image {img_idx} saved")
 
                     self.clear_image_parts()
                     img_idx += 1
             except (KeyboardInterrupt, SystemExit):
                 self.queue.close()
-                self.log.warn(f"{prefix} interruption; exiting...")
+                logging.warn(f"{prefix} interruption; exiting...")
                 return
 
     def make_full_image(self):
