@@ -3,7 +3,7 @@ import logging
 from multiprocessing import Event, Process, Queue
 
 from .recognition import Recognition
-from .screen import Screen, get_rois
+from .screen import Screen
 
 
 def main():
@@ -26,7 +26,7 @@ def main():
         datefmt="%Y-%m-%d %H:%M:%S",
     )
 
-    rois = get_rois(args["width"], args["height"])
+    rois = Screen.get_rois(args["width"], args["height"])
     roi_count = len(rois)
 
     queue = Queue(roi_count)
@@ -38,7 +38,7 @@ def main():
     procs = []
     for (i, roi) in enumerate(rois):
         scr = Process(
-            name=f"screen-{i}", target=screen.grab, args=(args["display"], roi, i)
+            name=f"screen-{i}", target=screen.capture, args=(args["display"], roi, i)
         )
         procs.append(scr)
 

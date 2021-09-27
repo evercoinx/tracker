@@ -37,17 +37,17 @@ class Recognition:
                 logging.warn(f"{prefix} interruption; exiting...")
                 return
 
-    def make_full_image(self):
-        center = len(self.image_parts) // 2
-        top = np.hstack(self.image_parts[:center])  # type: ignore
-        bottom = np.hstack(self.image_parts[center:])  # type: ignore
-        return np.vstack([top, bottom])
-
     def prepare_image_parts(self):
         for i, p in enumerate(self.image_parts):
             arr = np.asarray(p, dtype=np.uint8)
             gray = cv2.cvtColor(arr, cv2.COLOR_BGRA2GRAY)
             self.image_parts[i] = gray
+
+    def make_full_image(self):
+        center = len(self.image_parts) // 2
+        top = np.hstack(self.image_parts[:center])  # type: ignore
+        bottom = np.hstack(self.image_parts[center:])  # type: ignore
+        return np.vstack([top, bottom])
 
     def clear_image_parts(self):
         for i in range(len(self.image_parts)):
