@@ -1,7 +1,7 @@
 PKG_NAME = pytracker
 CHECK_DIRS := $(PKG_NAME) setup.py
 SOURCE_HOST := $(shell hostname)
-TARGET_HOST = raspberry
+TARGET_HOST = rpicv
 
 all: check deploy
 
@@ -40,6 +40,6 @@ sourceonly:
 	fi
 
 targetonly:
-	@if [ "$(SOURCE_HOST)" != "raspberrypi" ]; then \
+	@if [ ! "$(SOURCE_HOST)" =~ ^rpi[a-z]*$ ]; then \
 		echo "Invalid environment: $(SOURCE_HOST)"; exit 1; \
 	fi
