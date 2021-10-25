@@ -1,7 +1,9 @@
-PKG_NAME = pytracker
+NAMESPACE := ~/Workspace/piwatch
+PKG_NAME = tracker
 CHECK_DIRS := $(PKG_NAME) setup.py
-SOURCE_HOST := $(shell hostname)
-TARGET_HOST = rpicv
+SOURCE_HOST = fedora
+TARGET_HOST = raspberry
+EFFECTIVE_HOST := $(shell hostname)
 
 all: check deploy
 
@@ -32,14 +34,14 @@ run: install
 
 deploy: sourceonly
 	rsync -avh --delete $(PKG_NAME) images Makefile requirements.txt requirements-prod.txt setup.py \
-		pi@$(TARGET_HOST):~/Workspace/python/$(PKG_NAME)
+		pi@$(TARGET_HOST):$(NAMESPACE)/$(PKG_NAME)
 
 sourceonly:
-	@if [ "$(SOURCE_HOST)" != "fedora" ]; then \
-		echo "Invalid environment: $(SOURCE_HOST)"; exit 1; \
+	@if [ $(EFFECTIVE_HOST) != $(SOURCE_HOST) ]; then \
+		echo "Invalid host environment: $(EFFECTIVE_HOST)"; exit 1; \
 	fi
 
 targetonly:
-	@if [ ! "$(SOURCE_HOST)" =~ ^rpi[a-z]*$ ]; then \
-		echo "Invalid environment: $(SOURCE_HOST)"; exit 1; \
+	@if [ $(EFFECTIVE_HOST) != $(TARGET_HOST) ]; then \
+		echo "Invalid host environment: $(EFFECTIVE_HOST)"; exit 1; \
 	fi

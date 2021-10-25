@@ -2,8 +2,8 @@ import argparse
 import logging
 from multiprocessing import Event, Process, Queue
 
-from pytracker.recognition import Recognition
-from pytracker.screen import Screen
+from tracker.recognition import Recognition
+from tracker.screen import Screen
 
 
 def main():

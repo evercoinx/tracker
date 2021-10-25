@@ -1,6 +1,6 @@
 import unittest
 
-from pytracker.screen import Screen
+from tracker.screen import Screen
 
 
 class TestScreen(unittest.TestCase):
