@@ -1,5 +1,7 @@
 import argparse
 import logging
+import os
+import sys
 from multiprocessing import Event, Process, Queue
 
 from tracker.recognition import Recognition
@@ -14,7 +16,7 @@ def main():
         default="info",
         help="log level: debug, info, warn, error",
     )
-    ap.add_argument("--display", type=str, default=":0.0", help="display number")
+    ap.add_argument("--display", type=str, default=":10.0", help="display number")
     ap.add_argument("--width", type=int, default=1920, help="screen width")
     ap.add_argument("--height", type=int, default=1080, help="screen height")
     args = vars(ap.parse_args())
@@ -25,6 +27,19 @@ def main():
         format="%(asctime)s - %(levelname)-7s - %(message)s",
         datefmt="%Y-%m-%d %H:%M:%S",
     )
+
+    # The display variable has the following format: hostname:display.screen
+    display = os.environ.get("DISPLAY", "")
+    parsed_display = display.split(":")
+    if len(parsed_display) < 2:
+        logging.critical(f"Invalid display value: {display}")
+        sys.exit(1)
+
+    if args["display"] != f":{parsed_display[1]}":
+        logging.critical(
+            f"Display values mismatch: {args['display']} != :{parsed_display[1]}"
+        )
+        sys.exit(1)
 
     rois = Screen.get_rois(args["width"], args["height"])
     roi_count = len(rois)
