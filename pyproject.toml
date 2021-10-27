@@ -5,6 +5,7 @@ exclude = '''
 /(
     \.git
   | \.vscode
+  | images
   | __pycache__
 )/
 '''
@@ -14,13 +15,15 @@ profile = "black"
 multi_line_output = 5
 
 [tool.pyright]
-include = ["src"]
+include = ["tracker"]
 exclude = [
     "**/__pycache__",
-    "src/typestubs"
+    "tracker.egg-info",
+    "images",
+    "tracker/typestubs"
 ]
 ignore = []
-stubPath = "src/stubs"
+stubPath = "tracker/stubs"
 venv = "env367"
 
 reportMissingImports = false
@@ -30,5 +33,5 @@ pythonVersion = "3.7"
 pythonPlatform = "Linux"
 
 executionEnvironments = [
-  { root = "src" }
+  { root = "tracker" }
 ]
