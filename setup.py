@@ -1,6 +1,6 @@
 from setuptools import setup
 
-pkg_name = "tracker"
+from tracker import __package__ as pkg_name
 
 setup(
     name=pkg_name,

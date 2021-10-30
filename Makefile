@@ -1,23 +1,40 @@
-NAMESPACE := ~/Workspace/piwatch
 PKG_NAME = tracker
-CHECK_DIRS := $(PKG_NAME) setup.py
+NAMESPACE := ~/Workspace/piwatch
+CHECK_FILES := $(PKG_NAME) setup.py
+
 SOURCE_HOST = fedora
 TARGET_HOST = raspberry
 EFFECTIVE_HOST := $(shell hostname)
 
+LOG_LEVEL = debug
+DISPLAY = :10.0
+
 all: check deploy
 
-check: sourceonly format imports lint test
+sourceonly:
+	@if [ $(EFFECTIVE_HOST) != $(SOURCE_HOST) ]; then \
+		echo "Hostname mismatch: expected $(SOURCE_HOST), actual $(EFFECTIVE_HOST)"; \
+		exit 1; \
+	fi
+
+targetonly:
+	@if [ $(EFFECTIVE_HOST) != $(TARGET_HOST) ]; then \
+		echo "Hostname mismatch: expected $(TARGET_HOST), actual $(EFFECTIVE_HOST)"; \
+		exit 1; \
+	fi
+
+check: format imports lint test
 
 format:
-	black $(CHECK_DIRS)
+	black $(CHECK_FILES)
 
 imports:
-	isort $(CHECK_DIRS)
+	isort $(CHECK_FILES)
 
 lint:
-	flake8 $(CHECK_DIRS)
+	flake8 $(CHECK_FILES)
 
+.PHONY: test
 test:
 	python -m unittest discover -s $(PKG_NAME) -p "*_test.py"
 
@@ -32,18 +49,6 @@ deploy: sourceonly
 	rsync -avh --delete $(PKG_NAME) images Makefile requirements.txt requirements-prod.txt setup.py \
 		pi@$(TARGET_HOST):$(NAMESPACE)/$(PKG_NAME)
 
-run: install
+run: targetonly
 	rm -rf images/*
-	$(PKG_NAME) --loglevel debug --display :10.0
-
-sourceonly:
-	@if [ $(EFFECTIVE_HOST) != $(SOURCE_HOST) ]; then \
-		echo "Invalid host environment: $(EFFECTIVE_HOST)"; \
-		exit 1; \
-	fi
-
-targetonly:
-	@if [ $(EFFECTIVE_HOST) != $(TARGET_HOST) ]; then \
-		echo "Invalid host environment: $(EFFECTIVE_HOST)"; \
-		exit 1; \
-	fi
+	$(PKG_NAME) --loglevel $(LOG_LEVEL) --display $(DISPLAY)
