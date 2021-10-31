@@ -17,21 +17,18 @@ src_paths = ["notifier"]
 [tool.pyright]
 include = ["tracker"]
 exclude = [
+    ".vscode",
     "**/__pycache__",
-    "tracker.egg-info",
     "images",
-    "tracker/typestubs"
+    "tracker.egg-info"
 ]
 ignore = []
-stubPath = "tracker/stubs"
-venv = "env367"
-
-reportMissingImports = false
-reportMissingTypeStubs = false
-
+venvPath = "/home/serge/.cache/pyenvs"
+venv = "tracker"
 pythonVersion = "3.7"
 pythonPlatform = "Linux"
-
 executionEnvironments = [
   { root = "tracker" }
 ]
+reportMissingImports = false
+reportMissingTypeStubs = false
