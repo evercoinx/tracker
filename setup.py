@@ -1,5 +1,4 @@
 from setuptools import setup
-
 from tracker import __package__ as pkg_name
 
 setup(
