@@ -28,18 +28,6 @@ def main():
         datefmt="%Y-%m-%d %H:%M:%S",
     )
 
-    venv_path = os.environ.get("VIRTUAL_ENV", "")
-    if not venv_path:
-        logging.critical("Virtual environment is not set")
-        sys.exit(1)
-
-    if __package__ != os.path.basename(venv_path):
-        logging.critical(
-            f"Virtual environment mismatch: expected {__package__}, "
-            f"acutal {os.path.basename(venv_path)}"
-        )
-        sys.exit(1)
-
     # The display variable has the following format: hostname:display.screen
     display = os.environ.get("DISPLAY", "")
     if not display:
