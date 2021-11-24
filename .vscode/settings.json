@@ -1,5 +1,5 @@
 {
-    "python.defaultInterpreterPath": "~/.cache/pyenvs/tracker/bin/python",
+    "python.defaultInterpreterPath": "~/.virtualenvs/tracker/bin/python",
     "python.formatting.provider": "black",
     "python.formatting.blackArgs": [],
     "python.linting.enabled": true,

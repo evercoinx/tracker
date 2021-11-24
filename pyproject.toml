@@ -23,7 +23,7 @@ exclude = [
     "tracker.egg-info"
 ]
 ignore = []
-venvPath = "/home/serge/.cache/pyenvs"
+venvPath = "~/.virtualenvs"
 venv = "tracker"
 pythonVersion = "3.7"
 pythonPlatform = "Linux"
