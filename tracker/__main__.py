@@ -4,8 +4,8 @@ import os
 import sys
 from multiprocessing import Event, Process, Queue
 
-from tracker.recognition import Recognition
-from tracker.screen import Screen
+from tracker.grabber import Grabber
+from tracker.stitcher import Stitcher
 
 
 def main():
@@ -41,24 +41,24 @@ def main():
         )
         sys.exit(1)
 
-    rois = Screen.get_rois(args["width"], args["height"])
+    rois = Grabber.get_rois(args["width"], args["height"])
     roi_count = len(rois)
 
     queue = Queue(roi_count)
     events = [Event() for _ in range(roi_count)]
 
-    screen = Screen(queue, events)
-    recognition = Recognition(queue, events)
+    grabber = Grabber(queue, events)
+    stitcher = Stitcher(queue, events)
 
     procs = []
     for (i, roi) in enumerate(rois):
-        scr = Process(
-            name=f"screen-{i}", target=screen.capture, args=(args["display"], roi, i)
+        gp = Process(
+            name=f"grabber-{i}", target=grabber.capture, args=(args["display"], roi, i)
         )
-        procs.append(scr)
+        procs.append(gp)
 
-    rec = Process(name="recognition", target=recognition.run, args=())
-    procs.append(rec)
+    sp = Process(name="stitcher", target=stitcher.run, args=())
+    procs.append(sp)
 
     for p in procs:
         p.start()

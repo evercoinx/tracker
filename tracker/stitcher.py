@@ -5,8 +5,8 @@ import cv2
 import numpy as np
 
 
-class Recognition:
-    """Provides API to recognize objects in a given image"""
+class Stitcher:
+    """Provides API to stitch image parts"""
 
     def __init__(self, queue, events):
         self.queue = queue
@@ -26,9 +26,9 @@ class Recognition:
                 if all(p is not None for p in self.image_parts):
                     self.prepare_image_parts()
 
-                    full = self.make_full_image()
+                    full = self.stitch_image()
                     cv2.imwrite(output_file_path.format(img_idx), full)
-                    logging.info(f"{prefix} image {img_idx} saved")
+                    logging.info(f"{prefix} image {img_idx} stitched")
 
                     self.clear_image_parts()
                     img_idx += 1
@@ -43,7 +43,7 @@ class Recognition:
             gray = cv2.cvtColor(arr, cv2.COLOR_BGRA2GRAY)
             self.image_parts[i] = gray
 
-    def make_full_image(self):
+    def stitch_image(self):
         center = len(self.image_parts) // 2
         top = np.hstack(self.image_parts[:center])  # type: ignore
         bottom = np.hstack(self.image_parts[center:])  # type: ignore

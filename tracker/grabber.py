@@ -4,7 +4,7 @@ from multiprocessing import current_process
 from mss.linux import MSS as mss
 
 
-class Screen:
+class Grabber:
     """Provides API to grab a screen with a given region of interest"""
 
     def __init__(self, queue, events):
