@@ -12,13 +12,13 @@ DISPLAY = :10.0
 all: check deploy
 
 sourceonly:
-	@if [[ $(EFFECTIVE_HOST) != $(SOURCE_HOST) ]]; then \
+	@if [ "$(EFFECTIVE_HOST)" != "$(SOURCE_HOST)" ]; then \
 		echo "Hostname mismatch: expected $(SOURCE_HOST), actual $(EFFECTIVE_HOST)"; \
 		exit 1; \
 	fi
 
 targetonly:
-	@if [[ $(EFFECTIVE_HOST) != $(TARGET_HOST) ]]; then \
+	@if [ "$(EFFECTIVE_HOST)" != "$(TARGET_HOST)" ]; then \
 		echo "Hostname mismatch: expected $(TARGET_HOST), actual $(EFFECTIVE_HOST)"; \
 		exit 1; \
 	fi
