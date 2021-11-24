@@ -4,6 +4,8 @@ from multiprocessing import current_process
 import cv2
 import numpy as np
 
+from .recognizer import Recognizer
+
 
 class Stitcher:
     """Provides API to stitch image parts"""
@@ -12,11 +14,11 @@ class Stitcher:
         self.queue = queue
         self.events = events
         self.image_parts = [None] * len(events)
+        self.recognizer = Recognizer()
 
     def run(self):
         prefix = f"{current_process().name}:"
-        output_file_path = "images/{}.png"
-        img_idx = 1
+        img_seq_num = 1
 
         while True:
             try:
@@ -26,12 +28,13 @@ class Stitcher:
                 if all(p is not None for p in self.image_parts):
                     self.prepare_image_parts()
 
-                    full = self.stitch_image()
-                    cv2.imwrite(output_file_path.format(img_idx), full)
-                    logging.info(f"{prefix} image {img_idx} stitched")
+                    stitched = self.stitch_image()
+                    logging.info(f"{prefix} image #{img_seq_num} stitched")
+
+                    self.recognizer.run(stitched, img_seq_num)
 
                     self.clear_image_parts()
-                    img_idx += 1
+                    img_seq_num += 1
             except (KeyboardInterrupt, SystemExit):
                 self.queue.close()
                 logging.warn(f"{prefix} interruption; exiting...")
