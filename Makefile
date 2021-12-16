@@ -1,5 +1,5 @@
 PKG_NAME = tracker
-NAMESPACE = ~/Workspace/piwatch
+NAMESPACE = ~/Workspace/evercoinx
 SOURCE_FILES = $(PKG_NAME) setup.py
 
 SOURCE_HOST = fedora
