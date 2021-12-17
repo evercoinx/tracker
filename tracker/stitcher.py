@@ -4,17 +4,15 @@ from multiprocessing import current_process
 import cv2
 import numpy as np
 
-from .recognizer import Recognizer
-
 
 class Stitcher:
     """Provides API to stitch image parts"""
 
-    def __init__(self, queue, events):
+    def __init__(self, queue, events, recognizer):
         self.queue = queue
         self.events = events
         self.image_parts = [None] * len(events)
-        self.recognizer = Recognizer()
+        self.recognizer = recognizer
 
     def run(self):
         prefix = f"{current_process().name}:"

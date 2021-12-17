@@ -22,8 +22,8 @@ class Recognizer:
 
             if len(approx) == 4:
                 cv2.drawContours(image, [approx], -1, (255, 255, 255), 5)
-                cv2.imwrite(f"images/{img_seq_num}_edged.png", edged)
-                cv2.imwrite(f"images/{img_seq_num}.png", image)
+                cv2.imwrite(f"images/original/{img_seq_num}.png", image)
+                cv2.imwrite(f"images/processed/{img_seq_num}.png", edged)
                 logging.info(f"{prefix} image #{img_seq_num} recognized")
                 break
 

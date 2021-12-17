@@ -5,6 +5,7 @@ import sys
 from multiprocessing import Event, Process, Queue
 
 from tracker.grabber import Grabber
+from tracker.recognizer import Recognizer
 from tracker.stitcher import Stitcher
 
 
@@ -48,14 +49,16 @@ def main():
     events = [Event() for _ in range(roi_count)]
 
     grabber = Grabber(queue, events)
-    stitcher = Stitcher(queue, events)
-
     procs = []
+
     for (i, roi) in enumerate(rois):
         gp = Process(
             name=f"grabber-{i}", target=grabber.capture, args=(args["display"], roi, i)
         )
         procs.append(gp)
+
+    recognizer = Recognizer()
+    stitcher = Stitcher(queue, events, recognizer)
 
     sp = Process(name="stitcher", target=stitcher.run, args=())
     procs.append(sp)
