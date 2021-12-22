@@ -4,7 +4,7 @@ import os
 import sys
 from multiprocessing import Event, Process, Queue
 
-from tracker.object_detector import ObjectDetector
+from tracker.detector import ObjectDetector
 from tracker.screen import Screen
 
 
@@ -47,18 +47,18 @@ def main():
     queue = Queue(roi_count)
     events = [Event() for _ in range(roi_count)]
 
-    screen = Screen(queue, events)
     procs = []
+    screen = Screen(queue, events)
+    detector = ObjectDetector(queue, events)
 
     for (i, roi) in enumerate(rois):
-        p = Process(
+        sp = Process(
             name=f"screen-{i}", target=screen.capture, args=(args["display"], roi, i)
         )
-        procs.append(p)
+        procs.append(sp)
 
-    obj_detector = ObjectDetector(queue, events)
-    p = Process(name="obj-detector", target=obj_detector.run, args=())
-    procs.append(p)
+        dp = Process(name=f"detector-{i}", target=detector.run, args=())
+        procs.append(dp)
 
     for p in procs:
         p.start()
