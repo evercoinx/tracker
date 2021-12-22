@@ -50,5 +50,5 @@ deploy: sourceonly
 		pi@$(TARGET_HOST):$(NAMESPACE)/$(PKG_NAME)
 
 run: targetonly
-	rm -rf images/original/* images/processed/*
+	rm -rf images/original/table{1,2,3,4}/* images/processed/*
 	$(PKG_NAME) --loglevel $(LOG_LEVEL) --display $(DISPLAY)

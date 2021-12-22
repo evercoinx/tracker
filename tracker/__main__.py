@@ -42,7 +42,7 @@ def main():
         )
         sys.exit(1)
 
-    rois = Grabber.get_rois(args["width"], args["height"])
+    rois = Grabber.get_rois(args["width"], args["height"], 0, 98)
     roi_count = len(rois)
 
     queue = Queue(roi_count)

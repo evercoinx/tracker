@@ -32,7 +32,7 @@ class TestGrabber(unittest.TestCase):
 
         for t in tests:
             with self.subTest(f"get rois for {t['name']}"):
-                rois = Grabber.get_rois(t["width"], t["height"])
+                rois = Grabber.get_rois(t["width"], t["height"], 0, 0)
                 self.assertTupleEqual(t["rois"], rois)
 
 

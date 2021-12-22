@@ -27,33 +27,37 @@ class Grabber:
                     return
 
     @staticmethod
-    def get_rois(width, height):
-        c_x = width // 2
-        c_y = height // 2
+    def get_rois(screen_width, screen_height, left_margin, top_margin):
+        roi_width = screen_width // 2
+        roi_height = (screen_height - top_margin) // 2
 
         return (
+            # Top Left: 0
             {
-                "top": 0,
-                "left": 0,
-                "width": c_x,
-                "height": c_y,
+                "left": left_margin,
+                "top": top_margin,
+                "width": roi_width,
+                "height": roi_height,
             },
+            # Top Right: 1
             {
-                "top": 0,
-                "left": c_x,
-                "width": c_x,
-                "height": c_y,
+                "left": left_margin + roi_width,
+                "top": top_margin,
+                "width": roi_width,
+                "height": roi_height,
             },
+            # Bottom Left: 2
             {
-                "top": c_y,
-                "left": 0,
-                "width": c_x,
-                "height": c_y,
+                "left": left_margin,
+                "top": top_margin + roi_height,
+                "width": roi_width,
+                "height": roi_height,
             },
+            # Bottom Right: 3
             {
-                "top": c_y,
-                "left": c_x,
-                "width": c_x,
-                "height": c_y,
+                "left": left_margin + roi_width,
+                "top": top_margin + roi_height,
+                "width": roi_width,
+                "height": roi_height,
             },
         )
