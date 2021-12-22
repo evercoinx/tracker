@@ -4,24 +4,25 @@ from multiprocessing import current_process
 from mss.linux import MSS as mss
 
 
-class Grabber:
-    """Provides API to grab a screen with a given region of interest"""
+class Screen:
+    """Grabs a screen part identified by a region of interest"""
 
     def __init__(self, queue, events):
         self.queue = queue
         self.events = events
 
-    def capture(self, display, roi, index):
+    def capture(self, display, roi, screen_index):
         prefix = f"{current_process().name}{display}:"
 
-        with mss(display) as screen:
+        with mss(display) as viewport:
             while True:
                 try:
-                    img = screen.grab(roi)
-                    self.queue.put((index, img))
-                    logging.debug(f"{prefix} image part grabbed")
+                    screen = viewport.grab(roi)
+                    self.queue.put((screen_index, screen))
+                    logging.debug(f"{prefix} screen part captured")
 
-                    self.events[index].wait()
+                    self.events[screen_index].wait()
+
                 except (KeyboardInterrupt, SystemExit):
                     logging.warn(f"{prefix} interruption; exiting...")
                     return

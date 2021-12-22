@@ -1,9 +1,9 @@
 import unittest
 
-from tracker.grabber import Grabber
+from tracker.screen import Screen
 
 
-class TestGrabber(unittest.TestCase):
+class TestScreen(unittest.TestCase):
     def test_get_rois(self):
         tests = [
             {
@@ -32,7 +32,7 @@ class TestGrabber(unittest.TestCase):
 
         for t in tests:
             with self.subTest(f"get rois for {t['name']}"):
-                rois = Grabber.get_rois(t["width"], t["height"], 0, 0)
+                rois = Screen.get_rois(t["width"], t["height"], 0, 0)
                 self.assertTupleEqual(t["rois"], rois)
 
 

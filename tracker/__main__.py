@@ -4,9 +4,8 @@ import os
 import sys
 from multiprocessing import Event, Process, Queue
 
-from tracker.grabber import Grabber
-from tracker.recognizer import Recognizer
-from tracker.stitcher import Stitcher
+from tracker.object_detector import ObjectDetector
+from tracker.screen import Screen
 
 
 def main():
@@ -42,26 +41,24 @@ def main():
         )
         sys.exit(1)
 
-    rois = Grabber.get_rois(args["width"], args["height"], 0, 98)
+    rois = Screen.get_rois(args["width"], args["height"], 0, 98)
     roi_count = len(rois)
 
     queue = Queue(roi_count)
     events = [Event() for _ in range(roi_count)]
 
-    grabber = Grabber(queue, events)
+    screen = Screen(queue, events)
     procs = []
 
     for (i, roi) in enumerate(rois):
-        gp = Process(
-            name=f"grabber-{i}", target=grabber.capture, args=(args["display"], roi, i)
+        p = Process(
+            name=f"screen-{i}", target=screen.capture, args=(args["display"], roi, i)
         )
-        procs.append(gp)
+        procs.append(p)
 
-    recognizer = Recognizer()
-    stitcher = Stitcher(queue, events, recognizer)
-
-    sp = Process(name="stitcher", target=stitcher.run, args=())
-    procs.append(sp)
+    obj_detector = ObjectDetector(queue, events)
+    p = Process(name="obj-detector", target=obj_detector.run, args=())
+    procs.append(p)
 
     for p in procs:
         p.start()
