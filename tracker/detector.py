@@ -6,7 +6,7 @@ import numpy as np
 
 
 class ObjectDetector:
-    """Detects objects on an image"""
+    """Detect objects on an image"""
 
     def __init__(self, queue, events):
         self.queue = queue
@@ -18,19 +18,19 @@ class ObjectDetector:
 
         while True:
             try:
-                idx, img = self.queue.get()
+                win_idx, win_img = self.queue.get()
+                win_arr = np.asarray(win_img, dtype=np.uint8)
 
-                arr = np.asarray(img, dtype=np.uint8)
-                gray = cv2.cvtColor(arr, cv2.COLOR_BGRA2GRAY)
-
+                gray = cv2.cvtColor(win_arr, cv2.COLOR_BGRA2GRAY)
                 cv2.imwrite(
-                    f"./images/original/table{idx+1}/{img_seq}.png",
+                    f"./images/original/table{win_idx+1}/{img_seq}.png",
                     gray,
                 )
-                logging.info(f"{prefix} table {idx+1}: image {img_seq}.png saved")
+                logging.info(f"{prefix} table {win_idx+1}: image {img_seq}.png saved")
 
                 img_seq += 1
-                self.events[idx].set()
+                self.events[win_idx].set()
+
             except (KeyboardInterrupt, SystemExit):
                 self.queue.close()
                 logging.warn(f"{prefix} interruption; exiting...")

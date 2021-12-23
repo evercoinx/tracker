@@ -4,13 +4,13 @@ from tracker.screen import Screen
 
 
 class TestScreen(unittest.TestCase):
-    def test_get_rois(self):
+    def test_calculate_window_coords(self):
         tests = [
             {
                 "name": "full hd",
                 "width": 1920,
                 "height": 1080,
-                "rois": (
+                "coords": (
                     {"top": 0, "left": 0, "width": 960, "height": 540},
                     {"top": 0, "left": 960, "width": 960, "height": 540},
                     {"top": 540, "left": 0, "width": 960, "height": 540},
@@ -21,7 +21,7 @@ class TestScreen(unittest.TestCase):
                 "name": "hd",
                 "width": 1280,
                 "height": 720,
-                "rois": (
+                "coords": (
                     {"top": 0, "left": 0, "width": 640, "height": 360},
                     {"top": 0, "left": 640, "width": 640, "height": 360},
                     {"top": 360, "left": 0, "width": 640, "height": 360},
@@ -31,9 +31,9 @@ class TestScreen(unittest.TestCase):
         ]
 
         for t in tests:
-            with self.subTest(f"get rois for {t['name']}"):
-                rois = Screen.get_rois(t["width"], t["height"], 0, 0)
-                self.assertTupleEqual(t["rois"], rois)
+            with self.subTest(f"calculate {t['name']} window coordinates"):
+                wc = Screen.calculate_window_coords(t["width"], t["height"], 0, 0)
+                self.assertTupleEqual(wc, t["coords"])
 
 
 if __name__ == "__main__":

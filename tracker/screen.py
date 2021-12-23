@@ -5,60 +5,60 @@ from mss.linux import MSS as mss
 
 
 class Screen:
-    """Grabs a screen part identified by a region of interest"""
+    """Capture a screen window by coordinates"""
 
     def __init__(self, queue, events):
         self.queue = queue
         self.events = events
 
-    def capture(self, display, roi, screen_index):
+    def capture(self, display, window_coords, window_index):
         prefix = f"{current_process().name}{display}:"
 
-        with mss(display) as viewport:
+        with mss(display) as screen:
             while True:
                 try:
-                    screen = viewport.grab(roi)
-                    self.queue.put((screen_index, screen))
-                    logging.debug(f"{prefix} screen part captured")
+                    window_image = screen.grab(window_coords)
+                    self.queue.put((window_index, window_image))
+                    logging.debug(f"{prefix} window {window_index+1} captured")
 
-                    self.events[screen_index].wait()
+                    self.events[window_index].wait()
 
                 except (KeyboardInterrupt, SystemExit):
                     logging.warn(f"{prefix} interruption; exiting...")
                     return
 
     @staticmethod
-    def get_rois(screen_width, screen_height, left_margin, top_margin):
-        roi_width = screen_width // 2
-        roi_height = (screen_height - top_margin) // 2
+    def calculate_window_coords(screen_width, screen_height, left_margin, top_margin):
+        window_width = screen_width // 2
+        window_height = (screen_height - top_margin) // 2
 
         return (
-            # Top Left: 0
+            # top left window, index 0
             {
                 "left": left_margin,
                 "top": top_margin,
-                "width": roi_width,
-                "height": roi_height,
+                "width": window_width,
+                "height": window_height,
             },
-            # Top Right: 1
+            # top right window, index 1
             {
-                "left": left_margin + roi_width,
+                "left": left_margin + window_width,
                 "top": top_margin,
-                "width": roi_width,
-                "height": roi_height,
+                "width": window_width,
+                "height": window_height,
             },
-            # Bottom Left: 2
+            # bottom left window, index 2
             {
                 "left": left_margin,
-                "top": top_margin + roi_height,
-                "width": roi_width,
-                "height": roi_height,
+                "top": top_margin + window_height,
+                "width": window_width,
+                "height": window_height,
             },
-            # Bottom Right: 3
+            # bottom right window, index 3
             {
-                "left": left_margin + roi_width,
-                "top": top_margin + roi_height,
-                "width": roi_width,
-                "height": roi_height,
+                "left": left_margin + window_width,
+                "top": top_margin + window_height,
+                "width": window_width,
+                "height": window_height,
             },
         )

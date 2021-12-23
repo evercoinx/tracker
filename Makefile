@@ -8,6 +8,7 @@ EFFECTIVE_HOST = $(shell hostname)
 
 LOG_LEVEL = debug
 DISPLAY = :10.0
+SCREEN_TOP_MARGIN = 98
 
 all: check deploy
 
@@ -51,4 +52,4 @@ deploy: sourceonly
 
 run: targetonly
 	rm -rf images/original/table{1,2,3,4}/* images/processed/*
-	$(PKG_NAME) --loglevel $(LOG_LEVEL) --display $(DISPLAY)
+	$(PKG_NAME) --log-level $(LOG_LEVEL) --display $(DISPLAY) --top-margin $(SCREEN_TOP_MARGIN)
