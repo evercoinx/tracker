@@ -32,8 +32,10 @@ class TestScreen(unittest.TestCase):
 
         for t in tests:
             with self.subTest(f"calculate {t['name']} window coordinates"):
-                wc = Screen.calculate_window_coords(t["width"], t["height"], 0, 0)
-                self.assertTupleEqual(wc, t["coords"])
+                wc = Screen.calculate_window_coords(
+                    [0, 1, 2, 3], t["width"], t["height"], 0, 0
+                )
+                self.assertTupleEqual(tuple(wc), t["coords"])
 
 
 if __name__ == "__main__":

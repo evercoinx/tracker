@@ -17,7 +17,13 @@ def main():
         help="log level: debug, info, warn, error",
     )
     ap.add_argument(
-        "--display", type=str, default=":0.0", help="display number, e.g. :10.0"
+        "--display", type=str, default=":0.0", help="display number; deafult: :0.0"
+    )
+    ap.add_argument(
+        "--windows",
+        type=list,
+        default=[0, 1, 2, 3],
+        help="windows to watch; default: 1234",
     )
     ap.add_argument("--screen-width", type=int, default=1920, help="screen width in px")
     ap.add_argument(
@@ -38,6 +44,11 @@ def main():
         datefmt="%Y-%m-%d %H:%M:%S",
     )
 
+    windows = args["windows"]
+    if len(windows) > 4:
+        logging.critical(f"Too many windows to watch: {len(windows)}")
+        sys.exit(1)
+
     # The display variable has the following format: hostname:display.screen
     display = os.environ.get("DISPLAY", "")
     if not display:
@@ -51,7 +62,9 @@ def main():
         )
         sys.exit(1)
 
+    win_indexes = [int(i) - 1 for i in windows]
     win_coords = Screen.calculate_window_coords(
+        win_indexes,
         args["screen_width"],
         args["screen_height"],
         args["left_margin"],
