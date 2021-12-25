@@ -47,9 +47,9 @@ install: targetonly
 	pip install -e .
 
 deploy: sourceonly
-	rsync -avh --delete $(PKG_NAME) images Makefile requirements.txt requirements-prod.txt setup.py \
+	rsync -avh --delete $(PKG_NAME) stream Makefile requirements.txt requirements-prod.txt setup.py \
 		pi@$(TARGET_HOST):$(NAMESPACE)/$(PKG_NAME)
 
 run: targetonly
-	rm -rf images/original/table{1,2,3,4}/* images/processed/*
+	rm -rf stream/table{1,2,3,4}/*
 	$(PKG_NAME) --log-level $(LOG_LEVEL) --display $(DISPLAY) --top-margin $(SCREEN_TOP_MARGIN)

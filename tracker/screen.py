@@ -5,7 +5,7 @@ from mss.linux import MSS as mss
 
 
 class Screen:
-    """Capture a screen window by coordinates"""
+    """Capture a window of a screen"""
 
     def __init__(self, queue, events):
         self.queue = queue
@@ -17,8 +17,8 @@ class Screen:
         with mss(display) as screen:
             while True:
                 try:
-                    window_image = screen.grab(window_coords)
-                    self.queue.put((window_index, window_image))
+                    window_frame = screen.grab(window_coords)
+                    self.queue.put((window_index, window_frame))
                     logging.debug(f"{prefix} window {window_index+1} captured")
 
                     self.events[window_index].wait()

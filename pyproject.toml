@@ -5,7 +5,7 @@ exclude = '''
 /(
     \.git
   | \.vscode
-  | images
+  | stream
   | __pycache__
 )/
 '''
@@ -19,7 +19,7 @@ include = ["tracker"]
 exclude = [
     ".vscode",
     "**/__pycache__",
-    "images",
+    "stream",
     "tracker.egg-info"
 ]
 ignore = []

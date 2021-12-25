@@ -45,6 +45,5 @@ share/python-wheels/
 *.egg
 MANIFEST
 
-# Images
-images/original/table*/*.png
-images/processed/table*/*.png
+# Custom
+stream/table*/*.png
