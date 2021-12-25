@@ -63,8 +63,8 @@ def main():
     events = [Event() for _ in range(win_count)]
 
     procs = []
-    screen = Screen(queue, events)
-    detector = ObjectDetector(queue, events, "./stream")
+    screen = Screen(queue, events, "./stream")
+    detector = ObjectDetector(queue, events)
 
     for (i, wc) in enumerate(win_coords):
         sp = Process(

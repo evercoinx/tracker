@@ -24,7 +24,7 @@ targetonly:
 		exit 1; \
 	fi
 
-check: format imports lint test
+check: format imports lint
 
 format:
 	black $(SOURCE_FILES)
@@ -50,6 +50,6 @@ deploy: sourceonly
 	rsync -avh --delete $(PKG_NAME) stream Makefile requirements.txt requirements-prod.txt setup.py \
 		pi@$(TARGET_HOST):$(NAMESPACE)/$(PKG_NAME)
 
-run: targetonly
+run: test targetonly
 	rm -rf stream/table{1,2,3,4}/*
 	$(PKG_NAME) --log-level $(LOG_LEVEL) --display $(DISPLAY) --top-margin $(SCREEN_TOP_MARGIN)

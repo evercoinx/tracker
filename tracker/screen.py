@@ -1,27 +1,41 @@
 import logging
 from multiprocessing import current_process
 
+import cv2
+import numpy as np
 from mss.linux import MSS as mss
 
 
 class Screen:
     """Capture a window of a screen"""
 
-    def __init__(self, queue, events):
+    def __init__(self, queue, events, stream_path):
         self.queue = queue
         self.events = events
+        self.stream_path = stream_path
 
     def capture(self, display, window_coords, window_index):
         prefix = f"{current_process().name}{display}:"
+        frame_num = 1
 
         with mss(display) as screen:
             while True:
                 try:
-                    window_frame = screen.grab(window_coords)
-                    self.queue.put((window_index, window_frame))
-                    logging.debug(f"{prefix} window {window_index+1} captured")
+                    win_frame = screen.grab(window_coords)
+                    win_arr = np.asarray(win_frame, dtype=np.uint8)
 
+                    gray_frame = cv2.cvtColor(win_arr, cv2.COLOR_BGRA2GRAY)
+                    cv2.imwrite(
+                        f"{self.stream_path}/table{window_index+1}/{frame_num}.png",
+                        gray_frame,
+                    )
+                    logging.info(
+                        f"{prefix} table {window_index+1}: frame {frame_num}.png saved"
+                    )
+
+                    self.queue.put((window_index, gray_frame))
                     self.events[window_index].wait()
+                    frame_num += 1
 
                 except (KeyboardInterrupt, SystemExit):
                     logging.warn(f"{prefix} interruption; exiting...")
