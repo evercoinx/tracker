@@ -26,16 +26,17 @@ class Screen:
 
                     gray_frame = cv2.cvtColor(win_arr, cv2.COLOR_BGRA2GRAY)
                     cv2.imwrite(
-                        f"{self.stream_path}/window{window_index+1}/{frame_num}.png",
+                        f"{self.stream_path}/window{window_index+1}/"
+                        + f"{frame_num}_raw.png",
                         gray_frame,
                     )
                     logging.debug(
                         f"{prefix} window {window_index+1}: frame {frame_num}.png saved"
                     )
 
+                    frame_num += 1
                     self.queue.put((window_index, gray_frame))
                     self.events[window_index].wait()
-                    frame_num += 1
 
                 except (KeyboardInterrupt, SystemExit):
                     logging.warn(f"{prefix} interruption; exiting...")

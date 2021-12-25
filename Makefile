@@ -57,3 +57,6 @@ run: targetonly test
 run4: targetonly test
 	rm -rf stream/window{1,2,3,4}/*
 	$(PKG_NAME) --log-level $(LOG_LEVEL) --display $(DISPLAY) --windows 1234 --top-margin $(SCREEN_TOP_MARGIN)
+
+version:
+	$(PKG_NAME) --version

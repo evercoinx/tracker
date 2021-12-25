@@ -1,10 +1,11 @@
 from setuptools import setup
 
 from tracker import __package__ as pkg_name
+from tracker import __version__
 
 setup(
     name=pkg_name,
-    version="0.1.0",
+    version=__version__,
     description="Tracker Module",
     license="UNLICENSED",
     author="evercoinx",
