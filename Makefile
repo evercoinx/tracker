@@ -50,13 +50,17 @@ deploy: sourceonly
 	rsync -avh --delete $(PKG_NAME) stream Makefile requirements.txt requirements-prod.txt setup.py \
 		pi@$(TARGET_HOST):$(NAMESPACE)/$(PKG_NAME)
 
-run: targetonly test
-	rm -rf stream/window{1,2,3,4}/*
-	$(PKG_NAME) --log-level $(LOG_LEVEL) --display $(DISPLAY) --windows 1 --top-margin $(SCREEN_TOP_MARGIN)
+play: targetonly clean test
+	$(PKG_NAME) --windows 1 --log-level $(LOG_LEVEL) --display $(DISPLAY) --top-margin $(SCREEN_TOP_MARGIN)
 
-run4: targetonly test
-	rm -rf stream/window{1,2,3,4}/*
-	$(PKG_NAME) --log-level $(LOG_LEVEL) --display $(DISPLAY) --windows 1234 --top-margin $(SCREEN_TOP_MARGIN)
+play4: targetonly clean test
+	$(PKG_NAME) --windows 1234 --log-level $(LOG_LEVEL) --display $(DISPLAY) --top-margin $(SCREEN_TOP_MARGIN)
+
+replay: targetonly
+	$(PKG_NAME) --replay --log-level $(LOG_LEVEL)
 
 version:
 	$(PKG_NAME) --version
+
+clean:
+	rm -rf stream/window{1,2,3,4}/*

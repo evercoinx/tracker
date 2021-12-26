@@ -8,44 +8,15 @@ from tracker import __version__
 from tracker.detector import ObjectDetector
 from tracker.screen import Screen
 
+STREAM_PATH = "./stream"
+
 
 def main():
-    args = parse_args()
-    valid_args = validate_args(args)
-
-    win_coords = Screen.calculate_window_coords(
-        valid_args["windows"],
-        args["screen_width"],
-        args["screen_height"],
-        args["left_margin"],
-        args["top_margin"],
-    )
-    win_count = len(win_coords)
-
-    queue = Queue(win_count)
-    events = [Event() for _ in range(win_count)]
-
-    stream_path = "./stream"
-    screen = Screen(queue, events, stream_path)
-    detector = ObjectDetector(queue, events, stream_path)
-    procs = []
-
-    for (i, wc) in enumerate(win_coords):
-        sp = Process(
-            name=f"screen-{i}",
-            target=screen.capture,
-            args=(valid_args["display"], wc, i),
-        )
-        procs.append(sp)
-
-        dp = Process(name=f"detector-{i}", target=detector.run, args=())
-        procs.append(dp)
-
-    for p in procs:
-        p.start()
-
-    for p in procs:
-        p.join()
+    args = validate_args(parse_args())
+    if args["replay"]:
+        replay_session(args)
+    else:
+        play_session(args)
 
 
 def parse_args():
@@ -55,6 +26,12 @@ def parse_args():
         type=str,
         default="info",
         help="log level: debug, info, warn, error; defaults to info",
+    )
+    ap.add_argument(
+        "--replay",
+        dest="replay",
+        action="store_true",
+        help="replay saved session",
     )
     ap.add_argument(
         "--display", type=str, default=":0.0", help="display number; defaults to :0.0"
@@ -102,12 +79,15 @@ def validate_args(args):
         datefmt="%Y-%m-%d %H:%M:%S",
     )
 
+    if args["replay"]:
+        return args
+
     windows = args["windows"]
     if len(windows) > 4:
-        logging.critical(f"Too many windows to watch: {len(windows)}")
+        logging.critical(f"Too many windows to play: {len(windows)}")
         sys.exit(1)
 
-    # display variable formatted as hostname:display.screen
+    # the environment variable formatted as hostname:display.screen
     display = os.environ.get("DISPLAY", "").strip()
     if not display:
         logging.critical("Display is not set")
@@ -115,16 +95,58 @@ def validate_args(args):
 
     parsed_display = display.split(":")
     if args["display"] != f":{parsed_display[1]}":
-        logging.critical(
-            f"Display mismatch: actual :{parsed_display[1]}, expected {args['display']}"
-        )
+        logging.critical(f"Display mismatch: :{parsed_display[1]} != {args['display']}")
         sys.exit(1)
 
     return {
-        "display": display,
-        # remap user defined window indexes to 0-based ones
-        "windows": [int(i) - 1 for i in windows],
+        **args,
+        **{
+            "log_level": log_level,
+            "display": display,
+            # remap user defined window indexes to 0-based
+            "windows": [int(i) - 1 for i in windows],
+        },
     }
+
+
+def play_session(args):
+    win_coords = Screen.calculate_window_coords(
+        args["windows"],
+        args["screen_width"],
+        args["screen_height"],
+        args["left_margin"],
+        args["top_margin"],
+    )
+    win_count = len(win_coords)
+
+    queue = Queue(win_count)
+    events = [Event() for _ in range(win_count)]
+
+    screen = Screen(queue, events, STREAM_PATH)
+    detector = ObjectDetector(queue, events, STREAM_PATH)
+    procs = []
+
+    for (i, wc) in enumerate(win_coords):
+        sp = Process(
+            name=f"screen-{i}",
+            target=screen.capture,
+            args=(args["display"], wc, i),
+        )
+        procs.append(sp)
+
+        dp = Process(name=f"detector-{i}", target=detector.play_live_stream, args=())
+        procs.append(dp)
+
+    for p in procs:
+        p.start()
+
+    for p in procs:
+        p.join()
+
+
+def replay_session(args):
+    detector = ObjectDetector(None, [], STREAM_PATH)
+    detector.replay_saved_stream()
 
 
 if __name__ == "__main__":
