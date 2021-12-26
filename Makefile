@@ -47,20 +47,26 @@ install: targetonly
 	pip install -e .
 
 deploy: sourceonly
-	rsync -avh --delete $(PKG_NAME) stream Makefile requirements.txt requirements-prod.txt setup.py \
+	rsync -avh $(PKG_NAME) stream Makefile requirements.txt requirements-prod.txt setup.py \
 		pi@$(TARGET_HOST):$(NAMESPACE)/$(PKG_NAME)
 
-play: targetonly clean test
+play: targetonly cleanall test
 	$(PKG_NAME) --windows 1 --log-level $(LOG_LEVEL) --display $(DISPLAY) --top-margin $(SCREEN_TOP_MARGIN)
 
-play4: targetonly clean test
+play4: targetonly cleanall test
 	$(PKG_NAME) --windows 1234 --log-level $(LOG_LEVEL) --display $(DISPLAY) --top-margin $(SCREEN_TOP_MARGIN)
 
-replay: targetonly
-	$(PKG_NAME) --replay --log-level $(LOG_LEVEL)
+replay: targetonly cleanproc
+	$(PKG_NAME) --windows 1 --replay --log-level $(LOG_LEVEL)
 
-version:
+replay4: targetonly cleanproc
+	$(PKG_NAME) --windows 1234 --replay --log-level $(LOG_LEVEL)
+
+version: targetonly
 	$(PKG_NAME) --version
 
-clean:
+cleanall:
 	rm -rf stream/window{1,2,3,4}/*
+
+cleanproc:
+	find stream -maxdepth 2 -name "*_processed.png" -type f -delete

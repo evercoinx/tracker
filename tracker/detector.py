@@ -4,10 +4,15 @@ from glob import glob
 from multiprocessing import current_process
 
 import cv2
+import pytesseract
 
 
 class ObjectDetector:
     """Detect objects on an window frame"""
+
+    TESSERACT_LANGUAGE = "eng"
+    TESSERACT_NICENESS = -10
+    TESSERACT_TIMEOUT = 2
 
     def __init__(self, queue, events, stream_path):
         self.queue = queue
@@ -22,7 +27,7 @@ class ObjectDetector:
         while True:
             try:
                 window_index, frame = self.queue.get()
-                self.process_frame(frame, frame_num, window_index + 1)
+                self.detect_objects(frame, frame_num, window_index + 1)
 
                 frame_num += 1
                 self.events[window_index].set()
@@ -32,22 +37,43 @@ class ObjectDetector:
                 logging.warn(f"{self.prefix} interruption; exiting...")
                 return
 
-    def replay_saved_stream(self):
-        path_pattern = re.compile(r"window(\d+)\/(\d+)_raw.png$")
-        stream_paths = glob(f"{self.stream_path}/**/*_raw.png", recursive=True)
+    def replay_saved_stream(self, windows):
+        path_pattern = re.compile(
+            r"window([" + re.escape(",".join(windows)) + r"])\/(\d+)_raw.png$"
+        )
+        stream_paths = glob(
+            f"{self.stream_path}/window[{''.join(windows)}]/*_raw.png", recursive=True
+        )
 
         for p in stream_paths:
             frame = cv2.imread(p, cv2.IMREAD_UNCHANGED)
             matches = re.findall(path_pattern, p)
-            self.process_frame(frame, matches[0][1], matches[0][0])
+            self.detect_objects(frame, matches[0][1], matches[0][0])
 
-    def process_frame(self, frame, frame_number, window_index):
-        blurred = cv2.GaussianBlur(frame, (5, 5), 0)
-        thresh = cv2.threshold(blurred, 60, 255, cv2.THRESH_BINARY)[1]
+    def detect_objects(self, frame, frame_number, window_index):
+        logging.info(f"{self.prefix} window #{window_index}, frame #{frame_number}")
 
-        cv2.imwrite(
-            f"{self.stream_path}/window{window_index}/{frame_number}_processed.png",
-            thresh,
-        )
-        logging.info(f"{self.prefix} table {window_index}: frame of {len(frame)}B")
+        hand_number = self.detect_hand_number(frame, frame_number, window_index)
+        logging.info(f"{self.prefix} hand number #{hand_number}")
         return
+
+    def detect_hand_number(self, frame, frame_number, window_index):
+        roi = cv2.bitwise_not(frame[21:42, 69:178])
+        cv2.imwrite(
+            f"{self.stream_path}/window{window_index}/"
+            + f"{frame_number}_hand_number_processed.png",
+            roi,
+        )
+
+        line = pytesseract.image_to_string(
+            roi,
+            config="--oem 1 --psm 7 -c tessedit_char_whitelist=Hand:#0123456789",
+            lang=ObjectDetector.TESSERACT_LANGUAGE,
+            nice=ObjectDetector.TESSERACT_NICENESS,
+            timeout=ObjectDetector.TESSERACT_TIMEOUT,
+        )
+
+        matches = re.findall(r"(\d+)$", line.strip())
+        if not len(matches):
+            return "0"
+        return matches[0]

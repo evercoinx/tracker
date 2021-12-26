@@ -79,13 +79,13 @@ def validate_args(args):
         datefmt="%Y-%m-%d %H:%M:%S",
     )
 
-    if args["replay"]:
-        return args
-
     windows = args["windows"]
     if len(windows) > 4:
         logging.critical(f"Too many windows to play: {len(windows)}")
         sys.exit(1)
+
+    if args["replay"]:
+        return args
 
     # the environment variable formatted as hostname:display.screen
     display = os.environ.get("DISPLAY", "").strip()
@@ -146,7 +146,7 @@ def play_session(args):
 
 def replay_session(args):
     detector = ObjectDetector(None, [], STREAM_PATH)
-    detector.replay_saved_stream()
+    detector.replay_saved_stream(args["windows"])
 
 
 if __name__ == "__main__":
