@@ -154,7 +154,7 @@ class StreamPlayer:
                     name=f"seat_action_{action_coords_groups[i]}",
                 )
             logging.info(
-                f"{self.log_prefix} seat {number}, in play: {in_play} "
+                f"{self.log_prefix} seat {number}, in play: {in_play}, "
                 + f"balance: {balance:.2f}, action: {action}"
             )
 
@@ -173,7 +173,7 @@ class StreamPlayer:
         proc_name = current_process().name
         if proc_name == "MainProcess":  # no multiprocessing
             proc_name = "player"
-        self.log_prefix = f"{proc_name}-w{window_index}-f{frame_index} -"
+        self.log_prefix = f"{proc_name}-w{window_index}-f{frame_index:<5} -"
 
     @staticmethod
     def is_debug():
