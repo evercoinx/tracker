@@ -6,7 +6,6 @@ SOURCE_HOST = fedora
 TARGET_HOST = raspberry
 EFFECTIVE_HOST = $(shell hostname)
 
-LOG_LEVEL = debug
 DISPLAY = :10.0
 SCREEN_TOP_MARGIN = 98
 
@@ -51,16 +50,16 @@ deploy: sourceonly
 		pi@$(TARGET_HOST):$(NAMESPACE)/$(PKG_NAME)
 
 play: targetonly cleanall test
-	$(PKG_NAME) --windows 1 --log-level $(LOG_LEVEL) --display $(DISPLAY) --top-margin $(SCREEN_TOP_MARGIN)
+	$(PKG_NAME) --windows 1 --display $(DISPLAY) --top-margin $(SCREEN_TOP_MARGIN)
 
 play4: targetonly cleanall test
-	$(PKG_NAME) --windows 1234 --log-level $(LOG_LEVEL) --display $(DISPLAY) --top-margin $(SCREEN_TOP_MARGIN)
+	$(PKG_NAME) --windows 1234 --display $(DISPLAY) --top-margin $(SCREEN_TOP_MARGIN)
 
 replay: targetonly cleanproc
-	$(PKG_NAME) --windows 1 --replay --log-level $(LOG_LEVEL)
+	$(PKG_NAME) --windows 1 --replay
 
 replay4: targetonly cleanproc
-	$(PKG_NAME) --windows 1234 --replay --log-level $(LOG_LEVEL)
+	$(PKG_NAME) --windows 1234 --replay
 
 version: targetonly
 	$(PKG_NAME) --version

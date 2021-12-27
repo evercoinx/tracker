@@ -22,12 +22,6 @@ def main():
 def parse_args():
     ap = argparse.ArgumentParser()
     ap.add_argument(
-        "--log-level",
-        type=str,
-        default="info",
-        help="log level: debug, info, warn, error; defaults to info",
-    )
-    ap.add_argument(
         "--replay",
         dest="replay",
         action="store_true",
@@ -72,10 +66,11 @@ def parse_args():
 
 
 def validate_args(args):
-    log_level = args["log_level"].upper()
+    raw_log_level = os.environ.get("DEBUG", "0").strip()
+    log_level = "DEBUG" if raw_log_level == "1" else "INFO"
     logging.basicConfig(
         level=logging.getLevelName(log_level),
-        format="%(asctime)s - %(levelname)-7s - %(message)s",
+        format="%(asctime)s - %(message)s",
         datefmt="%Y-%m-%d %H:%M:%S",
     )
 
@@ -88,13 +83,14 @@ def validate_args(args):
         return args
 
     # the environment variable formatted as hostname:display.screen
-    display = os.environ.get("DISPLAY", "").strip()
-    if not display:
+    raw_display = os.environ.get("DISPLAY", "").strip()
+    if not raw_display:
         logging.critical("Display is not set")
         sys.exit(1)
 
-    parsed_display = display.split(":")
-    if args["display"] != f":{parsed_display[1]}":
+    parsed_display = raw_display.split(":")
+    display = f":{parsed_display[1]}"
+    if display != args["display"]:
         logging.critical(f"Display mismatch: :{parsed_display[1]} != {args['display']}")
         sys.exit(1)
 

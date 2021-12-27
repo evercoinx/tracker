@@ -78,26 +78,39 @@ class ObjectDetector:
         balance_dims = (74, 16)
 
         for i in range(len(number_coords)):
-            # self.save_frame(
-            #     frame,
-            #     frame_number,
-            #     window_index,
-            #     coords=number_coords[i],
-            #     dims=number_dims,
-            #     name=str(number_coords[i]),
-            # )
             number = self.detect_seat_number(number_coords[i], number_dims)
             in_play = "yes" if number else "no "
+            if logging.root.level == logging.DEBUG:
+                self.save_frame(
+                    frame,
+                    frame_number,
+                    window_index,
+                    coords=number_coords[i],
+                    dims=number_dims,
+                    name=f"seat_number_{number_coords[i]}",
+                )
+
             balance = self.detect_seat_balance(balance_coords[i], balance_dims)
+            if logging.root.level == logging.DEBUG:
+                self.save_frame(
+                    frame,
+                    frame_number,
+                    window_index,
+                    coords=balance_coords[i],
+                    dims=balance_dims,
+                    name=f"seat_balance_{balance_coords[i]}",
+                )
+
             action = self.detect_seat_action(action_coords[i], action_dims)
-            # self.save_frame(
-            #     frame,
-            #     frame_number,
-            #     window_index,
-            #     coords=action_coords[i],
-            #     dims=action_dims,
-            #     name=str(action_coords[i]),
-            # )
+            if logging.root.level == logging.DEBUG:
+                self.save_frame(
+                    frame,
+                    frame_number,
+                    window_index,
+                    coords=action_coords[i],
+                    dims=action_dims,
+                    name=f"seat_action_{action_coords[i]}",
+                )
             logging.info(
                 f"{self.prefix} seat {i}, in play: {in_play} "
                 + f"balance: {balance:.2f}, action: {action}"

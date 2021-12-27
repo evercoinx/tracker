@@ -30,7 +30,7 @@ class Screen:
                         + f"{frame_num}_raw.png",
                         gray_frame,
                     )
-                    logging.debug(
+                    logging.info(
                         f"{prefix} window {window_index+1}: frame {frame_num}.png saved"
                     )
 
