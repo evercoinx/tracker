@@ -3,7 +3,7 @@ import re
 from collections import defaultdict
 from glob import glob
 from multiprocessing import current_process
-from pprint import pprint
+from pprint import pformat
 
 import cv2
 
@@ -59,6 +59,8 @@ class StreamPlayer:
             self.log_prefix = self.get_log_prefix(window_index, frame_index)
             self.analyze_stream(window_index, frame_index, frame)
 
+        logging.info(f"{self.log_prefix} session dump:\n{pformat(self.session)}")
+
     def analyze_stream(self, window_index, frame_index, frame):
         frame = cv2.bitwise_not(frame)
 
@@ -79,9 +81,20 @@ class StreamPlayer:
         logging.info(f"{self.log_prefix} hand number: {hand_number}")
 
         seats = self.get_seats(window_index, frame_index, frame)
-        self.session[hand_number].append(seats)
+        for s in seats:
+            logging.info(
+                f"{self.log_prefix} seat {s['number']}, "
+                + f"balance: {s['balance']:.2f}, action: {s['action']}"
+            )
 
-        pprint(self.session)
+        self.session[hand_number].append(
+            {
+                "window": window_index,
+                "frame": frame_index,
+                "seats": seats,
+            }
+        )
+
         self.detector.clear_current_frame()
 
     def get_hand_number(self, window_index, frame_index, frame):
@@ -134,23 +147,26 @@ class StreamPlayer:
         seats = []
 
         for i in range(len(number_coords_groups)):
+            # last player is a hero
             if i == len(number_coords_groups) - 1:
-                number = 0
+                number = 9
             else:
                 number = self.detector.get_seat_number(
                     number_coords_groups[i], number_dims
                 )
-                if self.is_debug():
-                    self.save_frame_roi(
-                        window_index,
-                        frame_index,
-                        frame,
-                        coords=number_coords_groups[i],
-                        dims=number_dims,
-                        name=f"seat_number_{i}",
-                    )
-                if not number:
-                    continue
+
+            if self.is_debug():
+                self.save_frame_roi(
+                    window_index,
+                    frame_index,
+                    frame,
+                    coords=number_coords_groups[i],
+                    dims=number_dims,
+                    name=f"seat_number_{i}",
+                )
+
+            if not number:
+                continue
 
             balance = self.detector.get_seat_balance(
                 balance_coords_groups[i], balance_dims
@@ -182,11 +198,6 @@ class StreamPlayer:
                     "balance": balance,
                     "action": action,
                 }
-            )
-
-            logging.info(
-                f"{self.log_prefix} seat {number}, "
-                + f"balance: {balance:.2f}, action: {action}"
             )
 
         return seats
