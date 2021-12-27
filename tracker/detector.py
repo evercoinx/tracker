@@ -52,44 +52,59 @@ class ObjectDetector:
             self.detect_objects(frame, matches[0][1], matches[0][0])
 
     def detect_objects(self, frame, frame_number, window_index):
-        self.prefix += f"-{window_index}-{frame_number}:"
+        self.prefix = f"detector-{window_index}-{frame_number}:"
         frame = cv2.bitwise_not(frame)
 
         cv2.imwrite(
             f"{self.stream_path}/window{window_index}/{frame_number}_processed.png",
             frame,
         )
+
+        # set image
         self.tesseract.SetImage(Image.fromarray(frame))
 
-        # hand number
+        # detect hand number
         hand_number = self.detect_hand_number((73, 24), (101, 15))
         logging.info(f"{self.prefix} hand number: {hand_number}")
 
-        # seats
-        action_coords = [(138, 338), (172, 100), (478, 68), (709, 100), (728, 338)]
+        # detect seats
+        action_coords = [(138, 321), (172, 100), (478, 68), (709, 100), (728, 338)]
         action_dims = (74, 14)
 
         number_coords = [(138, 334), (172, 113), (478, 81), (709, 113), (728, 334)]
-        seat_dims = (74, 15)
+        number_dims = (74, 15)
 
         balance_coords = [(138, 351), (172, 130), (478, 98), (709, 130), (728, 351)]
         balance_dims = (74, 16)
 
         for i in range(len(number_coords)):
-            self.save_frame(
-                frame,
-                frame_number,
-                window_index,
-                coords=number_coords[i],
-                dims=seat_dims,
-                name=str(number_coords[i]),
-            )
-            number = self.detect_seat_number(number_coords[i], seat_dims)
+            # self.save_frame(
+            #     frame,
+            #     frame_number,
+            #     window_index,
+            #     coords=number_coords[i],
+            #     dims=number_dims,
+            #     name=str(number_coords[i]),
+            # )
+            number = self.detect_seat_number(number_coords[i], number_dims)
+            in_play = "yes" if number else "no "
             balance = self.detect_seat_balance(balance_coords[i], balance_dims)
             action = self.detect_seat_action(action_coords[i], action_dims)
+            # self.save_frame(
+            #     frame,
+            #     frame_number,
+            #     window_index,
+            #     coords=action_coords[i],
+            #     dims=action_dims,
+            #     name=str(action_coords[i]),
+            # )
             logging.info(
-                f"{self.prefix} seat, {number} balance: {balance:.2f}, action: {action}"
+                f"{self.prefix} seat {i}, in play: {in_play} "
+                + f"balance: {balance:.2f}, action: {action}"
             )
+
+        # clear image
+        self.tesseract.Clear()
 
     def detect_hand_number(self, coords, dims):
         self.tesseract.SetVariable("tessedit_char_whitelist", "Hand:#0123456789")
