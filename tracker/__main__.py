@@ -76,9 +76,9 @@ def validate_args(args):
         datefmt="%Y-%m-%d %H:%M:%S",
     )
 
-    windows = args["windows"]
-    if len(windows) > 4:
-        logging.critical(f"Too many windows to play: {len(windows)}")
+    windows_arg = args["windows"]
+    if len(windows_arg) > 4:
+        logging.critical(f"Too many windows to play: {len(windows_arg)}")
         sys.exit(1)
 
     if args["replay"]:
@@ -101,6 +101,7 @@ def validate_args(args):
         **{
             "log_level": log_level,
             "display": display,
+            "windows": [int(i) for i in windows_arg],
         },
     }
 

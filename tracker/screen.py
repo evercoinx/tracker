@@ -18,7 +18,7 @@ class Screen:
 
     def capture(self, display, window_coords, window_index):
         frame_index = 0
-        self.set_log_prefix(window_index, frame_index)
+        self.log_prefix = self.get_log_prefix(window_index, frame_index)
 
         with mss(display) as screen:
             while True:
@@ -27,13 +27,12 @@ class Screen:
                     win_arr = np.asarray(color_frame, dtype=np.uint8)
                     gray_frame = cv2.cvtColor(win_arr, cv2.COLOR_BGRA2GRAY)
 
-                    if self.is_debug():
-                        cv2.imwrite(
-                            f"{self.stream_path}/window{window_index}/"
-                            + f"{frame_index}_raw.{self.frame_format}",
-                            gray_frame,
-                        )
-                        logging.debug(f"{self.log_prefix} raw frame saved")
+                    cv2.imwrite(
+                        f"{self.stream_path}/window{window_index}/"
+                        + f"{frame_index}_raw.{self.frame_format}",
+                        gray_frame,
+                    )
+                    logging.info(f"{self.log_prefix} raw frame saved")
 
                     frame_index += 1
                     self.set_log_prefix(window_index, frame_index)
@@ -85,9 +84,6 @@ class Screen:
 
         return [windows[i] for i in window_indexes]
 
-    def set_log_prefix(self, window_index, frame_index):
-        self.log_prefix = f"{current_process().name}-{window_index}-{frame_index} -"
-
     @staticmethod
-    def is_debug():
-        return logging.root.level == logging.DEBUG
+    def get_log_prefix(window_index, frame_index):
+        return f"{current_process().name}-{window_index}-{frame_index} -"

@@ -50,7 +50,7 @@ deploy: sourceonly
 		pi@$(TARGET_HOST):$(NAMESPACE)/$(PKG_NAME)
 
 play: targetonly cleanall test
-	$(PKG_NAME) --windows 1 --display $(DISPLAY) --top-margin $(SCREEN_TOP_MARGIN)
+	$(PKG_NAME) --windows 0 --display $(DISPLAY) --top-margin $(SCREEN_TOP_MARGIN)
 
 play4: targetonly cleanall test
 	$(PKG_NAME) --windows 1234 --display $(DISPLAY) --top-margin $(SCREEN_TOP_MARGIN)

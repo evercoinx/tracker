@@ -32,7 +32,7 @@ class ObjectDetector:
 
         line = self.tess_api.GetUTF8Text()
         matches = re.findall(ObjectDetector.REGEX_MULTIPLE_DIGITS, line.strip())
-        if len(matches) == 0:
+        if not matches:
             return 0
         return int(matches[0])
 
@@ -42,7 +42,7 @@ class ObjectDetector:
 
         line = self.tess_api.GetUTF8Text()
         matches = re.findall(ObjectDetector.REGEX_SINGLE_DIGIT, line.strip())
-        if len(matches) == 0:
+        if not matches:
             return 0
         return int(matches[0])
 
@@ -52,7 +52,7 @@ class ObjectDetector:
 
         line = self.tess_api.GetUTF8Text()
         matches = re.findall(ObjectDetector.REGEX_MONEY, line.strip())
-        if len(matches) == 0:
+        if not matches:
             return 0.0
         return float(matches[0])
 
@@ -64,7 +64,7 @@ class ObjectDetector:
 
         line = self.tess_api.GetUTF8Text()
         matches = re.findall(ObjectDetector.REGEX_ACTION, line.strip())
-        if len(matches) == 0:
+        if not matches:
             return "none"
 
         match = matches[0].lower()
