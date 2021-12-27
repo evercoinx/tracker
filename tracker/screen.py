@@ -35,7 +35,7 @@ class Screen:
                     logging.info(f"{self.log_prefix} raw frame saved")
 
                     frame_index += 1
-                    self.set_log_prefix(window_index, frame_index)
+                    self.log_prefix = self.get_log_prefix(window_index, frame_index)
 
                     self.queue.put((window_index, gray_frame))
                     self.events[window_index].wait()
@@ -86,4 +86,4 @@ class Screen:
 
     @staticmethod
     def get_log_prefix(window_index, frame_index):
-        return f"{current_process().name}-{window_index}-{frame_index} -"
+        return f"{current_process().name}-w{window_index}-f{frame_index:<5} -"

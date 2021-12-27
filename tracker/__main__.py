@@ -72,8 +72,8 @@ def validate_args(args):
     log_level = "DEBUG" if debug_env == "1" else "INFO"
     logging.basicConfig(
         level=logging.getLevelName(log_level),
-        format="%(asctime)s - %(message)s",
-        datefmt="%Y-%m-%d %H:%M:%S",
+        format="%(asctime)s.%(msecs)03d - %(message)s",
+        datefmt="%H:%M:%S",
     )
 
     windows_arg = args["windows"]
@@ -93,7 +93,7 @@ def validate_args(args):
     parsed_display = display_env.split(":")
     display = f":{parsed_display[1]}"
     if display != args["display"]:
-        logging.critical(f"Display mismatch: {display} != {args['display']}")
+        logging.critical(f"Display is {display}; want {args['display']}")
         sys.exit(1)
 
     return {

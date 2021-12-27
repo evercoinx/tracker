@@ -1,4 +1,5 @@
 import logging
+import os
 import re
 from collections import defaultdict
 from glob import glob
@@ -43,7 +44,7 @@ class StreamPlayer:
             + re.escape(",".join(windows))
             + r"])\/(\d+)_raw."
             + re.escape(self.frame_format)
-            + "$"
+            + r"$"
         )
         raw_frame_paths = glob(
             f"{self.stream_path}/window[{''.join(windows)}]/*_raw.{self.frame_format}",
@@ -59,7 +60,7 @@ class StreamPlayer:
             self.log_prefix = self.get_log_prefix(window_index, frame_index)
             self.analyze_stream(window_index, frame_index, frame)
 
-        logging.info(f"{self.log_prefix} session dump:\n{pformat(self.session)}")
+        logging.debug(f"{self.log_prefix} session dump:\n{pformat(self.session)}")
 
     def analyze_stream(self, window_index, frame_index, frame):
         frame = cv2.bitwise_not(frame)
@@ -76,8 +77,13 @@ class StreamPlayer:
 
         hand_number = self.get_hand_number(window_index, frame_index, frame)
         if not hand_number:
-            logging.warn(f"{self.log_prefix} no hand data found")
+            os.remove(
+                f"{self.stream_path}/window{window_index}/"
+                + f"{frame_index}_raw.{self.frame_format}"
+            )
+            logging.warn(f"{self.log_prefix} raw frame removed as no data found")
             return
+
         logging.info(f"{self.log_prefix} hand number: {hand_number}")
 
         seats = self.get_seats(window_index, frame_index, frame)
@@ -101,6 +107,7 @@ class StreamPlayer:
         coords = (73, 24)
         dims = (101, 15)
         hand_number = self.detector.get_hand_number(coords, dims)
+
         if self.is_debug():
             self.save_frame_roi(
                 window_index,
@@ -108,7 +115,7 @@ class StreamPlayer:
                 frame,
                 coords=coords,
                 dims=dims,
-                name=f"hand_number{coords}",
+                name="hand_number",
             )
 
         return hand_number
@@ -117,32 +124,32 @@ class StreamPlayer:
         action_coords_groups = [
             (138, 321),
             (172, 100),
-            (478, 68),
-            (709, 100),
-            (728, 338),
-            (442, 328),
+            (433, 68),
+            (664, 100),
+            (682, 321),
+            (431, 328),
         ]
-        action_dims = (108, 14)
+        action_dims = (119, 14)
 
         number_coords_groups = [
             (138, 334),
             (172, 113),
-            (478, 81),
-            (709, 113),
-            (728, 334),
-            (476, 342),
+            (433, 81),
+            (664, 113),
+            (682, 334),
+            (431, 342),
         ]
-        number_dims = (74, 15)
+        number_dims = (119, 15)
 
         balance_coords_groups = [
             (138, 351),
             (172, 130),
-            (478, 98),
-            (709, 130),
-            (728, 351),
-            (476, 357),
+            (433, 98),
+            (664, 130),
+            (682, 351),
+            (431, 357),
         ]
-        balance_dims = (74, 16)
+        balance_dims = (119, 16)
 
         seats = []
 
