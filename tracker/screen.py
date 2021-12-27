@@ -90,4 +90,4 @@ class Screen:
 
     @staticmethod
     def is_debug():
-        logging.root.level == logging.DEBUG
+        return logging.root.level == logging.DEBUG
