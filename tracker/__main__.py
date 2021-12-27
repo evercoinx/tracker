@@ -6,6 +6,7 @@ from multiprocessing import Event, Process, Queue
 
 from tracker import __version__
 from tracker.detector import ObjectDetector
+from tracker.player import StreamPlayer
 from tracker.screen import Screen
 
 STREAM_PATH = "./stream"
@@ -118,8 +119,13 @@ def play_session(args):
     events = [Event() for _ in range(win_count)]
 
     screen = Screen(queue, events, stream_path=STREAM_PATH, frame_format=FRAME_FORMAT)
-    detector = ObjectDetector(
-        queue, events, stream_path=STREAM_PATH, frame_format=FRAME_FORMAT
+    detector = ObjectDetector()
+    player = StreamPlayer(
+        queue,
+        events,
+        detector=detector,
+        stream_path=STREAM_PATH,
+        frame_format=FRAME_FORMAT,
     )
     procs = []
 
@@ -131,8 +137,8 @@ def play_session(args):
         )
         procs.append(sp)
 
-        dp = Process(name=f"detector-{i}", target=detector.play_live_stream, args=())
-        procs.append(dp)
+        pp = Process(name=f"player-{i}", target=player.play_live, args=())
+        procs.append(pp)
 
     for p in procs:
         p.start()
@@ -142,10 +148,15 @@ def play_session(args):
 
 
 def replay_session(args):
-    detector = ObjectDetector(
-        None, [], stream_path=STREAM_PATH, frame_format=FRAME_FORMAT
+    detector = ObjectDetector()
+    player = StreamPlayer(
+        queue=None,
+        events=[],
+        detector=detector,
+        stream_path=STREAM_PATH,
+        frame_format=FRAME_FORMAT,
     )
-    detector.play_saved_stream(args["windows"])
+    player.play_saved(args["windows"])
 
 
 if __name__ == "__main__":
