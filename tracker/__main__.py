@@ -9,6 +9,7 @@ from tracker.detector import ObjectDetector
 from tracker.screen import Screen
 
 STREAM_PATH = "./stream"
+FRAME_FORMAT = "png"
 
 
 def main():
@@ -33,8 +34,8 @@ def parse_args():
     ap.add_argument(
         "--windows",
         type=list,
-        default=["1", "2", "3", "4"],
-        help="windows to watch; defaults to 1234",
+        default=["0", "1", "2", "3"],
+        help="windows to watch; defaults to 0123",
     )
     ap.add_argument(
         "--screen-width",
@@ -66,8 +67,8 @@ def parse_args():
 
 
 def validate_args(args):
-    raw_log_level = os.environ.get("DEBUG", "0").strip()
-    log_level = "DEBUG" if raw_log_level == "1" else "INFO"
+    debug_env = os.environ.get("DEBUG", "0").strip()
+    log_level = "DEBUG" if debug_env == "1" else "INFO"
     logging.basicConfig(
         level=logging.getLevelName(log_level),
         format="%(asctime)s - %(message)s",
@@ -83,15 +84,15 @@ def validate_args(args):
         return args
 
     # the environment variable formatted as hostname:display.screen
-    raw_display = os.environ.get("DISPLAY", "").strip()
-    if not raw_display:
+    display_env = os.environ.get("DISPLAY", "").strip()
+    if not display_env:
         logging.critical("Display is not set")
         sys.exit(1)
 
-    parsed_display = raw_display.split(":")
+    parsed_display = display_env.split(":")
     display = f":{parsed_display[1]}"
     if display != args["display"]:
-        logging.critical(f"Display mismatch: :{parsed_display[1]} != {args['display']}")
+        logging.critical(f"Display mismatch: {display} != {args['display']}")
         sys.exit(1)
 
     return {
@@ -99,8 +100,6 @@ def validate_args(args):
         **{
             "log_level": log_level,
             "display": display,
-            # remap user defined window indexes to 0-based
-            "windows": [int(i) - 1 for i in windows],
         },
     }
 
@@ -118,8 +117,10 @@ def play_session(args):
     queue = Queue(win_count)
     events = [Event() for _ in range(win_count)]
 
-    screen = Screen(queue, events, STREAM_PATH)
-    detector = ObjectDetector(queue, events, STREAM_PATH)
+    screen = Screen(queue, events, stream_path=STREAM_PATH, frame_format=FRAME_FORMAT)
+    detector = ObjectDetector(
+        queue, events, stream_path=STREAM_PATH, frame_format=FRAME_FORMAT
+    )
     procs = []
 
     for (i, wc) in enumerate(win_coords):
@@ -141,8 +142,10 @@ def play_session(args):
 
 
 def replay_session(args):
-    detector = ObjectDetector(None, [], STREAM_PATH)
-    detector.replay_saved_stream(args["windows"])
+    detector = ObjectDetector(
+        None, [], stream_path=STREAM_PATH, frame_format=FRAME_FORMAT
+    )
+    detector.play_saved_stream(args["windows"])
 
 
 if __name__ == "__main__":

@@ -9,37 +9,40 @@ from mss.linux import MSS as mss
 class Screen:
     """Capture a window of a screen"""
 
-    def __init__(self, queue, events, stream_path):
+    def __init__(self, queue, events, stream_path, frame_format):
         self.queue = queue
         self.events = events
         self.stream_path = stream_path
+        self.frame_format = frame_format
+        self.log_prefix = ""
 
     def capture(self, display, window_coords, window_index):
-        prefix = f"{current_process().name}{display}:"
-        frame_num = 1
+        frame_index = 0
+        self.set_log_prefix(window_index, frame_index)
 
         with mss(display) as screen:
             while True:
                 try:
                     color_frame = screen.grab(window_coords)
                     win_arr = np.asarray(color_frame, dtype=np.uint8)
-
                     gray_frame = cv2.cvtColor(win_arr, cv2.COLOR_BGRA2GRAY)
-                    cv2.imwrite(
-                        f"{self.stream_path}/window{window_index+1}/"
-                        + f"{frame_num}_raw.png",
-                        gray_frame,
-                    )
-                    logging.info(
-                        f"{prefix} window {window_index+1}: frame {frame_num}.png saved"
-                    )
 
-                    frame_num += 1
+                    if self.is_debug():
+                        cv2.imwrite(
+                            f"{self.stream_path}/window{window_index}/"
+                            + f"{frame_index}_raw.{self.frame_format}",
+                            gray_frame,
+                        )
+                        logging.debug(f"{self.log_prefix} raw frame saved")
+
+                    frame_index += 1
+                    self.set_log_prefix(window_index, frame_index)
+
                     self.queue.put((window_index, gray_frame))
                     self.events[window_index].wait()
 
                 except (KeyboardInterrupt, SystemExit):
-                    logging.warn(f"{prefix} interruption; exiting...")
+                    logging.warn(f"{self.log_prefix} interruption; exiting...")
                     return
 
     @staticmethod
@@ -81,3 +84,10 @@ class Screen:
         )
 
         return [windows[i] for i in window_indexes]
+
+    def set_log_prefix(self, window_index, frame_index):
+        self.log_prefix = f"{current_process().name}-{window_index}-{frame_index} -"
+
+    @staticmethod
+    def is_debug():
+        logging.root.level == logging.DEBUG

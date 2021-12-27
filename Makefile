@@ -56,16 +56,16 @@ play4: targetonly cleanall test
 	$(PKG_NAME) --windows 1234 --display $(DISPLAY) --top-margin $(SCREEN_TOP_MARGIN)
 
 replay: targetonly cleanproc
-	$(PKG_NAME) --windows 1 --replay
+	$(PKG_NAME) --windows 0 --replay
 
 replay4: targetonly cleanproc
-	$(PKG_NAME) --windows 1234 --replay
+	$(PKG_NAME) --windows 0123 --replay
 
 version: targetonly
 	$(PKG_NAME) --version
 
 cleanall:
-	rm -rf stream/window{1,2,3,4}/*
+	rm -rf stream/window{0,1,2,3}/*
 
 cleanproc:
 	find stream -maxdepth 2 -name "*_processed.png" -type f -delete
