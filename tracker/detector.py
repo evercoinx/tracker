@@ -15,7 +15,11 @@ class ObjectDetector:
         self.queue = queue
         self.events = events
         self.stream_path = stream_path
-        self.prefix = "detector:"
+        self.prefix = "detector"
+        self.tesseract = PyTessBaseAPI(psm=PSM.SINGLE_LINE, oem=OEM.LSTM_ONLY)
+
+    def __del__(self):
+        self.tesseract.End()
 
     def play_live_stream(self):
         self.prefix = f"{current_process().name}:"
@@ -48,84 +52,94 @@ class ObjectDetector:
             self.detect_objects(frame, matches[0][1], matches[0][0])
 
     def detect_objects(self, frame, frame_number, window_index):
-        logging.info(f"{self.prefix} window: {window_index}, frame: {frame_number}")
+        self.prefix += f"-{window_index}-{frame_number}:"
+        frame = cv2.bitwise_not(frame)
 
-        with PyTessBaseAPI(psm=PSM.SINGLE_LINE, oem=OEM.LSTM_ONLY) as api:
-            hand_number = self.detect_hand_number(
-                api, frame, frame_number, window_index
-            )
-            logging.info(f"{self.prefix} hand number: {hand_number}")
-
-            for num in range(1, 7):
-                seat = self.detect_seat(api, frame, frame_number, window_index, num)
-                logging.info(
-                    f"{self.prefix} seat {seat['number']} action: {seat['action']}"
-                )
-                logging.info(
-                    f"{self.prefix} seat {seat['number']} balance: {seat['balance']}"
-                )
-            return
-
-    def detect_hand_number(self, api, frame, frame_number, window_index):
-        roi = cv2.bitwise_not(frame[25:38, 73:174])
-        frame_path = (
-            f"{self.stream_path}/window{window_index}/"
-            + f"{frame_number}_hand_number_processed.png"
+        cv2.imwrite(
+            f"{self.stream_path}/window{window_index}/{frame_number}_processed.png",
+            frame,
         )
-        cv2.imwrite(frame_path, roi)
+        self.tesseract.SetImage(Image.fromarray(frame))
 
-        api.SetVariable("tessedit_char_whitelist", "Hand:#0123456789")
-        api.SetImageFile(frame_path)
-        line = api.GetUTF8Text()
+        # hand number
+        hand_number = self.detect_hand_number((73, 24), (101, 15))
+        logging.info(f"{self.prefix} hand number: {hand_number}")
 
+        # seats
+        action_coords = [(138, 338), (172, 100), (478, 68), (709, 100), (728, 338)]
+        action_dims = (74, 14)
+
+        number_coords = [(138, 334), (172, 113), (478, 81), (709, 113), (728, 334)]
+        seat_dims = (74, 15)
+
+        balance_coords = [(138, 351), (172, 130), (478, 98), (709, 130), (728, 351)]
+        balance_dims = (74, 16)
+
+        for i in range(len(number_coords)):
+            self.save_frame(
+                frame,
+                frame_number,
+                window_index,
+                coords=number_coords[i],
+                dims=seat_dims,
+                name=str(number_coords[i]),
+            )
+            number = self.detect_seat_number(number_coords[i], seat_dims)
+            balance = self.detect_seat_balance(balance_coords[i], balance_dims)
+            action = self.detect_seat_action(action_coords[i], action_dims)
+            logging.info(
+                f"{self.prefix} seat, {number} balance: {balance:.2f}, action: {action}"
+            )
+
+    def detect_hand_number(self, coords, dims):
+        self.tesseract.SetVariable("tessedit_char_whitelist", "Hand:#0123456789")
+        self.tesseract.SetRectangle(coords[0], coords[1], dims[0], dims[1])
+
+        line = self.tesseract.GetUTF8Text()
         matches = re.findall(r"(\d+)$", line.strip())
         if not len(matches):
             return "0"
         return matches[0]
 
-    def detect_seat(self, api, frame, frame_number, window_index, seat_number):
-        roi = cv2.bitwise_not(frame[67:118, 478:553])
-        frame_path = (
-            f"{self.stream_path}/window{window_index}/"
-            + f"{frame_number}_seat_{seat_number}_processed.png"
-        )
-        cv2.imwrite(frame_path, roi)
-        return {
-            "action": self.detect_seat_action(api, roi),
-            "number": self.detect_seat_number(api, roi),
-            "balance": self.detect_seat_balance(api, roi),
-        }
+    def detect_seat_number(self, coords, dims):
+        self.tesseract.SetVariable("tessedit_char_whitelist", "Seat123456")
+        self.tesseract.SetRectangle(coords[0], coords[1], dims[0], dims[1])
 
-    def detect_seat_action(self, api, frame):
-        roi = frame[:15]
-        api.SetVariable("tessedit_char_whitelist", "ABCDEFGHIJKLMNOPQRSTUVWXYZ")
-        api.SetImage(Image.fromarray(roi))
-
-        line = api.GetUTF8Text()
-        matches = re.findall(r"(\w+)$", line.strip())
-        if not len(matches):
-            return ""
-        return matches[0].lower()
-
-    def detect_seat_number(self, api, frame):
-        roi = frame[14:31]
-        api.SetVariable("tessedit_char_whitelist", "Seat123456")
-        api.SetImage(Image.fromarray(roi))
-
-        line = api.GetUTF8Text()
+        line = self.tesseract.GetUTF8Text()
         matches = re.findall(r"(\d)$", line.strip())
         if not len(matches):
             return 0
         return int(matches[0])
 
-    def detect_seat_balance(self, api, frame):
-        h = frame.shape[0]
-        roi = frame[31:h]
-        api.SetVariable("tessedit_char_whitelist", "€0123456789.")
-        api.SetImage(Image.fromarray(roi))
+    def detect_seat_balance(self, coords, dims):
+        self.tesseract.SetVariable("tessedit_char_whitelist", "€.0123456789")
+        self.tesseract.SetRectangle(coords[0], coords[1], dims[0], dims[1])
 
-        line = api.GetUTF8Text()
+        line = self.tesseract.GetUTF8Text()
         matches = re.findall(r"([.\d]+)$", line.strip())
         if not len(matches):
             return 0.0
         return float(matches[0])
+
+    def detect_seat_action(self, coords, dims):
+        self.tesseract.SetVariable(
+            "tessedit_char_whitelist", "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+        )
+        self.tesseract.SetRectangle(coords[0], coords[1], dims[0], dims[1])
+
+        line = self.tesseract.GetUTF8Text()
+        matches = re.findall(r"(\w{3,})$", line.strip())
+        if not len(matches):
+            return "-"
+        return matches[0].lower()
+
+    def save_frame(self, frame, frame_number, window_index, *, coords, dims, name):
+        x1, x2 = coords[0], coords[0] + dims[0]
+        y1, y2 = coords[1], coords[1] + dims[1]
+        roi = frame[y1:y2, x1:x2]
+
+        frame_path = (
+            f"{self.stream_path}/window{window_index}/"
+            + f"{frame_number}_{name}_processed.png"
+        )
+        cv2.imwrite(frame_path, roi)
