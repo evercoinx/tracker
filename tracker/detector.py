@@ -1,5 +1,7 @@
 import re
+from datetime import datetime
 
+from dateutil import parser as dateparser
 from PIL import Image
 from tesserocr import OEM, PSM, PyTessBaseAPI
 
@@ -7,12 +9,13 @@ from tesserocr import OEM, PSM, PyTessBaseAPI
 class ObjectDetector:
     """Detect objects on an window frame"""
 
-    REGEX_MULTIPLE_DIGITS = re.compile(r"(\d+)$")
-    REGEX_SINGLE_DIGIT = re.compile(r"(\d)$")
-    REGEX_MONEY = re.compile(r"[$€]([.\d]+)$")
     REGEX_ACTION = re.compile(
         r"(bet|call|check|fold|raise|sittingin|waitingforbb)", flags=re.IGNORECASE
     )
+    REGEX_MONEY = re.compile(r"[$€]([.\d]+)")
+    REGEX_MULTIPLE_DIGITS = re.compile(r"(\d+)")
+    REGEX_SINGLE_DIGIT = re.compile(r"(\d)")
+    REGEX_TIME_WITH_ZONE = re.compile(r"\d{2}:\d{2}\+\d{2}")
 
     def __init__(self):
         self.tess_api = PyTessBaseAPI(psm=PSM.SINGLE_LINE, oem=OEM.LSTM_ONLY)
@@ -35,6 +38,16 @@ class ObjectDetector:
         if not matches:
             return 0
         return int(matches[0])
+
+    def get_hand_time(self, coords, dims):
+        self.tess_api.SetVariable("tessedit_char_whitelist", ":+0123456789")
+        self.tess_api.SetRectangle(coords[0], coords[1], dims[0], dims[1])
+
+        line = self.tess_api.GetUTF8Text()
+        matches = re.findall(ObjectDetector.REGEX_TIME_WITH_ZONE, line.strip())
+        if not matches:
+            return datetime.min
+        return dateparser.parse(matches[0])
 
     def get_seat_number(self, coords, dims):
         self.tess_api.SetVariable("tessedit_char_whitelist", "Seat123456")

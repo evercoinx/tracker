@@ -83,7 +83,11 @@ class StreamPlayer:
             logging.warn(f"{self.log_prefix} raw frame removed as no data found")
             return
 
-        logging.info(f"{self.log_prefix} hand number: {hand_number}")
+        hand_time = self.get_hand_time(frame, window_index, frame_index)
+        logging.info(
+            f"{self.log_prefix} hand number: {hand_number} "
+            + f"at {hand_time.strftime('%H:%M%z')[:-2]}"
+        )
 
         seats = self.get_seats(frame, window_index, frame_index)
         for s in seats:
@@ -96,6 +100,7 @@ class StreamPlayer:
             {
                 "window": window_index,
                 "frame": frame_index,
+                "time": hand_time,
                 "seats": seats,
             }
         )
@@ -118,6 +123,23 @@ class StreamPlayer:
             )
 
         return hand_number
+
+    def get_hand_time(self, frame, window_index, frame_index):
+        coords = (857, 22)
+        dims = (55, 14)
+        hand_time = self.detector.get_hand_time(coords, dims)
+
+        if self.is_debug():
+            self.save_frame_roi(
+                frame,
+                window_index,
+                frame_index,
+                coords=coords,
+                dims=dims,
+                name="hand_time",
+            )
+
+        return hand_time
 
     def get_seats(self, frame, window_index, frame_index):
         action_coords_groups = [
