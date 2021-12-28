@@ -92,8 +92,8 @@ class StreamPlayer:
         seats = self.get_seats(frame, window_index, frame_index)
         for s in seats:
             logging.info(
-                f"{self.log_prefix} seat {s['number']}, "
-                + f"balance: {s['balance']:.2f}, action: {s['action']}"
+                f"{self.log_prefix} seat {s['number']}, balance: {s['balance']:.2f}, "
+                + f"stake: {s['stake']:.2f}, action: {s['action']}"
             )
 
         self.session[hand_number].append(
@@ -172,6 +172,16 @@ class StreamPlayer:
         ]
         balance_dims = (119, 16)
 
+        stake_coords_groups = [
+            (287, 288),
+            (294, 154),
+            (423, 131),
+            (602, 153),
+            (595, 290),
+            (0, 0),
+        ]
+        stake_dims = (56, 19)
+
         seats = []
 
         for i in range(len(number_coords_groups)):
@@ -198,7 +208,29 @@ class StreamPlayer:
             if not number:
                 continue
 
-            balance = self.detector.get_seat_balance(
+            action = self.detector.get_seat_action(action_coords_groups[i], action_dims)
+            if self.is_debug():
+                self.save_frame_roi(
+                    frame,
+                    window_index,
+                    frame_index,
+                    coords=action_coords_groups[i],
+                    dims=action_dims,
+                    name=f"seat_action_{i}",
+                )
+
+            stake = self.detector.get_seat_money(stake_coords_groups[i], stake_dims)
+            if self.is_debug():
+                self.save_frame_roi(
+                    frame,
+                    window_index,
+                    frame_index,
+                    coords=stake_coords_groups[i],
+                    dims=stake_dims,
+                    name=f"seat_stake_{i}",
+                )
+
+            balance = self.detector.get_seat_money(
                 balance_coords_groups[i], balance_dims
             )
             if self.is_debug():
@@ -211,22 +243,12 @@ class StreamPlayer:
                     name=f"seat_balance_{i}",
                 )
 
-            action = self.detector.get_seat_action(action_coords_groups[i], action_dims)
-            if self.is_debug():
-                self.save_frame_roi(
-                    frame,
-                    window_index,
-                    frame_index,
-                    coords=action_coords_groups[i],
-                    dims=action_dims,
-                    name=f"seat_action_{i}",
-                )
-
             seats.append(
                 {
                     "number": number,
-                    "balance": balance,
                     "action": action,
+                    "stake": stake,
+                    "balance": balance,
                 }
             )
 

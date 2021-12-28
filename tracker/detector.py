@@ -59,7 +59,7 @@ class ObjectDetector:
             return 0
         return int(matches[0])
 
-    def get_seat_balance(self, coords, dims):
+    def get_seat_money(self, coords, dims):
         self.tess_api.SetVariable("tessedit_char_whitelist", "€.0123456789")
         self.tess_api.SetRectangle(coords[0], coords[1], dims[0], dims[1])
 
