@@ -49,6 +49,16 @@ class ObjectDetector:
             return datetime.min
         return dateparser.parse(matches[0])
 
+    def get_total_pot(self, coords, dims):
+        self.tess_api.SetVariable("tessedit_char_whitelist", "pot:€.0123456789")
+        self.tess_api.SetRectangle(coords[0], coords[1], dims[0], dims[1])
+
+        line = self.tess_api.GetUTF8Text()
+        matches = re.findall(ObjectDetector.REGEX_MONEY, line.strip())
+        if not matches:
+            return 0.0
+        return float(matches[0])
+
     def get_seat_number(self, coords, dims):
         self.tess_api.SetVariable("tessedit_char_whitelist", "Seat123456")
         self.tess_api.SetRectangle(coords[0], coords[1], dims[0], dims[1])

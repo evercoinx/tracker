@@ -2,6 +2,7 @@ import logging
 import os
 import re
 from collections import defaultdict
+from functools import reduce
 from glob import glob
 from multiprocessing import current_process
 from pprint import pformat
@@ -83,13 +84,23 @@ class StreamPlayer:
             logging.warn(f"{self.log_prefix} raw frame removed as no data found")
             return
 
+        logging.info(f"{self.log_prefix} {'-' * 60}")
+
         hand_time = self.get_hand_time(frame, window_index, frame_index)
         logging.info(
             f"{self.log_prefix} hand number: {hand_number} "
             + f"at {hand_time.strftime('%H:%M%z')[:-2]}"
         )
 
+        total_pot = self.get_total_pot(frame, window_index, frame_index)
         seats = self.get_seats(frame, window_index, frame_index)
+
+        total_stakes = reduce(lambda accum, seat: accum + seat["stake"], seats, 0)
+        logging.info(
+            f"{self.log_prefix} total pot: {total_pot:.2f}, "
+            + f"total stakes: {total_stakes:.2f}"
+        )
+
         for s in seats:
             logging.info(
                 f"{self.log_prefix} seat {s['number']}, balance: {s['balance']:.2f}, "
@@ -102,6 +113,8 @@ class StreamPlayer:
                 "frame": frame_index,
                 "time": hand_time,
                 "seats": seats,
+                "total_pot": total_pot,
+                "total_stakes": total_stakes,
             }
         )
 
@@ -140,6 +153,23 @@ class StreamPlayer:
             )
 
         return hand_time
+
+    def get_total_pot(self, frame, window_index, frame_index):
+        coords = (462, 160)
+        dims = (91, 21)
+        total_pot = self.detector.get_total_pot(coords, dims)
+
+        if self.is_debug():
+            self.save_frame_roi(
+                frame,
+                window_index,
+                frame_index,
+                coords=coords,
+                dims=dims,
+                name="total_pot",
+            )
+
+        return total_pot
 
     def get_seats(self, frame, window_index, frame_index):
         action_coords_groups = [
