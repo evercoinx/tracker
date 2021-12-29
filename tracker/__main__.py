@@ -5,12 +5,14 @@ import sys
 from multiprocessing import Event, Process, Queue
 
 from tracker import __version__
-from tracker.detector import ObjectDetector
 from tracker.error import ValidationError
-from tracker.player import StreamPlayer
+from tracker.object_detection import ObjectDetection
 from tracker.screen import Screen
+from tracker.stream_player import StreamPlayer
+from tracker.text_detection import TextDetection
 
 STREAM_PATH = "./stream"
+TEMPLATE_PATH = "./template"
 FRAME_FORMAT = "png"
 
 
@@ -110,13 +112,16 @@ def validate_args(args):
 
 
 def replay_session(args):
-    detector = ObjectDetector()
+    object_detection = ObjectDetection(template_path=TEMPLATE_PATH)
+    text_detection = TextDetection()
+
     player = StreamPlayer(
         queue=None,
         events=[],
-        detector=detector,
         stream_path=STREAM_PATH,
         frame_format=FRAME_FORMAT,
+        object_detection=object_detection,
+        text_detection=text_detection,
     )
     player.replay(args["windows"])
 
@@ -134,15 +139,17 @@ def play_session(args):
     queue = Queue(win_count)
     events = [Event() for _ in range(win_count)]
 
-    screen = Screen(queue, events, stream_path=STREAM_PATH, frame_format=FRAME_FORMAT)
-    detector = ObjectDetector()
+    object_detection = ObjectDetection(template_path=TEMPLATE_PATH)
+    text_detection = TextDetection()
     player = StreamPlayer(
         queue,
         events,
-        detector=detector,
         stream_path=STREAM_PATH,
         frame_format=FRAME_FORMAT,
+        object_detection=object_detection,
+        text_detection=text_detection,
     )
+    screen = Screen(queue, events, stream_path=STREAM_PATH, frame_format=FRAME_FORMAT)
     procs = []
 
     for (i, wc) in enumerate(win_coords):

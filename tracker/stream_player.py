@@ -13,12 +13,15 @@ import cv2
 class StreamPlayer:
     """Plays a live or saved stream"""
 
-    def __init__(self, queue, events, detector, stream_path, frame_format):
+    def __init__(
+        self, queue, events, stream_path, frame_format, object_detection, text_detection
+    ):
         self.queue = queue
         self.events = events
-        self.detector = detector
         self.stream_path = stream_path
         self.frame_format = frame_format
+        self.object_detection = object_detection
+        self.text_detection = text_detection
         self.log_prefix = ""
         self.session = defaultdict(list)
 
@@ -71,9 +74,8 @@ class StreamPlayer:
                 + f"{frame_index}_processed.{self.frame_format}",
                 processed_frame,
             )
-            logging.debug(f"{self.log_prefix} processed frame saved")
 
-        self.detector.set_frame(processed_frame)
+        self.text_detection.set_frame(processed_frame)
 
         hand_number = self.get_hand_number(processed_frame, window_index, frame_index)
         if not hand_number:
@@ -107,6 +109,8 @@ class StreamPlayer:
             + f"total stakes: {total_stakes:.2f}"
         )
 
+        self.text_detection.clear_current_frame()
+
         for seat in seats:
             logging.info(
                 f"{self.log_prefix} seat {seat['number']}, "
@@ -126,12 +130,18 @@ class StreamPlayer:
             }
         )
 
-        self.detector.clear_current_frame()
+        dealer_frame = self.object_detection.get_dealer(frame.copy())
+        if self.is_debug():
+            cv2.imwrite(
+                f"{self.stream_path}/window{window_index}/"
+                + f"{frame_index}_dealer_processed.{self.frame_format}",
+                dealer_frame,
+            )
 
     def get_hand_number(self, frame, window_index, frame_index):
         coords = (73, 24)
         dims = (101, 15)
-        hand_number = self.detector.get_hand_number(coords, dims)
+        hand_number = self.text_detection.get_hand_number(coords, dims)
 
         if self.is_debug():
             self.save_frame_roi(
@@ -148,7 +158,7 @@ class StreamPlayer:
     def get_hand_time(self, frame, window_index, frame_index):
         coords = (857, 22)
         dims = (55, 14)
-        hand_time = self.detector.get_hand_time(coords, dims)
+        hand_time = self.text_detection.get_hand_time(coords, dims)
 
         if self.is_debug():
             self.save_frame_roi(
@@ -165,7 +175,7 @@ class StreamPlayer:
     def get_total_pot(self, frame, window_index, frame_index):
         coords = (462, 160)
         dims = (91, 21)
-        total_pot = self.detector.get_total_pot(coords, dims)
+        total_pot = self.text_detection.get_total_pot(coords, dims)
 
         if self.is_debug():
             self.save_frame_roi(
@@ -227,7 +237,7 @@ class StreamPlayer:
             if i == len(number_coords_groups) - 1:
                 number = 9
             else:
-                number = self.detector.get_seat_number(
+                number = self.text_detection.get_seat_number(
                     number_coords_groups[i], number_dims
                 )
 
@@ -246,7 +256,9 @@ class StreamPlayer:
             if not number:
                 continue
 
-            action = self.detector.get_seat_action(action_coords_groups[i], action_dims)
+            action = self.text_detection.get_seat_action(
+                action_coords_groups[i], action_dims
+            )
             if self.is_debug():
                 self.save_frame_roi(
                     frame,
@@ -257,7 +269,9 @@ class StreamPlayer:
                     name=f"seat_action_{i}",
                 )
 
-            stake = self.detector.get_seat_money(stake_coords_groups[i], stake_dims)
+            stake = self.text_detection.get_seat_money(
+                stake_coords_groups[i], stake_dims
+            )
             if self.is_debug():
                 self.save_frame_roi(
                     frame,
@@ -268,7 +282,7 @@ class StreamPlayer:
                     name=f"seat_stake_{i}",
                 )
 
-            balance = self.detector.get_seat_money(
+            balance = self.text_detection.get_seat_money(
                 balance_coords_groups[i], balance_dims
             )
             if self.is_debug():
