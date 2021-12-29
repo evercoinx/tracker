@@ -1,8 +1,9 @@
 {
-    "python.defaultInterpreterPath": "~/.virtualenvs/tracker/bin/python",
-    "python.formatting.provider": "black",
-    "python.formatting.blackArgs": [],
-    "python.linting.enabled": true,
-    "python.linting.flake8Enabled": true,
-    "python.sortImports.args": ["--profile", "black"],
+  "python.defaultInterpreterPath": "~/.virtualenvs/tracker/bin/python",
+  "python.analysis.extraPaths": ["."],
+  "python.formatting.provider": "black",
+  "python.formatting.blackArgs": [],
+  "python.linting.enabled": true,
+  "python.linting.flake8Enabled": true,
+  "python.sortImports.args": ["--profile", "black"]
 }
