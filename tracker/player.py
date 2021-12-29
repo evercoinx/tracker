@@ -77,12 +77,19 @@ class StreamPlayer:
 
         hand_number = self.get_hand_number(processed_frame, window_index, frame_index)
         if not hand_number:
-            os.remove(
-                f"{self.stream_path}/window{window_index}/"
-                + f"{frame_index}_raw.{self.frame_format}"
-            )
-            logging.warn(f"{self.log_prefix} raw frame removed as no data found")
-            return
+            try:
+                os.remove(
+                    f"{self.stream_path}/window{window_index}/"
+                    + f"{frame_index}_raw.{self.frame_format}"
+                )
+            except OSError:
+                logging.error(f"{self.log_prefix} no data: raw frame was not removed")
+            else:
+                logging.warn(
+                    f"{self.log_prefix} no data: raw frame removed successfully"
+                )
+            finally:
+                return
 
         logging.info(f"{self.log_prefix} {'-' * 60}")
 

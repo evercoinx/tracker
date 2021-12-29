@@ -6,6 +6,7 @@ from multiprocessing import Event, Process, Queue
 
 from tracker import __version__
 from tracker.detector import ObjectDetector
+from tracker.error import ValidationError
 from tracker.player import StreamPlayer
 from tracker.screen import Screen
 
@@ -14,13 +15,16 @@ FRAME_FORMAT = "png"
 
 
 def main():
-    args = validate_args(parse_args())
+    try:
+        args = validate_args(parse_args())
+        if args["replay"]:
+            replay_session(args)
+            return
 
-    if args["replay"]:
-        replay_session(args)
-        return
-
-    play_session(args)
+        play_session(args)
+    except Exception as e:
+        logging.critical(f"Error! {e}")
+        sys.exit(1)
 
 
 def parse_args():
@@ -80,8 +84,7 @@ def validate_args(args):
 
     windows_arg = args["windows"]
     if len(windows_arg) > 4:
-        logging.critical(f"Too many windows to play: {len(windows_arg)}")
-        sys.exit(1)
+        raise ValidationError(f"Too many windows to play: {len(windows_arg)}")
 
     if args["replay"]:
         return args
@@ -89,14 +92,12 @@ def validate_args(args):
     # the environment variable formatted as hostname:display.screen
     display_env = os.environ.get("DISPLAY", "").strip()
     if not display_env:
-        logging.critical("Display is not set")
-        sys.exit(1)
+        raise ValidationError("Display is not set")
 
     parsed_display = display_env.split(":")
     display = f":{parsed_display[1]}"
     if display != args["display"]:
-        logging.critical(f"Display is {display}; want {args['display']}")
-        sys.exit(1)
+        raise ValidationError(f"Display is {display}; want {args['display']}")
 
     return {
         **args,
