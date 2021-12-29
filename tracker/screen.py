@@ -5,6 +5,8 @@ import cv2
 import numpy as np
 from mss.linux import MSS as mss
 
+from tracker.error import FrameError
+
 
 class Screen:
     """Capture a window of a screen"""
@@ -23,15 +25,20 @@ class Screen:
         with mss(display) as screen:
             while True:
                 try:
-                    color_frame = screen.grab(window_coords)
-                    win_arr = np.asarray(color_frame, dtype=np.uint8)
-                    gray_frame = cv2.cvtColor(win_arr, cv2.COLOR_BGRA2GRAY)
+                    frame = screen.grab(window_coords)
+                    frame_arr = np.asarray(frame, dtype=np.uint8)
+                    gray_frame = cv2.cvtColor(frame_arr, cv2.COLOR_BGRA2GRAY)
 
-                    cv2.imwrite(
+                    saved = cv2.imwrite(
                         f"{self.stream_path}/window{window_index}/"
                         + f"{frame_index}_raw.{self.frame_format}",
                         gray_frame,
                     )
+                    if not saved:
+                        raise FrameError(
+                            "unable to save frame", window_index, frame_index, "raw"
+                        )
+
                     logging.info(f"{self.log_prefix} raw frame saved")
 
                     frame_index += 1
