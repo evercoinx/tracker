@@ -22,7 +22,7 @@ class StreamPlayer:
         self.log_prefix = ""
         self.session = defaultdict(list)
 
-    def play_live(self):
+    def play(self):
         frame_index = 0
 
         while True:
@@ -39,7 +39,7 @@ class StreamPlayer:
                 logging.warn(f"{self.log_prefix} interruption; exiting...")
                 return
 
-    def play_saved(self, windows):
+    def replay(self, windows):
         raw_frame_path_pattern = re.compile(
             r"window(["
             + re.escape(",".join(windows))
@@ -52,9 +52,9 @@ class StreamPlayer:
             recursive=True,
         )
 
-        for p in sorted(raw_frame_paths):
-            frame = cv2.imread(p, cv2.IMREAD_UNCHANGED)
-            matches = re.findall(raw_frame_path_pattern, p)
+        for path in sorted(raw_frame_paths):
+            frame = cv2.imread(path, cv2.IMREAD_UNCHANGED)
+            matches = re.findall(raw_frame_path_pattern, path)
             if matches:
                 (window_index, frame_index) = matches[0]
                 self.log_prefix = self.get_log_prefix(window_index, frame_index)
@@ -63,19 +63,19 @@ class StreamPlayer:
         logging.debug(f"{self.log_prefix} session dump:\n{pformat(self.session)}")
 
     def process_frame(self, frame, window_index, frame_index):
-        frame = cv2.bitwise_not(frame)
+        processed_frame = cv2.bitwise_not(frame)
 
         if self.is_debug():
             cv2.imwrite(
                 f"{self.stream_path}/window{window_index}/"
                 + f"{frame_index}_processed.{self.frame_format}",
-                frame,
+                processed_frame,
             )
             logging.debug(f"{self.log_prefix} processed frame saved")
 
-        self.detector.set_frame(frame)
+        self.detector.set_frame(processed_frame)
 
-        hand_number = self.get_hand_number(frame, window_index, frame_index)
+        hand_number = self.get_hand_number(processed_frame, window_index, frame_index)
         if not hand_number:
             os.remove(
                 f"{self.stream_path}/window{window_index}/"
@@ -86,25 +86,26 @@ class StreamPlayer:
 
         logging.info(f"{self.log_prefix} {'-' * 60}")
 
-        hand_time = self.get_hand_time(frame, window_index, frame_index)
+        hand_time = self.get_hand_time(processed_frame, window_index, frame_index)
         logging.info(
             f"{self.log_prefix} hand number: {hand_number} "
             + f"at {hand_time.strftime('%H:%M%z')[:-2]}"
         )
 
-        total_pot = self.get_total_pot(frame, window_index, frame_index)
-        seats = self.get_seats(frame, window_index, frame_index)
-
+        total_pot = self.get_total_pot(processed_frame, window_index, frame_index)
+        seats = self.get_seats(processed_frame, window_index, frame_index)
         total_stakes = reduce(lambda accum, seat: accum + seat["stake"], seats, 0)
         logging.info(
             f"{self.log_prefix} total pot: {total_pot:.2f}, "
             + f"total stakes: {total_stakes:.2f}"
         )
 
-        for s in seats:
+        for seat in seats:
             logging.info(
-                f"{self.log_prefix} seat {s['number']}, balance: {s['balance']:.2f}, "
-                + f"stake: {s['stake']:.2f}, action: {s['action']}"
+                f"{self.log_prefix} seat {seat['number']}, "
+                + f"balance: {seat['balance']:.2f}, "
+                + f"stake: {seat['stake']:.2f}, "
+                + f"action: {seat['action']}"
             )
 
         self.session[hand_number].append(

@@ -15,10 +15,12 @@ FRAME_FORMAT = "png"
 
 def main():
     args = validate_args(parse_args())
+
     if args["replay"]:
         replay_session(args)
-    else:
-        play_session(args)
+        return
+
+    play_session(args)
 
 
 def parse_args():
@@ -106,6 +108,18 @@ def validate_args(args):
     }
 
 
+def replay_session(args):
+    detector = ObjectDetector()
+    player = StreamPlayer(
+        queue=None,
+        events=[],
+        detector=detector,
+        stream_path=STREAM_PATH,
+        frame_format=FRAME_FORMAT,
+    )
+    player.replay(args["windows"])
+
+
 def play_session(args):
     win_coords = Screen.calculate_window_coords(
         args["windows"],
@@ -138,7 +152,7 @@ def play_session(args):
         )
         procs.append(sp)
 
-        pp = Process(name=f"player-{i}", target=player.play_live, args=())
+        pp = Process(name=f"player-{i}", target=player.play, args=())
         procs.append(pp)
 
     for p in procs:
@@ -146,18 +160,6 @@ def play_session(args):
 
     for p in procs:
         p.join()
-
-
-def replay_session(args):
-    detector = ObjectDetector()
-    player = StreamPlayer(
-        queue=None,
-        events=[],
-        detector=detector,
-        stream_path=STREAM_PATH,
-        frame_format=FRAME_FORMAT,
-    )
-    player.play_saved(args["windows"])
 
 
 if __name__ == "__main__":
