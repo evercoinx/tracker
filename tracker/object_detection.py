@@ -1,5 +1,7 @@
 import cv2
 
+from tracker.error import TemplateError
+
 
 class ObjectDetection:
     """Detect objects on an window frame"""
@@ -12,9 +14,9 @@ class ObjectDetection:
             f"{self.template_path}/dealer.{self.template_format}", cv2.IMREAD_UNCHANGED
         )
         if self.dealer_tmpl is None:
-            raise Exception("Dealer template is not found")
+            raise TemplateError("dealer template is not found")
 
-    def get_dealer(self, frame):
+    def get_dealer_coords(self, frame):
         result = cv2.matchTemplate(frame, self.dealer_tmpl, cv2.TM_CCOEFF_NORMED)
         max_loc = cv2.minMaxLoc(result)[3]
         (start_x, start_y) = max_loc

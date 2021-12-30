@@ -326,13 +326,15 @@ class StreamPlayer:
         return seats
 
     def recognize_dealer(self, frame, window_index, frame_index):
-        coords = self.object_detection.get_dealer(frame)
+        (start_x, start_y, end_x, end_y) = self.object_detection.get_dealer_coords(
+            frame
+        )
 
         if self.is_debug():
             dealer_frame = cv2.rectangle(
                 frame.copy(),
-                (coords[0], coords[1]),
-                (coords[2], coords[3]),
+                (start_x, start_y),
+                (end_x, end_y),
                 (255, 255, 255),
                 2,
             )
@@ -344,11 +346,11 @@ class StreamPlayer:
         if logging.root.level != logging.DEBUG:
             return
 
-        frame_roi = frame
+        roi = frame
         if coords and dims:
             x1, x2 = coords[0], coords[0] + dims[0]
             y1, y2 = coords[1], coords[1] + dims[1]
-            frame_roi = frame[y1:y2, x1:x2]
+            roi = frame[y1:y2, x1:x2]
 
         saved = cv2.imwrite(
             os.path.join(
@@ -356,7 +358,7 @@ class StreamPlayer:
                 f"window{window_index}",
                 f"{frame_index}_{name}_processed.{self.frame_format}",
             ),
-            frame_roi,
+            roi,
         )
         if not saved:
             raise FrameError(

@@ -7,7 +7,7 @@ from tesserocr import OEM, PSM, PyTessBaseAPI
 
 
 class TextRecognition:
-    """Recognizes a text on a region of interest for a window frame"""
+    """Recognizes texts on a window frame"""
 
     REGEX_ACTION = re.compile(
         r"(bet|call|check|fold|raise|sittingin|waitingforbb)", flags=re.IGNORECASE

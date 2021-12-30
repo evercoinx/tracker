@@ -4,8 +4,7 @@ class ValidationError(Exception):
 
 
 class FrameError(Exception):
-    """Raises an error when an unexpected behaviour during processing of a frame
-    is occurred"""
+    """Raises an error when a window frame is unable to be loaded or saved"""
 
     def __init__(self, message, window_index, frame_index, name):
         super().__init__(message)
@@ -16,3 +15,7 @@ class FrameError(Exception):
 
     def __str__(self):
         return f"w{self.window_index}-f{self.frame_index:<5} - {self.message}"
+
+
+class TemplateError(Exception):
+    """Raises an error when a template is unable to be loaded"""
