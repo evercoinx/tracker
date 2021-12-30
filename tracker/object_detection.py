@@ -23,3 +23,34 @@ class ObjectDetection:
         end_x = start_x + self.dealer_tmpl.shape[1]
         end_y = start_y + self.dealer_tmpl.shape[0]
         return (start_x, start_y, end_x, end_y)
+
+    def point_in_region(
+        self, point, frame_width, frame_height, width_parts, height_parts
+    ):
+        regions = self.split_regions(
+            frame_width, frame_height, width_parts, height_parts
+        )
+
+        for i, region in enumerate(regions):
+            if region[0] < point[0] < region[2] and region[1] < point[1] < region[3]:
+                return i
+        return -1
+
+    @staticmethod
+    def split_regions(frame_width, frame_height, width_parts, height_parts):
+        w = frame_width // width_parts
+        h = frame_height // height_parts
+
+        iterations = width_parts * height_parts
+        regions = []
+
+        x, y = 0, 0
+        for _ in range(iterations // 2):
+            regions.append((x, y, x + w, y + h))
+            x += w
+
+        x, y = 0, h
+        for _ in range(iterations // 2):
+            regions.append((x, y, x + w, y + h))
+            x += w
+        return regions

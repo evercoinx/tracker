@@ -95,6 +95,28 @@ class StreamPlayer:
             logging.warn(f"{self.log_prefix} unable to process objects on frame")
             return
 
+        indent = " " * 26
+        seat_data = []
+        for seat in text_data["seats"]:
+            seat_data.append(
+                indent
+                + f"{self.log_prefix} seat {seat['number']}, "
+                + f"balance: {seat['balance']:.2f}, "
+                + f"stake: {seat['stake']:.2f}, "
+                + f"action: {seat['action']}"
+            )
+
+        logging.info(
+            f"{self.log_prefix} hand number: {text_data['hand_number']} "
+            + f"at {text_data['hand_time'].strftime('%H:%M%z')}\n"
+            + indent
+            + f"{self.log_prefix} total pot: {text_data['total_pot']:.2f}, "
+            + f"total stakes: {text_data['total_stakes']:.2f}, "
+            + f"dealer position: {object_data['dealer_position']}\n"
+            + "\n".join(seat_data)
+            + "\n"
+        )
+
         self.session[text_data["hand_number"]].append(
             {
                 "window_index": window_index,
@@ -115,32 +137,13 @@ class StreamPlayer:
             self.remove_frame(window_index, frame_index, "raw")
             return
 
-        logging.info(f"{self.log_prefix} {'-' * 60}")
-
         hand_time = self.recognize_hand_time(frame, window_index, frame_index)
-        logging.info(
-            f"{self.log_prefix} hand number: {hand_number} "
-            + f"at {hand_time.strftime('%H:%M%z')}"
-        )
 
         total_pot = self.recognize_total_pot(frame, window_index, frame_index)
         seats = self.recognize_seats(frame, window_index, frame_index)
+        total_stakes = reduce(lambda accum, seat: accum + seat["stake"], seats, 0)
 
         self.text_recognition.clear_current_frame()
-
-        total_stakes = reduce(lambda accum, seat: accum + seat["stake"], seats, 0)
-        logging.info(
-            f"{self.log_prefix} total pot: {total_pot:.2f}, "
-            + f"total stakes: {total_stakes:.2f}"
-        )
-
-        for seat in seats:
-            logging.info(
-                f"{self.log_prefix} seat {seat['number']}, "
-                + f"balance: {seat['balance']:.2f}, "
-                + f"stake: {seat['stake']:.2f}, "
-                + f"action: {seat['action']}"
-            )
 
         return {
             "hand_number": hand_number,
@@ -340,12 +343,10 @@ class StreamPlayer:
             )
             self.save_frame(dealer_frame, window_index, frame_index, "dealer")
 
-        return 0
+        (h, w) = frame.shape[:2]
+        return self.object_detection.point_in_region((end_x, end_y), w, h, 3, 2)
 
     def save_frame(self, frame, window_index, frame_index, name, *, coords=(), dims=()):
-        if logging.root.level != logging.DEBUG:
-            return
-
         roi = frame
         if coords and dims:
             x1, x2 = coords[0], coords[0] + dims[0]
