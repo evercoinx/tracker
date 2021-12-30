@@ -16,13 +16,19 @@ class StreamPlayer:
     """Plays a live stream or replays a saved one"""
 
     def __init__(
-        self, queue, events, stream_path, frame_format, text_detection, object_detection
+        self,
+        queue,
+        events,
+        stream_path,
+        frame_format,
+        text_recognition,
+        object_detection,
     ):
         self.queue = queue
         self.events = events
         self.stream_path = stream_path
         self.frame_format = frame_format
-        self.text_detection = text_detection
+        self.text_recognition = text_recognition
         self.object_detection = object_detection
         self.log_prefix = ""
         self.session = defaultdict(list)
@@ -80,12 +86,12 @@ class StreamPlayer:
 
         text_data = self.process_texts(inverted_frame, window_index, frame_index)
         if not text_data:
-            logging.warn(f"{self.log_prefix} no text data is detected on frame")
+            logging.warn(f"{self.log_prefix} unable to process texts on frame")
             return
 
         object_data = self.process_objects(inverted_frame, window_index, frame_index)
         if not object_data:
-            logging.warn(f"{self.log_prefix} no object data is detected on frame")
+            logging.warn(f"{self.log_prefix} unable to process objects on frame")
             return
 
         self.session[text_data["hand_number"]].append(
@@ -101,25 +107,25 @@ class StreamPlayer:
         )
 
     def process_texts(self, frame, window_index, frame_index):
-        self.text_detection.set_frame(frame)
+        self.text_recognition.set_frame(frame)
 
-        hand_number = self.get_hand_number(frame, window_index, frame_index)
+        hand_number = self.recognize_hand_number(frame, window_index, frame_index)
         if not hand_number:
             self.remove_frame(window_index, frame_index, "raw")
             return
 
         logging.info(f"{self.log_prefix} {'-' * 60}")
 
-        hand_time = self.get_hand_time(frame, window_index, frame_index)
+        hand_time = self.recognize_hand_time(frame, window_index, frame_index)
         logging.info(
             f"{self.log_prefix} hand number: {hand_number} "
             + f"at {hand_time.strftime('%H:%M%z')}"
         )
 
-        total_pot = self.get_total_pot(frame, window_index, frame_index)
-        seats = self.get_seats(frame, window_index, frame_index)
+        total_pot = self.recognize_total_pot(frame, window_index, frame_index)
+        seats = self.recognize_seats(frame, window_index, frame_index)
 
-        self.text_detection.clear_current_frame()
+        self.text_recognition.clear_current_frame()
 
         total_stakes = reduce(lambda accum, seat: accum + seat["stake"], seats, 0)
         logging.info(
@@ -144,28 +150,16 @@ class StreamPlayer:
         }
 
     def process_objects(self, frame, window_index, frame_index):
-        dealer_position = self.get_dealer(frame, window_index, frame_index)
+        dealer_position = self.recognize_dealer(frame, window_index, frame_index)
 
         return {
             "dealer_position": dealer_position,
         }
 
-    def get_dealer(self, frame, window_index, frame_index):
-        coords = self.object_detection.get_dealer(frame)
-        dealer_frame = cv2.rectangle(
-            frame.copy(),
-            (coords[0], coords[1]),
-            (coords[2], coords[3]),
-            (255, 255, 255),
-            2,
-        )
-        self.save_frame(dealer_frame, window_index, frame_index, "dealer")
-        return 0
-
-    def get_hand_number(self, frame, window_index, frame_index):
+    def recognize_hand_number(self, frame, window_index, frame_index):
         coords = (73, 24)
         dims = (101, 15)
-        hand_number = self.text_detection.get_hand_number(coords, dims)
+        hand_number = self.text_recognition.get_hand_number(coords, dims)
 
         self.save_frame(
             frame,
@@ -178,10 +172,10 @@ class StreamPlayer:
 
         return hand_number
 
-    def get_hand_time(self, frame, window_index, frame_index):
+    def recognize_hand_time(self, frame, window_index, frame_index):
         coords = (857, 22)
         dims = (55, 14)
-        hand_time = self.text_detection.get_hand_time(coords, dims)
+        hand_time = self.text_recognition.get_hand_time(coords, dims)
 
         self.save_frame(
             frame,
@@ -194,10 +188,10 @@ class StreamPlayer:
 
         return hand_time
 
-    def get_total_pot(self, frame, window_index, frame_index):
+    def recognize_total_pot(self, frame, window_index, frame_index):
         coords = (462, 160)
         dims = (91, 21)
-        total_pot = self.text_detection.get_total_pot(coords, dims)
+        total_pot = self.text_recognition.get_total_pot(coords, dims)
 
         self.save_frame(
             frame,
@@ -210,7 +204,7 @@ class StreamPlayer:
 
         return total_pot
 
-    def get_seats(self, frame, window_index, frame_index):
+    def recognize_seats(self, frame, window_index, frame_index):
         action_coords_groups = [
             (138, 321),
             (172, 100),
@@ -258,7 +252,7 @@ class StreamPlayer:
             if i == len(number_coords_groups) - 1:
                 number = 9
             else:
-                number = self.text_detection.get_seat_number(
+                number = self.text_recognition.get_seat_number(
                     number_coords_groups[i], number_dims
                 )
 
@@ -276,7 +270,7 @@ class StreamPlayer:
             if not number:
                 continue
 
-            action = self.text_detection.get_seat_action(
+            action = self.text_recognition.get_seat_action(
                 action_coords_groups[i], action_dims
             )
             self.save_frame(
@@ -288,7 +282,7 @@ class StreamPlayer:
                 dims=action_dims,
             )
 
-            stake = self.text_detection.get_seat_money(
+            stake = self.text_recognition.get_seat_money(
                 stake_coords_groups[i], stake_dims
             )
             self.save_frame(
@@ -300,7 +294,7 @@ class StreamPlayer:
                 dims=stake_dims,
             )
 
-            balance = self.text_detection.get_seat_money(
+            balance = self.text_recognition.get_seat_money(
                 balance_coords_groups[i], balance_dims
             )
             self.save_frame(
@@ -322,6 +316,18 @@ class StreamPlayer:
             )
 
         return seats
+
+    def recognize_dealer(self, frame, window_index, frame_index):
+        coords = self.object_detection.get_dealer(frame)
+        dealer_frame = cv2.rectangle(
+            frame.copy(),
+            (coords[0], coords[1]),
+            (coords[2], coords[3]),
+            (255, 255, 255),
+            2,
+        )
+        self.save_frame(dealer_frame, window_index, frame_index, "dealer")
+        return 0
 
     def save_frame(self, frame, window_index, frame_index, name, *, coords=(), dims=()):
         if logging.root.level != logging.DEBUG:

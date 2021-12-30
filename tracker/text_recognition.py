@@ -6,8 +6,8 @@ from PIL import Image
 from tesserocr import OEM, PSM, PyTessBaseAPI
 
 
-class TextDetection:
-    """Detect text on an window frame"""
+class TextRecognition:
+    """Recognizes a text on a region of interest for a window frame"""
 
     REGEX_ACTION = re.compile(
         r"(bet|call|check|fold|raise|sittingin|waitingforbb)", flags=re.IGNORECASE
@@ -34,7 +34,7 @@ class TextDetection:
         self.tess_api.SetRectangle(coords[0], coords[1], dims[0], dims[1])
 
         line = self.tess_api.GetUTF8Text()
-        matches = re.findall(TextDetection.REGEX_MULTIPLE_DIGITS, line.strip())
+        matches = re.findall(TextRecognition.REGEX_MULTIPLE_DIGITS, line.strip())
         if not matches:
             return 0
         return int(matches[0])
@@ -44,7 +44,7 @@ class TextDetection:
         self.tess_api.SetRectangle(coords[0], coords[1], dims[0], dims[1])
 
         line = self.tess_api.GetUTF8Text()
-        matches = re.findall(TextDetection.REGEX_TIME_WITH_ZONE, line.strip())
+        matches = re.findall(TextRecognition.REGEX_TIME_WITH_ZONE, line.strip())
         if not matches:
             return datetime.min
         return dateparser.parse(matches[0])
@@ -54,7 +54,7 @@ class TextDetection:
         self.tess_api.SetRectangle(coords[0], coords[1], dims[0], dims[1])
 
         line = self.tess_api.GetUTF8Text()
-        matches = re.findall(TextDetection.REGEX_MONEY, line.strip())
+        matches = re.findall(TextRecognition.REGEX_MONEY, line.strip())
         if not matches:
             return 0.0
         return float(matches[0])
@@ -64,7 +64,7 @@ class TextDetection:
         self.tess_api.SetRectangle(coords[0], coords[1], dims[0], dims[1])
 
         line = self.tess_api.GetUTF8Text()
-        matches = re.findall(TextDetection.REGEX_SINGLE_DIGIT, line.strip())
+        matches = re.findall(TextRecognition.REGEX_SINGLE_DIGIT, line.strip())
         if not matches:
             return 0
         return int(matches[0])
@@ -74,7 +74,7 @@ class TextDetection:
         self.tess_api.SetRectangle(coords[0], coords[1], dims[0], dims[1])
 
         line = self.tess_api.GetUTF8Text()
-        matches = re.findall(TextDetection.REGEX_MONEY, line.strip())
+        matches = re.findall(TextRecognition.REGEX_MONEY, line.strip())
         if not matches:
             return 0.0
         return float(matches[0])
@@ -86,7 +86,7 @@ class TextDetection:
         self.tess_api.SetRectangle(coords[0], coords[1], dims[0], dims[1])
 
         line = self.tess_api.GetUTF8Text()
-        matches = re.findall(TextDetection.REGEX_ACTION, line.strip())
+        matches = re.findall(TextRecognition.REGEX_ACTION, line.strip())
         if not matches:
             return "none"
 
