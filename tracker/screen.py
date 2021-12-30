@@ -1,4 +1,5 @@
 import logging
+import os
 from multiprocessing import current_process
 
 import cv2
@@ -30,13 +31,16 @@ class Screen:
                     gray_frame = cv2.cvtColor(frame_arr, cv2.COLOR_BGRA2GRAY)
 
                     saved = cv2.imwrite(
-                        f"{self.stream_path}/window{window_index}/"
-                        + f"{frame_index}_raw.{self.frame_format}",
+                        os.path.join(
+                            self.stream_path,
+                            f"window{window_index}",
+                            f"{frame_index}_raw.{self.frame_format}",
+                        ),
                         gray_frame,
                     )
                     if not saved:
                         raise FrameError(
-                            "unable to save frame", window_index, frame_index, "raw"
+                            "unable to save raw frame", window_index, frame_index, "raw"
                         )
 
                     logging.info(f"{self.log_prefix} raw frame saved")

@@ -9,6 +9,7 @@ class FrameError(Exception):
 
     def __init__(self, message, window_index, frame_index, name):
         super().__init__(message)
+        self.message = message
         self.window_index = window_index
         self.frame_index = frame_index
         self.name = name

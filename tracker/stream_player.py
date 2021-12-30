@@ -82,7 +82,8 @@ class StreamPlayer:
 
     def process_frame(self, frame, window_index, frame_index):
         inverted_frame = cv2.bitwise_not(frame)
-        self.save_frame(frame, window_index, frame_index, "raw")
+        if self.is_debug():
+            self.save_frame(inverted_frame, window_index, frame_index, "full")
 
         text_data = self.process_texts(inverted_frame, window_index, frame_index)
         if not text_data:
@@ -161,14 +162,15 @@ class StreamPlayer:
         dims = (101, 15)
         hand_number = self.text_recognition.get_hand_number(coords, dims)
 
-        self.save_frame(
-            frame,
-            window_index,
-            frame_index,
-            "hand_number",
-            coords=coords,
-            dims=dims,
-        )
+        if self.is_debug():
+            self.save_frame(
+                frame,
+                window_index,
+                frame_index,
+                "hand_number",
+                coords=coords,
+                dims=dims,
+            )
 
         return hand_number
 
@@ -177,14 +179,15 @@ class StreamPlayer:
         dims = (55, 14)
         hand_time = self.text_recognition.get_hand_time(coords, dims)
 
-        self.save_frame(
-            frame,
-            window_index,
-            frame_index,
-            "hand_time",
-            coords=coords,
-            dims=dims,
-        )
+        if self.is_debug():
+            self.save_frame(
+                frame,
+                window_index,
+                frame_index,
+                "hand_time",
+                coords=coords,
+                dims=dims,
+            )
 
         return hand_time
 
@@ -193,14 +196,15 @@ class StreamPlayer:
         dims = (91, 21)
         total_pot = self.text_recognition.get_total_pot(coords, dims)
 
-        self.save_frame(
-            frame,
-            window_index,
-            frame_index,
-            "total_pot",
-            coords=coords,
-            dims=dims,
-        )
+        if self.is_debug():
+            self.save_frame(
+                frame,
+                window_index,
+                frame_index,
+                "total_pot",
+                coords=coords,
+                dims=dims,
+            )
 
         return total_pot
 
@@ -256,14 +260,15 @@ class StreamPlayer:
                     number_coords_groups[i], number_dims
                 )
 
-            self.save_frame(
-                frame,
-                window_index,
-                frame_index,
-                f"seat_number_{i}",
-                coords=number_coords_groups[i],
-                dims=number_dims,
-            )
+            if self.is_debug():
+                self.save_frame(
+                    frame,
+                    window_index,
+                    frame_index,
+                    f"seat_number_{i}",
+                    coords=number_coords_groups[i],
+                    dims=number_dims,
+                )
 
             # if we failed to detect a seat number it is unreasonable to look for
             # a balance and an action of this seat
@@ -273,38 +278,41 @@ class StreamPlayer:
             action = self.text_recognition.get_seat_action(
                 action_coords_groups[i], action_dims
             )
-            self.save_frame(
-                frame,
-                window_index,
-                frame_index,
-                f"seat_action_{i}",
-                coords=action_coords_groups[i],
-                dims=action_dims,
-            )
+            if self.is_debug():
+                self.save_frame(
+                    frame,
+                    window_index,
+                    frame_index,
+                    f"seat_action_{i}",
+                    coords=action_coords_groups[i],
+                    dims=action_dims,
+                )
 
             stake = self.text_recognition.get_seat_money(
                 stake_coords_groups[i], stake_dims
             )
-            self.save_frame(
-                frame,
-                window_index,
-                frame_index,
-                f"seat_stake_{i}",
-                coords=stake_coords_groups[i],
-                dims=stake_dims,
-            )
+            if self.is_debug():
+                self.save_frame(
+                    frame,
+                    window_index,
+                    frame_index,
+                    f"seat_stake_{i}",
+                    coords=stake_coords_groups[i],
+                    dims=stake_dims,
+                )
 
             balance = self.text_recognition.get_seat_money(
                 balance_coords_groups[i], balance_dims
             )
-            self.save_frame(
-                frame,
-                window_index,
-                frame_index,
-                f"seat_balance_{i}",
-                coords=balance_coords_groups[i],
-                dims=balance_dims,
-            )
+            if self.is_debug():
+                self.save_frame(
+                    frame,
+                    window_index,
+                    frame_index,
+                    f"seat_balance_{i}",
+                    coords=balance_coords_groups[i],
+                    dims=balance_dims,
+                )
 
             seats.append(
                 {
@@ -319,14 +327,17 @@ class StreamPlayer:
 
     def recognize_dealer(self, frame, window_index, frame_index):
         coords = self.object_detection.get_dealer(frame)
-        dealer_frame = cv2.rectangle(
-            frame.copy(),
-            (coords[0], coords[1]),
-            (coords[2], coords[3]),
-            (255, 255, 255),
-            2,
-        )
-        self.save_frame(dealer_frame, window_index, frame_index, "dealer")
+
+        if self.is_debug():
+            dealer_frame = cv2.rectangle(
+                frame.copy(),
+                (coords[0], coords[1]),
+                (coords[2], coords[3]),
+                (255, 255, 255),
+                2,
+            )
+            self.save_frame(dealer_frame, window_index, frame_index, "dealer")
+
         return 0
 
     def save_frame(self, frame, window_index, frame_index, name, *, coords=(), dims=()):
@@ -340,21 +351,33 @@ class StreamPlayer:
             frame_roi = frame[y1:y2, x1:x2]
 
         saved = cv2.imwrite(
-            f"{self.stream_path}/window{window_index}/"
-            + f"{frame_index}_{name}_processed.{self.frame_format}",
+            os.path.join(
+                self.stream_path,
+                f"window{window_index}",
+                f"{frame_index}_{name}_processed.{self.frame_format}",
+            ),
             frame_roi,
         )
         if not saved:
-            raise FrameError("unable to save frame", window_index, frame_index, name)
+            raise FrameError(
+                "unable to save processed frame", window_index, frame_index, name
+            )
 
     def remove_frame(self, window_index, frame_index, name):
         try:
             os.remove(
-                f"{self.stream_path}/window{window_index}/"
-                + f"{frame_index}_{name}.{self.frame_format}"
+                os.path.join(
+                    self.stream_path,
+                    f"window{window_index}",
+                    f"{frame_index}_{name}.{self.frame_format}",
+                ),
             )
         except OSError:
             raise FrameError("unable to remove frame", window_index, frame_index, name)
+
+    @staticmethod
+    def is_debug():
+        return logging.root.level == logging.DEBUG
 
     @staticmethod
     def get_log_prefix(window_index, frame_index):
