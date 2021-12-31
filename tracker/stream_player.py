@@ -2,14 +2,19 @@ import logging
 import os
 import re
 from collections import defaultdict
+from datetime import datetime
 from functools import reduce
 from glob import glob
-from multiprocessing import current_process
+from multiprocessing import Event, Queue, current_process
 from pprint import pformat
+from typing import Any, Dict, List, Union
 
 import cv2
+import numpy as np
 
 from tracker.error import FrameError
+from tracker.object_detection import ObjectDetection
+from tracker.text_recognition import TextRecognition
 from tracker.utils import Dimensions, Point
 
 
@@ -18,12 +23,12 @@ class StreamPlayer:
 
     def __init__(
         self,
-        queue,
-        events,
-        stream_path,
-        frame_format,
-        text_recognition,
-        object_detection,
+        queue: Queue,
+        events: List[Event],
+        stream_path: str,
+        frame_format: str,
+        text_recognition: TextRecognition,
+        object_detection: ObjectDetection,
     ):
         self.queue = queue
         self.events = events
@@ -34,7 +39,7 @@ class StreamPlayer:
         self.log_prefix = ""
         self.session = defaultdict(list)
 
-    def play(self):
+    def play(self) -> None:
         frame_index = 0
 
         while True:
@@ -51,7 +56,7 @@ class StreamPlayer:
                 logging.warn(f"{self.log_prefix} interruption; exiting...")
                 return
 
-    def replay(self, windows):
+    def replay(self, windows: List[int]) -> None:
         raw_frame_path_pattern = re.compile(
             r"window(["
             + re.escape(",".join(windows))
@@ -81,7 +86,9 @@ class StreamPlayer:
             f"{self.log_prefix} current session dump:\n{pformat(self.session)}"
         )
 
-    def process_frame(self, frame, window_index, frame_index):
+    def process_frame(
+        self, frame: np.ndarray, window_index: int, frame_index: int
+    ) -> None:
         inverted_frame = cv2.bitwise_not(frame)
         if self.is_debug():
             self.save_frame(inverted_frame, window_index, frame_index, "full")
@@ -130,7 +137,9 @@ class StreamPlayer:
             }
         )
 
-    def process_texts(self, frame, window_index, frame_index):
+    def process_texts(
+        self, frame: np.ndarray, window_index: int, frame_index: int
+    ) -> Dict[str, Any]:
         self.text_recognition.set_frame(frame)
 
         hand_number = self.recognize_hand_number(frame, window_index, frame_index)
@@ -154,7 +163,9 @@ class StreamPlayer:
             "total_stakes": total_stakes,
         }
 
-    def process_objects(self, frame, window_index, frame_index):
+    def process_objects(
+        self, frame: np.ndarray, window_index: int, frame_index: int
+    ) -> Dict[str, Any]:
         dealer_position = self.recognize_dealer_position(
             frame, window_index, frame_index
         )
@@ -163,7 +174,9 @@ class StreamPlayer:
             "dealer_position": dealer_position,
         }
 
-    def recognize_hand_number(self, frame, window_index, frame_index):
+    def recognize_hand_number(
+        self, frame: np.ndarray, window_index: int, frame_index: int
+    ) -> int:
         point = Point(73, 24)
         dims = Dimensions(101, 15)
         hand_number = self.text_recognition.get_hand_number(point, dims)
@@ -180,7 +193,9 @@ class StreamPlayer:
 
         return hand_number
 
-    def recognize_hand_time(self, frame, window_index, frame_index):
+    def recognize_hand_time(
+        self, frame: np.ndarray, window_index: int, frame_index: int
+    ) -> datetime:
         point = Point(857, 22)
         dims = Dimensions(55, 14)
         hand_time = self.text_recognition.get_hand_time(point, dims)
@@ -197,7 +212,9 @@ class StreamPlayer:
 
         return hand_time
 
-    def recognize_total_pot(self, frame, window_index, frame_index):
+    def recognize_total_pot(
+        self, frame: np.ndarray, window_index: int, frame_index: int
+    ) -> float:
         point = Point(462, 160)
         dims = Dimensions(91, 21)
         total_pot = self.text_recognition.get_total_pot(point, dims)
@@ -214,7 +231,9 @@ class StreamPlayer:
 
         return total_pot
 
-    def recognize_seats(self, frame, window_index, frame_index):
+    def recognize_seats(
+        self, frame: np.ndarray, window_index: int, frame_index: int
+    ) -> Dict[str, Union[int, float, str]]:
         action_points = [
             Point(138, 321),
             Point(172, 100),
@@ -329,7 +348,9 @@ class StreamPlayer:
 
         return seats
 
-    def recognize_dealer_position(self, frame, window_index, frame_index):
+    def recognize_dealer_position(
+        self, frame: np.ndarray, window_index: int, frame_index: int
+    ) -> int:
         region = self.object_detection.get_dealer_region(frame)
 
         if self.is_debug():
@@ -351,8 +372,15 @@ class StreamPlayer:
         return dealer_position
 
     def save_frame(
-        self, frame, window_index, frame_index, name, *, point=None, dimensions=None
-    ):
+        self,
+        frame: np.ndarray,
+        window_index: int,
+        frame_index: int,
+        name: str,
+        *,
+        point: Point = None,
+        dimensions: Dimensions = None,
+    ) -> None:
         roi = frame
         if point and dimensions:
             x1, x2 = point.x, point.x + dimensions.width
@@ -372,7 +400,7 @@ class StreamPlayer:
                 "unable to save processed frame", window_index, frame_index, name
             )
 
-    def remove_frame(self, window_index, frame_index, name):
+    def remove_frame(self, window_index: int, frame_index: int, name: str) -> None:
         try:
             os.remove(
                 os.path.join(
@@ -385,11 +413,11 @@ class StreamPlayer:
             raise FrameError("unable to remove frame", window_index, frame_index, name)
 
     @staticmethod
-    def is_debug():
+    def is_debug() -> None:
         return logging.root.level == logging.DEBUG
 
     @staticmethod
-    def get_log_prefix(window_index, frame_index):
+    def get_log_prefix(window_index: int, frame_index: int) -> str:
         proc_name = current_process().name
         if proc_name == "MainProcess":  # no multiprocessing
             proc_name = "player"

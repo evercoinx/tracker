@@ -1,9 +1,12 @@
 import re
 from datetime import datetime
 
+import numpy as np
 from dateutil import parser as dateparser
 from PIL import Image
 from tesserocr import OEM, PSM, PyTessBaseAPI
+
+from tracker.utils import Dimensions, Point
 
 
 class TextRecognition:
@@ -17,19 +20,19 @@ class TextRecognition:
     REGEX_SINGLE_DIGIT = re.compile(r"(\d)")
     REGEX_TIME_WITH_ZONE = re.compile(r"\d{2}:\d{2}\+\d{2}")
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.tess_api = PyTessBaseAPI(psm=PSM.SINGLE_LINE, oem=OEM.LSTM_ONLY)
 
-    def __del__(self):
+    def __del__(self) -> None:
         self.tess_api.End()
 
-    def set_frame(self, frame):
+    def set_frame(self, frame: np.ndarray) -> None:
         self.tess_api.SetImage(Image.fromarray(frame))
 
-    def clear_current_frame(self):
+    def clear_current_frame(self) -> None:
         self.tess_api.Clear()
 
-    def get_hand_number(self, point, dimensions):
+    def get_hand_number(self, point: Point, dimensions: Dimensions) -> int:
         self.tess_api.SetVariable("tessedit_char_whitelist", "Hand:#0123456789")
         self.tess_api.SetRectangle(
             point.x, point.y, dimensions.width, dimensions.height
@@ -41,7 +44,7 @@ class TextRecognition:
             return 0
         return int(matches[0])
 
-    def get_hand_time(self, point, dimensions):
+    def get_hand_time(self, point: Point, dimensions: Dimensions) -> datetime:
         self.tess_api.SetVariable("tessedit_char_whitelist", ":+0123456789")
         self.tess_api.SetRectangle(
             point.x, point.y, dimensions.width, dimensions.height
@@ -53,7 +56,7 @@ class TextRecognition:
             return datetime.min
         return dateparser.parse(matches[0])
 
-    def get_total_pot(self, point, dimensions):
+    def get_total_pot(self, point: Point, dimensions: Dimensions) -> float:
         self.tess_api.SetVariable("tessedit_char_whitelist", "pot:€.0123456789")
         self.tess_api.SetRectangle(
             point.x, point.y, dimensions.width, dimensions.height
@@ -65,7 +68,7 @@ class TextRecognition:
             return 0.0
         return float(matches[0])
 
-    def get_seat_number(self, point, dimensions):
+    def get_seat_number(self, point: Point, dimensions: Dimensions) -> int:
         self.tess_api.SetVariable("tessedit_char_whitelist", "Seat123456")
         self.tess_api.SetRectangle(
             point.x, point.y, dimensions.width, dimensions.height
@@ -77,7 +80,7 @@ class TextRecognition:
             return 0
         return int(matches[0])
 
-    def get_seat_money(self, point, dimensions):
+    def get_seat_money(self, point: Point, dimensions: Dimensions) -> float:
         self.tess_api.SetVariable("tessedit_char_whitelist", "€.0123456789")
         self.tess_api.SetRectangle(
             point.x, point.y, dimensions.width, dimensions.height
@@ -89,7 +92,7 @@ class TextRecognition:
             return 0.0
         return float(matches[0])
 
-    def get_seat_action(self, point, dimensions):
+    def get_seat_action(self, point: Point, dimensions: Dimensions) -> str:
         self.tess_api.SetVariable(
             "tessedit_char_whitelist", "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
         )

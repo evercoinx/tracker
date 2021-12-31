@@ -6,14 +6,16 @@ class ValidationError(Exception):
 class FrameError(Exception):
     """Raises an error when a window frame is unable to be loaded or saved"""
 
-    def __init__(self, message, window_index, frame_index, name):
+    def __init__(
+        self, message: str, window_index: int, frame_index: int, name: str
+    ) -> None:
         super().__init__(message)
         self.message = message
         self.window_index = window_index
         self.frame_index = frame_index
         self.name = name
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"w{self.window_index}-f{self.frame_index:<5} - {self.message}"
 
 

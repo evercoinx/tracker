@@ -1,13 +1,16 @@
+from typing import List, Tuple
+
 import cv2
+import numpy as np
 
 from tracker.error import TemplateError
-from tracker.utils import Point, Region
+from tracker.utils import Dimensions, Point, Region
 
 
 class ObjectDetection:
     """Detect objects on an window frame"""
 
-    def __init__(self, template_path, template_format):
+    def __init__(self, template_path: str, template_format: str) -> None:
         self.template_path = template_path
         self.template_format = template_format
 
@@ -17,7 +20,7 @@ class ObjectDetection:
         if self.dealer_tmpl is None:
             raise TemplateError("dealer template is not found")
 
-    def get_dealer_region(self, frame):
+    def get_dealer_region(self, frame: np.ndarray) -> Region:
         result = cv2.matchTemplate(frame, self.dealer_tmpl, cv2.TM_CCOEFF_NORMED)
         max_loc = cv2.minMaxLoc(result)[3]
 
@@ -30,7 +33,9 @@ class ObjectDetection:
             end=Point(end_x, end_y),
         )
 
-    def get_point_position(self, point, dimensions, ratio):
+    def get_point_position(
+        self, point: Point, dimensions: Dimensions, ratio: Tuple
+    ) -> int:
         regions = self.split_into_regions(dimensions, ratio)
         for i, region in enumerate(regions):
             if (
@@ -41,7 +46,7 @@ class ObjectDetection:
         return -1
 
     @staticmethod
-    def split_into_regions(dimensions, ratio):
+    def split_into_regions(dimensions: Dimensions, ratio: Tuple) -> List[Region]:
         w = dimensions.width // ratio[0]
         h = dimensions.height // ratio[1]
 

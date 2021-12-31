@@ -1,6 +1,8 @@
 import logging
 import os
-from multiprocessing import current_process
+from multiprocessing import Event, current_process
+from multiprocessing.queues import Queue
+from typing import Dict, List
 
 import cv2
 import numpy as np
@@ -12,14 +14,18 @@ from tracker.error import FrameError
 class Screen:
     """Capture a window of a screen"""
 
-    def __init__(self, queue, events, stream_path, frame_format):
+    def __init__(
+        self, queue: Queue, events: List[Event], stream_path: str, frame_format: str
+    ) -> None:
         self.queue = queue
         self.events = events
         self.stream_path = stream_path
         self.frame_format = frame_format
         self.log_prefix = ""
 
-    def capture(self, display, window_coords, window_index):
+    def capture(
+        self, display: str, window_coords: List[dict], window_index: int
+    ) -> None:
         frame_index = 0
         self.log_prefix = self.get_log_prefix(window_index, frame_index)
 
@@ -57,12 +63,16 @@ class Screen:
 
     @staticmethod
     def calculate_window_coords(
-        window_indexes, screen_width, screen_height, left_margin, top_margin
-    ):
+        windows: List[int],
+        screen_width: int,
+        screen_height: int,
+        left_margin: int,
+        top_margin: int,
+    ) -> Dict[str, int]:
         window_width = screen_width // 2
         window_height = (screen_height - top_margin) // 2
 
-        windows = (
+        window_coords = (
             # top left window, index 0
             {
                 "left": left_margin,
@@ -93,8 +103,8 @@ class Screen:
             },
         )
 
-        return [windows[i] for i in window_indexes]
+        return [window_coords[i] for i in windows]
 
     @staticmethod
-    def get_log_prefix(window_index, frame_index):
+    def get_log_prefix(window_index: int, frame_index: int):
         return f"{current_process().name}-w{window_index}-f{frame_index:<5} -"

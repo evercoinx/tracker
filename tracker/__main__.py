@@ -4,6 +4,7 @@ import os
 import sys
 import traceback
 from multiprocessing import Event, Process, Queue
+from typing import Any, Dict
 
 from tracker import __version__
 from tracker.error import ValidationError
@@ -17,7 +18,7 @@ TEMPLATE_PATH = "./template"
 IMAGE_FORMAT = "png"
 
 
-def main():
+def main() -> None:
     try:
         args = validate_args(parse_args())
         if args["replay"]:
@@ -31,7 +32,7 @@ def main():
         sys.exit(1)
 
 
-def parse_args():
+def parse_args() -> Dict[str, Any]:
     ap = argparse.ArgumentParser()
     ap.add_argument(
         "--replay",
@@ -77,7 +78,7 @@ def parse_args():
     return vars(ap.parse_args())
 
 
-def validate_args(args):
+def validate_args(args: Dict[str, Any]) -> Dict[str, Any]:
     debug_env = os.environ.get("DEBUG", "0").strip()
     log_level = "DEBUG" if debug_env == "1" else "INFO"
     logging.basicConfig(
@@ -113,7 +114,7 @@ def validate_args(args):
     }
 
 
-def replay_session(args):
+def replay_session(args: Dict[str, Any]) -> None:
     object_detection = ObjectDetection(
         template_path=TEMPLATE_PATH, template_format=IMAGE_FORMAT
     )
@@ -130,7 +131,7 @@ def replay_session(args):
     player.replay(args["windows"])
 
 
-def play_session(args):
+def play_session(args: Dict[str, Any]) -> None:
     win_coords = Screen.calculate_window_coords(
         args["windows"],
         args["screen_width"],
