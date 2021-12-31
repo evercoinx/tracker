@@ -27,7 +27,7 @@ class ObjectDetection:
     def point_in_region(
         self, point, frame_width, frame_height, width_parts, height_parts
     ):
-        regions = self.split_regions(
+        regions = self.split_into_regions(
             frame_width, frame_height, width_parts, height_parts
         )
 
@@ -37,7 +37,7 @@ class ObjectDetection:
         return -1
 
     @staticmethod
-    def split_regions(frame_width, frame_height, width_parts, height_parts):
+    def split_into_regions(frame_width, frame_height, width_parts, height_parts):
         w = frame_width // width_parts
         h = frame_height // height_parts
 
