@@ -155,7 +155,9 @@ class StreamPlayer:
         }
 
     def process_objects(self, frame, window_index, frame_index):
-        dealer_position = self.recognize_dealer(frame, window_index, frame_index)
+        dealer_position = self.recognize_dealer_position(
+            frame, window_index, frame_index
+        )
 
         return {
             "dealer_position": dealer_position,
@@ -327,28 +329,26 @@ class StreamPlayer:
 
         return seats
 
-    def recognize_dealer(self, frame, window_index, frame_index):
-        (start_x, start_y, end_x, end_y) = self.object_detection.get_dealer_coords(
-            frame
-        )
+    def recognize_dealer_position(self, frame, window_index, frame_index):
+        region = self.object_detection.get_dealer_region(frame)
 
         if self.is_debug():
             dealer_frame = cv2.rectangle(
                 frame.copy(),
-                (start_x, start_y),
-                (end_x, end_y),
+                (region.start.x, region.start.y),
+                (region.end.x, region.end.y),
                 (255, 255, 255),
                 2,
             )
             self.save_frame(dealer_frame, window_index, frame_index, "dealer")
 
         (h, w) = frame.shape[:2]
-        return self.object_detection.point_in_region(
-            Point(end_x, end_y),
+        dealer_position = self.object_detection.get_point_position(
+            Point(region.end.x, region.end.y),
             Dimensions(w, h),
-            width_parts=3,
-            height_parts=2,
+            ratio=(3, 2),
         )
+        return dealer_position
 
     def save_frame(
         self, frame, window_index, frame_index, name, *, point=None, dimensions=None

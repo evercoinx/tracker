@@ -1,6 +1,7 @@
 import cv2
 
 from tracker.error import TemplateError
+from tracker.utils import Point, Region
 
 
 class ObjectDetection:
@@ -16,37 +17,46 @@ class ObjectDetection:
         if self.dealer_tmpl is None:
             raise TemplateError("dealer template is not found")
 
-    def get_dealer_coords(self, frame):
+    def get_dealer_region(self, frame):
         result = cv2.matchTemplate(frame, self.dealer_tmpl, cv2.TM_CCOEFF_NORMED)
         max_loc = cv2.minMaxLoc(result)[3]
+
         (start_x, start_y) = max_loc
         end_x = start_x + self.dealer_tmpl.shape[1]
         end_y = start_y + self.dealer_tmpl.shape[0]
-        return (start_x, start_y, end_x, end_y)
 
-    def point_in_region(self, point, dimensions, width_parts, height_parts):
-        regions = self.split_into_regions(dimensions, width_parts, height_parts)
+        return Region(
+            start=Point(start_x, start_y),
+            end=Point(end_x, end_y),
+        )
 
+    def get_point_position(self, point, dimensions, ratio):
+        regions = self.split_into_regions(dimensions, ratio)
         for i, region in enumerate(regions):
-            if region[0] < point.x < region[2] and region[1] < point.y < region[3]:
+            if (
+                region.start.x < point.x < region.end.x
+                and region.start.y < point.y < region.end.y
+            ):
                 return i
         return -1
 
     @staticmethod
-    def split_into_regions(dimensions, width_parts, height_parts):
-        w = dimensions.width // width_parts
-        h = dimensions.height // height_parts
+    def split_into_regions(dimensions, ratio):
+        w = dimensions.width // ratio[0]
+        h = dimensions.height // ratio[1]
 
-        iterations = width_parts * height_parts
+        iterations = ratio[0] * ratio[1]
         regions = []
 
         x, y = 0, 0
         for _ in range(iterations // 2):
-            regions.append((x, y, x + w, y + h))
+            r = Region(start=Point(x, y), end=Point(x + w, y + h))
+            regions.append(r)
             x += w
 
         x, y = 0, h
         for _ in range(iterations // 2):
-            regions.append((x, y, x + w, y + h))
+            r = Region(start=Point(x, y), end=Point(x + w, y + h))
+            regions.append(r)
             x += w
         return regions

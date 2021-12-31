@@ -1,7 +1,7 @@
 import unittest
 
 from tracker.object_detection import ObjectDetection
-from tracker.utils import Dimensions
+from tracker.utils import Dimensions, Point, Region
 
 
 class TestScreen(unittest.TestCase):
@@ -9,15 +9,14 @@ class TestScreen(unittest.TestCase):
         tests = [
             {
                 "dimensions": Dimensions(960, 480),
-                "width_parts": 3,
-                "height_parts": 2,
+                "ratio": (3, 2),
                 "regions": [
-                    (0, 0, 320, 240),
-                    (320, 0, 640, 240),
-                    (640, 0, 960, 240),
-                    (0, 240, 320, 480),
-                    (320, 240, 640, 480),
-                    (640, 240, 960, 480),
+                    Region(start=Point(0, 0), end=Point(320, 240)),
+                    Region(start=Point(320, 0), end=Point(640, 240)),
+                    Region(start=Point(640, 0), end=Point(960, 240)),
+                    Region(start=Point(0, 240), end=Point(320, 480)),
+                    Region(start=Point(320, 240), end=Point(640, 480)),
+                    Region(start=Point(640, 240), end=Point(960, 480)),
                 ],
             }
         ]
@@ -25,9 +24,7 @@ class TestScreen(unittest.TestCase):
         for t in tests:
             with self.subTest("split regions"):
                 regions = ObjectDetection.split_into_regions(
-                    t["dimensions"],
-                    t["width_parts"],
-                    t["height_parts"],
+                    t["dimensions"], t["ratio"]
                 )
                 self.assertListEqual(regions, t["regions"])
 
