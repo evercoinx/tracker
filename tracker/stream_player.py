@@ -10,6 +10,7 @@ from pprint import pformat
 import cv2
 
 from tracker.error import FrameError
+from tracker.utils import Dimensions, Point
 
 
 class StreamPlayer:
@@ -161,9 +162,9 @@ class StreamPlayer:
         }
 
     def recognize_hand_number(self, frame, window_index, frame_index):
-        coords = (73, 24)
-        dims = (101, 15)
-        hand_number = self.text_recognition.get_hand_number(coords, dims)
+        point = Point(73, 24)
+        dims = Dimensions(101, 15)
+        hand_number = self.text_recognition.get_hand_number(point, dims)
 
         if self.is_debug():
             self.save_frame(
@@ -171,16 +172,16 @@ class StreamPlayer:
                 window_index,
                 frame_index,
                 "hand_number",
-                coords=coords,
-                dims=dims,
+                point=point,
+                dimensions=dims,
             )
 
         return hand_number
 
     def recognize_hand_time(self, frame, window_index, frame_index):
-        coords = (857, 22)
-        dims = (55, 14)
-        hand_time = self.text_recognition.get_hand_time(coords, dims)
+        point = Point(857, 22)
+        dims = Dimensions(55, 14)
+        hand_time = self.text_recognition.get_hand_time(point, dims)
 
         if self.is_debug():
             self.save_frame(
@@ -188,16 +189,16 @@ class StreamPlayer:
                 window_index,
                 frame_index,
                 "hand_time",
-                coords=coords,
-                dims=dims,
+                point=point,
+                dimensions=dims,
             )
 
         return hand_time
 
     def recognize_total_pot(self, frame, window_index, frame_index):
-        coords = (462, 160)
-        dims = (91, 21)
-        total_pot = self.text_recognition.get_total_pot(coords, dims)
+        point = Point(462, 160)
+        dims = Dimensions(91, 21)
+        total_pot = self.text_recognition.get_total_pot(point, dims)
 
         if self.is_debug():
             self.save_frame(
@@ -205,62 +206,62 @@ class StreamPlayer:
                 window_index,
                 frame_index,
                 "total_pot",
-                coords=coords,
-                dims=dims,
+                point=point,
+                dimensions=dims,
             )
 
         return total_pot
 
     def recognize_seats(self, frame, window_index, frame_index):
-        action_coords_groups = [
-            (138, 321),
-            (172, 100),
-            (433, 68),
-            (664, 100),
-            (682, 321),
-            (431, 328),
+        action_points = [
+            Point(138, 321),
+            Point(172, 100),
+            Point(433, 68),
+            Point(664, 100),
+            Point(682, 321),
+            Point(431, 328),
         ]
-        action_dims = (119, 14)
+        action_dims = Dimensions(119, 14)
 
-        number_coords_groups = [
-            (138, 334),
-            (172, 113),
-            (433, 81),
-            (664, 113),
-            (682, 334),
-            (431, 342),
+        number_points = [
+            Point(138, 334),
+            Point(172, 113),
+            Point(433, 81),
+            Point(664, 113),
+            Point(682, 334),
+            Point(431, 342),
         ]
-        number_dims = (119, 15)
+        number_dims = Dimensions(119, 15)
 
-        balance_coords_groups = [
-            (138, 351),
-            (172, 130),
-            (433, 98),
-            (664, 130),
-            (682, 351),
-            (431, 357),
+        balance_points = [
+            Point(138, 351),
+            Point(172, 130),
+            Point(433, 98),
+            Point(664, 130),
+            Point(682, 351),
+            Point(431, 357),
         ]
-        balance_dims = (119, 16)
+        balance_dims = Dimensions(119, 16)
 
-        stake_coords_groups = [
-            (287, 288),
-            (294, 154),
-            (423, 131),
-            (602, 153),
-            (595, 290),
-            (0, 0),
+        stake_points = [
+            Point(287, 288),
+            Point(294, 154),
+            Point(423, 131),
+            Point(602, 153),
+            Point(595, 290),
+            Point(0, 0),
         ]
-        stake_dims = (56, 19)
+        stake_dims = Dimensions(56, 19)
 
         seats = []
 
-        for i in range(len(number_coords_groups)):
+        for i in range(len(number_points)):
             # last player is a hero
-            if i == len(number_coords_groups) - 1:
+            if i == len(number_points) - 1:
                 number = 9
             else:
                 number = self.text_recognition.get_seat_number(
-                    number_coords_groups[i], number_dims
+                    number_points[i], number_dims
                 )
 
             if self.is_debug():
@@ -269,8 +270,8 @@ class StreamPlayer:
                     window_index,
                     frame_index,
                     f"seat_number_{i}",
-                    coords=number_coords_groups[i],
-                    dims=number_dims,
+                    point=number_points[i],
+                    dimensions=number_dims,
                 )
 
             # if we failed to detect a seat number it is unreasonable to look for
@@ -279,7 +280,7 @@ class StreamPlayer:
                 continue
 
             action = self.text_recognition.get_seat_action(
-                action_coords_groups[i], action_dims
+                action_points[i], action_dims
             )
             if self.is_debug():
                 self.save_frame(
@@ -287,25 +288,23 @@ class StreamPlayer:
                     window_index,
                     frame_index,
                     f"seat_action_{i}",
-                    coords=action_coords_groups[i],
-                    dims=action_dims,
+                    point=action_points[i],
+                    dimensions=action_dims,
                 )
 
-            stake = self.text_recognition.get_seat_money(
-                stake_coords_groups[i], stake_dims
-            )
+            stake = self.text_recognition.get_seat_money(stake_points[i], stake_dims)
             if self.is_debug():
                 self.save_frame(
                     frame,
                     window_index,
                     frame_index,
                     f"seat_stake_{i}",
-                    coords=stake_coords_groups[i],
-                    dims=stake_dims,
+                    point=stake_points[i],
+                    dimensions=stake_dims,
                 )
 
             balance = self.text_recognition.get_seat_money(
-                balance_coords_groups[i], balance_dims
+                balance_points[i], balance_dims
             )
             if self.is_debug():
                 self.save_frame(
@@ -313,8 +312,8 @@ class StreamPlayer:
                     window_index,
                     frame_index,
                     f"seat_balance_{i}",
-                    coords=balance_coords_groups[i],
-                    dims=balance_dims,
+                    point=balance_points[i],
+                    dimensions=balance_dims,
                 )
 
             seats.append(
@@ -344,13 +343,20 @@ class StreamPlayer:
             self.save_frame(dealer_frame, window_index, frame_index, "dealer")
 
         (h, w) = frame.shape[:2]
-        return self.object_detection.point_in_region((end_x, end_y), w, h, 3, 2)
+        return self.object_detection.point_in_region(
+            Point(end_x, end_y),
+            Dimensions(w, h),
+            width_parts=3,
+            height_parts=2,
+        )
 
-    def save_frame(self, frame, window_index, frame_index, name, *, coords=(), dims=()):
+    def save_frame(
+        self, frame, window_index, frame_index, name, *, point=None, dimensions=None
+    ):
         roi = frame
-        if coords and dims:
-            x1, x2 = coords[0], coords[0] + dims[0]
-            y1, y2 = coords[1], coords[1] + dims[1]
+        if point and dimensions:
+            x1, x2 = point.x, point.x + dimensions.width
+            y1, y2 = point.y, point.y + dimensions.height
             roi = frame[y1:y2, x1:x2]
 
         saved = cv2.imwrite(

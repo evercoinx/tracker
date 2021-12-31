@@ -29,9 +29,11 @@ class TextRecognition:
     def clear_current_frame(self):
         self.tess_api.Clear()
 
-    def get_hand_number(self, coords, dims):
+    def get_hand_number(self, point, dimensions):
         self.tess_api.SetVariable("tessedit_char_whitelist", "Hand:#0123456789")
-        self.tess_api.SetRectangle(coords[0], coords[1], dims[0], dims[1])
+        self.tess_api.SetRectangle(
+            point.x, point.y, dimensions.width, dimensions.height
+        )
 
         line = self.tess_api.GetUTF8Text()
         matches = re.findall(TextRecognition.REGEX_MULTIPLE_DIGITS, line.strip())
@@ -39,9 +41,11 @@ class TextRecognition:
             return 0
         return int(matches[0])
 
-    def get_hand_time(self, coords, dims):
+    def get_hand_time(self, point, dimensions):
         self.tess_api.SetVariable("tessedit_char_whitelist", ":+0123456789")
-        self.tess_api.SetRectangle(coords[0], coords[1], dims[0], dims[1])
+        self.tess_api.SetRectangle(
+            point.x, point.y, dimensions.width, dimensions.height
+        )
 
         line = self.tess_api.GetUTF8Text()
         matches = re.findall(TextRecognition.REGEX_TIME_WITH_ZONE, line.strip())
@@ -49,9 +53,11 @@ class TextRecognition:
             return datetime.min
         return dateparser.parse(matches[0])
 
-    def get_total_pot(self, coords, dims):
+    def get_total_pot(self, point, dimensions):
         self.tess_api.SetVariable("tessedit_char_whitelist", "pot:€.0123456789")
-        self.tess_api.SetRectangle(coords[0], coords[1], dims[0], dims[1])
+        self.tess_api.SetRectangle(
+            point.x, point.y, dimensions.width, dimensions.height
+        )
 
         line = self.tess_api.GetUTF8Text()
         matches = re.findall(TextRecognition.REGEX_MONEY, line.strip())
@@ -59,9 +65,11 @@ class TextRecognition:
             return 0.0
         return float(matches[0])
 
-    def get_seat_number(self, coords, dims):
+    def get_seat_number(self, point, dimensions):
         self.tess_api.SetVariable("tessedit_char_whitelist", "Seat123456")
-        self.tess_api.SetRectangle(coords[0], coords[1], dims[0], dims[1])
+        self.tess_api.SetRectangle(
+            point.x, point.y, dimensions.width, dimensions.height
+        )
 
         line = self.tess_api.GetUTF8Text()
         matches = re.findall(TextRecognition.REGEX_SINGLE_DIGIT, line.strip())
@@ -69,9 +77,11 @@ class TextRecognition:
             return 0
         return int(matches[0])
 
-    def get_seat_money(self, coords, dims):
+    def get_seat_money(self, point, dimensions):
         self.tess_api.SetVariable("tessedit_char_whitelist", "€.0123456789")
-        self.tess_api.SetRectangle(coords[0], coords[1], dims[0], dims[1])
+        self.tess_api.SetRectangle(
+            point.x, point.y, dimensions.width, dimensions.height
+        )
 
         line = self.tess_api.GetUTF8Text()
         matches = re.findall(TextRecognition.REGEX_MONEY, line.strip())
@@ -79,11 +89,13 @@ class TextRecognition:
             return 0.0
         return float(matches[0])
 
-    def get_seat_action(self, coords, dims):
+    def get_seat_action(self, point, dimensions):
         self.tess_api.SetVariable(
             "tessedit_char_whitelist", "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
         )
-        self.tess_api.SetRectangle(coords[0], coords[1], dims[0], dims[1])
+        self.tess_api.SetRectangle(
+            point.x, point.y, dimensions.width, dimensions.height
+        )
 
         line = self.tess_api.GetUTF8Text()
         matches = re.findall(TextRecognition.REGEX_ACTION, line.strip())

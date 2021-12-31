@@ -1,14 +1,14 @@
 import unittest
 
 from tracker.object_detection import ObjectDetection
+from tracker.utils import Dimensions
 
 
 class TestScreen(unittest.TestCase):
     def test_split_into_regions(self):
         tests = [
             {
-                "frame_width": 960,
-                "frame_height": 480,
+                "dimensions": Dimensions(960, 480),
                 "width_parts": 3,
                 "height_parts": 2,
                 "regions": [
@@ -25,8 +25,7 @@ class TestScreen(unittest.TestCase):
         for t in tests:
             with self.subTest("split regions"):
                 regions = ObjectDetection.split_into_regions(
-                    t["frame_width"],
-                    t["frame_height"],
+                    t["dimensions"],
                     t["width_parts"],
                     t["height_parts"],
                 )
