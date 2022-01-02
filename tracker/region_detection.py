@@ -1,9 +1,34 @@
+import cv2
 import numpy as np
 
+from tracker.error import TemplateError
 from tracker.utils import Point, Region
 
 
 class RegionDetection:
+    """Detects regions on an window frame"""
+
+    def __init__(self, template_path: str, template_format: str) -> None:
+        self.template_path = template_path
+        self.template_format = template_format
+
+        self.dealer_tmpl = cv2.imread(
+            f"{self.template_path}/dealer.{self.template_format}", cv2.IMREAD_UNCHANGED
+        )
+        if self.dealer_tmpl is None:
+            raise TemplateError("dealer template is not found")
+
+    def get_dealer_region(self, frame: np.ndarray) -> Region:
+        result = cv2.matchTemplate(frame, self.dealer_tmpl, cv2.TM_CCOEFF_NORMED)
+        max_loc = cv2.minMaxLoc(result)[3]
+
+        (start_x, start_y) = max_loc
+        start_point = Point(start_x, start_y)
+
+        h, w = self.dealer_tmpl.shape[:2]
+        end_point = self.calculate_end_point(start_point, w, h)
+        return Region(start=start_point, end=end_point)
+
     def get_hand_number_region(self, frame: np.ndarray) -> Region:
         return Region(
             start=Point(73, 24),

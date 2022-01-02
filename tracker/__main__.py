@@ -4,7 +4,7 @@ import os
 import sys
 import traceback
 from multiprocessing import Event, Process, Queue
-from typing import Any, Dict
+from typing import Any, Dict, List
 
 from tracker import __version__
 from tracker.error import ValidationError
@@ -116,11 +116,11 @@ def validate_args(args: Dict[str, Any]) -> Dict[str, Any]:
 
 
 def replay_session(args: Dict[str, Any]) -> None:
-    object_recognition = ObjectRecognition(
+    region_detection = RegionDetection(
         template_path=TEMPLATE_PATH, template_format=IMAGE_FORMAT
     )
-    region_detection = RegionDetection()
     text_recognition = TextRecognition()
+    object_recognition = ObjectRecognition()
 
     player = StreamPlayer(
         queue=None,
@@ -147,12 +147,11 @@ def play_session(args: Dict[str, Any]) -> None:
     queue = Queue(win_count)
     events = [Event() for _ in range(win_count)]
 
-    object_recognition = ObjectRecognition(
-        template_path=TEMPLATE_PATH,
-        template_format=IMAGE_FORMAT,
+    region_detection = RegionDetection(
+        template_path=TEMPLATE_PATH, template_format=IMAGE_FORMAT
     )
-    region_detection = RegionDetection()
     text_recognition = TextRecognition()
+    object_recognition = ObjectRecognition()
 
     player = StreamPlayer(
         queue,
@@ -164,7 +163,7 @@ def play_session(args: Dict[str, Any]) -> None:
         object_recognition=object_recognition,
     )
     screen = Screen(queue, events, stream_path=STREAM_PATH, frame_format=IMAGE_FORMAT)
-    procs = []
+    procs: List[Process] = []
 
     for (i, wc) in enumerate(win_coords):
         sp = Process(

@@ -17,7 +17,7 @@ from tracker.error import FrameError
 from tracker.object_recognition import ObjectRecognition
 from tracker.region_detection import RegionDetection
 from tracker.text_recognition import TextRecognition
-from tracker.utils import Dimensions, Point, Region
+from tracker.utils import Region
 
 
 class SeatData(TypedDict):
@@ -129,7 +129,8 @@ class StreamPlayer:
             return
 
         indent = " " * 26
-        seat_data = []
+        seat_data: List[SeatData] = []
+
         for seat in text_data["seats"]:
             seat_data.append(
                 indent
@@ -283,7 +284,7 @@ class StreamPlayer:
     def recognize_dealer_position(
         self, frame: np.ndarray, window_index: int, frame_index: int
     ) -> int:
-        region = self.object_recognition.get_dealer_region(frame)
+        region = self.region_detection.get_dealer_region(frame)
         if self.is_debug():
             dealer_frame = cv2.rectangle(
                 frame.copy(),
@@ -295,10 +296,8 @@ class StreamPlayer:
             self.save_frame(dealer_frame, window_index, frame_index, "dealer")
 
         (h, w) = frame.shape[:2]
-        return self.object_recognition.get_point_region_number(
-            Point(region.end.x, region.end.y),
-            Dimensions(w, h),
-            ratio=(3, 2),
+        return self.object_recognition.get_dealer_position(
+            region.end, width=w, height=h, ratio=(3, 2)
         )
 
     def save_frame(
