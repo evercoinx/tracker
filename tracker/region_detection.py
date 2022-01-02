@@ -1,8 +1,19 @@
+from typing import NamedTuple
+
 import cv2
 import numpy as np
 
 from tracker.error import TemplateError
-from tracker.utils import Point, Region
+
+
+class Point(NamedTuple):
+    x: int
+    y: int
+
+
+class Region(NamedTuple):
+    start: Point
+    end: Point
 
 
 class RegionDetection:

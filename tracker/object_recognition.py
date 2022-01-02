@@ -1,6 +1,6 @@
 from typing import List, Tuple
 
-from tracker.utils import Point, Region
+from tracker.region_detection import Point, Region
 
 
 class ObjectRecognition:

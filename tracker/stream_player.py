@@ -15,9 +15,8 @@ from typing_extensions import TypedDict
 
 from tracker.error import FrameError
 from tracker.object_recognition import ObjectRecognition
-from tracker.region_detection import RegionDetection
+from tracker.region_detection import Region, RegionDetection
 from tracker.text_recognition import TextRecognition
-from tracker.utils import Region
 
 
 class SeatData(TypedDict):
