@@ -16,7 +16,7 @@ from typing_extensions import TypedDict
 from tracker.error import FrameError
 from tracker.object_detection import ObjectDetection
 from tracker.text_recognition import TextRecognition
-from tracker.utils import Dimensions, Point, Region
+from tracker.utils import Dimensions, Point, Region, calculate_end_point
 
 
 class SeatData(TypedDict):
@@ -162,73 +162,19 @@ class StreamPlayer:
     ) -> TextData:
         self.text_recognition.set_frame(frame)
 
-        hand_number = self.recognize_hand_number(
-            frame,
-            window_index,
-            frame_index,
-            point=Point(73, 24),
-            dimensions=Dimensions(101, 15),
-        )
+        hand_number = self.recognize_hand_number(frame, window_index, frame_index)
         if not hand_number:
             self.remove_frame(window_index, frame_index, "raw")
             return
 
-        hand_time = self.recognize_hand_time(
-            frame,
-            window_index,
-            frame_index,
-            point=Point(857, 22),
-            dimensions=Dimensions(55, 14),
-        )
+        hand_time = self.recognize_hand_time(frame, window_index, frame_index)
 
-        total_pot = self.recognize_total_pot(
-            frame,
-            window_index,
-            frame_index,
-            point=Point(462, 160),
-            dimensions=Dimensions(91, 21),
-        )
+        total_pot = self.recognize_total_pot(frame, window_index, frame_index)
 
         seats = self.recognize_seats(
             frame,
             window_index,
             frame_index,
-            action_points=[
-                Point(138, 321),
-                Point(172, 100),
-                Point(433, 68),
-                Point(664, 100),
-                Point(682, 321),
-                Point(431, 328),
-            ],
-            action_dimensions=Dimensions(119, 14),
-            number_points=[
-                Point(138, 334),
-                Point(172, 113),
-                Point(433, 81),
-                Point(664, 113),
-                Point(682, 334),
-                Point(431, 342),
-            ],
-            number_dimensions=Dimensions(119, 15),
-            balance_points=[
-                Point(138, 351),
-                Point(172, 130),
-                Point(433, 98),
-                Point(664, 130),
-                Point(682, 351),
-                Point(431, 357),
-            ],
-            balance_dimensions=Dimensions(119, 16),
-            stake_points=[
-                Point(287, 288),
-                Point(294, 154),
-                Point(423, 131),
-                Point(602, 153),
-                Point(595, 290),
-                Point(0, 0),
-            ],
-            stake_dimensions=Dimensions(56, 19),
         )
         total_stakes = reduce(lambda accum, seat: accum + seat["stake"], seats, 0)
 
@@ -247,7 +193,7 @@ class StreamPlayer:
     ) -> ObjectData:
         region = self.object_detection.get_dealer_region(frame)
         dealer_position = self.recognize_dealer_position(
-            frame, window_index, frame_index, region=region
+            frame, window_index, frame_index, region
         )
 
         return {
@@ -255,48 +201,24 @@ class StreamPlayer:
         }
 
     def recognize_hand_number(
-        self,
-        frame: np.ndarray,
-        window_index: int,
-        frame_index: int,
-        *,
-        point: Point,
-        dimensions: Dimensions,
+        self, frame: np.ndarray, window_index: int, frame_index: int
     ) -> int:
-        hand_number = self.text_recognition.get_hand_number(point, dimensions)
+        region = Region(start=Point(73, 24), end=Point(174, 39))
+        hand_number = self.text_recognition.get_hand_number(region)
 
         if self.is_debug():
-            self.save_frame(
-                frame,
-                window_index,
-                frame_index,
-                "hand_number",
-                point=point,
-                dimensions=dimensions,
-            )
+            self.save_frame(frame, window_index, frame_index, "hand_number", region)
 
         return hand_number
 
     def recognize_hand_time(
-        self,
-        frame: np.ndarray,
-        window_index: int,
-        frame_index: int,
-        *,
-        point: Point,
-        dimensions: Dimensions,
+        self, frame: np.ndarray, window_index: int, frame_index: int
     ) -> datetime:
-        hand_time = self.text_recognition.get_hand_time(point, dimensions)
+        region = Region(start=Point(857, 22), end=Point(912, 36))
+        hand_time = self.text_recognition.get_hand_time(region)
 
         if self.is_debug():
-            self.save_frame(
-                frame,
-                window_index,
-                frame_index,
-                "hand_time",
-                point=point,
-                dimensions=dimensions,
-            )
+            self.save_frame(frame, window_index, frame_index, "hand_time", region)
 
         return hand_time
 
@@ -305,38 +227,58 @@ class StreamPlayer:
         frame: np.ndarray,
         window_index: int,
         frame_index: int,
-        point: Point,
-        dimensions: Dimensions,
     ) -> float:
-        total_pot = self.text_recognition.get_total_pot(point, dimensions)
+        region = Region(start=Point(462, 160), end=Point(553, 181))
+        total_pot = self.text_recognition.get_total_pot(region)
 
         if self.is_debug():
-            self.save_frame(
-                frame,
-                window_index,
-                frame_index,
-                "total_pot",
-                point=point,
-                dimensions=dimensions,
-            )
+            self.save_frame(frame, window_index, frame_index, "total_pot", region)
 
         return total_pot
 
     def recognize_seats(
-        self,
-        frame: np.ndarray,
-        window_index: int,
-        frame_index: int,
-        *,
-        action_points: List[Point],
-        action_dimensions: Dimensions,
-        number_points: List[Point],
-        number_dimensions: Dimensions,
-        balance_points: List[Point],
-        balance_dimensions: Dimensions,
-        stake_points: List[Point],
-        stake_dimensions: Dimensions,
+        self, frame: np.ndarray, window_index: int, frame_index: int
     ) -> List[SeatData]:
+        action_points = [
+            Point(138, 321),
+            Point(172, 100),
+            Point(433, 68),
+            Point(664, 100),
+            Point(682, 321),
+            Point(431, 328),
+        ]
+        action_dimensions = Dimensions(119, 14)
+
+        number_points = [
+            Point(138, 334),
+            Point(172, 113),
+            Point(433, 81),
+            Point(664, 113),
+            Point(682, 334),
+            Point(431, 342),
+        ]
+        number_dimensions = Dimensions(119, 15)
+
+        balance_points = [
+            Point(138, 351),
+            Point(172, 130),
+            Point(433, 98),
+            Point(664, 130),
+            Point(682, 351),
+            Point(431, 357),
+        ]
+        balance_dimensions = Dimensions(119, 16)
+
+        stake_points = [
+            Point(287, 288),
+            Point(294, 154),
+            Point(423, 131),
+            Point(602, 153),
+            Point(595, 290),
+            Point(0, 0),
+        ]
+        stake_dimensions = Dimensions(56, 19)
+
         seats = []
 
         for i in range(len(number_points)):
@@ -344,62 +286,49 @@ class StreamPlayer:
             if i == len(number_points) - 1:
                 number = 9
             else:
-                number = self.text_recognition.get_seat_number(
-                    number_points[i], number_dimensions
+                region = Region(
+                    start=number_points[i],
+                    end=calculate_end_point(number_points[i], number_dimensions),
                 )
+                number = self.text_recognition.get_seat_number(region)
 
             if self.is_debug():
                 self.save_frame(
-                    frame,
-                    window_index,
-                    frame_index,
-                    f"seat_number_{i}",
-                    point=number_points[i],
-                    dimensions=number_dimensions,
+                    frame, window_index, frame_index, f"seat_number_{i}", region
                 )
 
-            # if we failed to detect a seat number it is unreasonable to look for
-            # a balance and an action of this seat
+            # if we failed to detect a seat number it is unreasonable to look further
             if not number:
                 continue
 
-            action = self.text_recognition.get_seat_action(
-                action_points[i], action_dimensions
+            region = Region(
+                start=action_points[i],
+                end=calculate_end_point(action_points[i], action_dimensions),
             )
+            action = self.text_recognition.get_seat_action(region)
             if self.is_debug():
                 self.save_frame(
-                    frame,
-                    window_index,
-                    frame_index,
-                    f"seat_action_{i}",
-                    point=action_points[i],
-                    dimensions=action_dimensions,
+                    frame, window_index, frame_index, f"seat_action_{i}", region
                 )
 
-            stake = self.text_recognition.get_seat_money(
-                stake_points[i], stake_dimensions
+            region = Region(
+                start=stake_points[i],
+                end=calculate_end_point(stake_points[i], stake_dimensions),
             )
+            stake = self.text_recognition.get_seat_money(region)
             if self.is_debug():
                 self.save_frame(
-                    frame,
-                    window_index,
-                    frame_index,
-                    f"seat_stake_{i}",
-                    point=stake_points[i],
-                    dimensions=stake_dimensions,
+                    frame, window_index, frame_index, f"seat_stake_{i}", region
                 )
 
-            balance = self.text_recognition.get_seat_money(
-                balance_points[i], balance_dimensions
+            region = Region(
+                start=balance_points[i],
+                end=calculate_end_point(balance_points[i], balance_dimensions),
             )
+            balance = self.text_recognition.get_seat_money(region)
             if self.is_debug():
                 self.save_frame(
-                    frame,
-                    window_index,
-                    frame_index,
-                    f"seat_balance_{i}",
-                    point=balance_points[i],
-                    dimensions=balance_dimensions,
+                    frame, window_index, frame_index, f"seat_balance_{i}", region
                 )
 
             seats.append(
@@ -414,12 +343,7 @@ class StreamPlayer:
         return seats
 
     def recognize_dealer_position(
-        self,
-        frame: np.ndarray,
-        window_index: int,
-        frame_index: int,
-        *,
-        region: Region,
+        self, frame: np.ndarray, window_index: int, frame_index: int, region: Region
     ) -> int:
         if self.is_debug():
             dealer_frame = cv2.rectangle(
@@ -445,14 +369,12 @@ class StreamPlayer:
         window_index: int,
         frame_index: int,
         name: str,
-        *,
-        point: Optional[Point] = None,
-        dimensions: Optional[Dimensions] = None,
+        region: Optional[Region] = None,
     ) -> None:
         roi = frame
-        if point and dimensions:
-            x1, x2 = point.x, point.x + dimensions.width
-            y1, y2 = point.y, point.y + dimensions.height
+        if region:
+            x1, x2 = region.start.x, region.end.x
+            y1, y2 = region.start.y, region.end.y
             roi = frame[y1:y2, x1:x2]
 
         saved = cv2.imwrite(

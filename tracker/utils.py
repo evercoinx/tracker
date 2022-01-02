@@ -1,7 +1,22 @@
-from collections import namedtuple
+from typing import NamedTuple
 
-Point = namedtuple("Point", ["x", "y"])
 
-Dimensions = namedtuple("Dimensions", ["width", "height"])
+class Dimensions(NamedTuple):
+    width: int
+    height: int
 
-Region = namedtuple("Region", ["start", "end"])
+
+class Point(NamedTuple):
+    x: int
+    y: int
+
+
+class Region(NamedTuple):
+    start: Point
+    end: Point
+
+
+def calculate_end_point(start_point: Point, dimensions: Dimensions) -> Point:
+    end_x = start_point.x + dimensions.width
+    end_y = start_point.y + dimensions.height
+    return Point(end_x, end_y)
