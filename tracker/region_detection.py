@@ -3,7 +3,7 @@ import numpy as np
 from tracker.utils import Point, Region
 
 
-class TextDetection:
+class RegionDetection:
     def get_hand_number_region(self, frame: np.ndarray) -> Region:
         return Region(
             start=Point(73, 24),

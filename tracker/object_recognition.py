@@ -7,8 +7,8 @@ from tracker.error import TemplateError
 from tracker.utils import Dimensions, Point, Region
 
 
-class ObjectDetection:
-    """Detect objects on an window frame"""
+class ObjectRecognition:
+    """Recognizes objects on an window frame"""
 
     def __init__(self, template_path: str, template_format: str) -> None:
         self.template_path = template_path

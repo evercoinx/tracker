@@ -8,10 +8,10 @@ from typing import Any, Dict
 
 from tracker import __version__
 from tracker.error import ValidationError
-from tracker.object_detection import ObjectDetection
+from tracker.object_recognition import ObjectRecognition
+from tracker.region_detection import RegionDetection
 from tracker.screen import Screen
 from tracker.stream_player import StreamPlayer
-from tracker.text_detection import TextDetection
 from tracker.text_recognition import TextRecognition
 
 STREAM_PATH = "./stream"
@@ -116,10 +116,10 @@ def validate_args(args: Dict[str, Any]) -> Dict[str, Any]:
 
 
 def replay_session(args: Dict[str, Any]) -> None:
-    object_detection = ObjectDetection(
+    object_recognition = ObjectRecognition(
         template_path=TEMPLATE_PATH, template_format=IMAGE_FORMAT
     )
-    text_detection = TextDetection()
+    region_detection = RegionDetection()
     text_recognition = TextRecognition()
 
     player = StreamPlayer(
@@ -127,9 +127,9 @@ def replay_session(args: Dict[str, Any]) -> None:
         events=[],
         stream_path=STREAM_PATH,
         frame_format=IMAGE_FORMAT,
-        text_detectoin=text_detection,
+        region_detection=region_detection,
         text_recognition=text_recognition,
-        object_detection=object_detection,
+        object_recognition=object_recognition,
     )
     player.replay(args["windows"])
 
@@ -147,11 +147,11 @@ def play_session(args: Dict[str, Any]) -> None:
     queue = Queue(win_count)
     events = [Event() for _ in range(win_count)]
 
-    object_detection = ObjectDetection(
+    object_recognition = ObjectRecognition(
         template_path=TEMPLATE_PATH,
         template_format=IMAGE_FORMAT,
     )
-    text_detection = TextDetection()
+    region_detection = RegionDetection()
     text_recognition = TextRecognition()
 
     player = StreamPlayer(
@@ -159,9 +159,9 @@ def play_session(args: Dict[str, Any]) -> None:
         events,
         stream_path=STREAM_PATH,
         frame_format=IMAGE_FORMAT,
-        text_detectoin=text_detection,
+        region_detection=region_detection,
         text_recognition=text_recognition,
-        object_detection=object_detection,
+        object_recognition=object_recognition,
     )
     screen = Screen(queue, events, stream_path=STREAM_PATH, frame_format=IMAGE_FORMAT)
     procs = []

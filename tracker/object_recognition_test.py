@@ -1,6 +1,6 @@
 import unittest
 
-from tracker.object_detection import ObjectDetection
+from tracker.object_recognition import ObjectRecognition
 from tracker.utils import Dimensions, Point, Region
 
 
@@ -23,7 +23,7 @@ class TestScreen(unittest.TestCase):
 
         for t in tests:
             with self.subTest("split regions"):
-                regions = ObjectDetection.split_into_regions(
+                regions = ObjectRecognition.split_into_regions(
                     t["dimensions"], t["ratio"]
                 )
                 self.assertListEqual(regions, t["regions"])
