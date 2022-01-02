@@ -45,5 +45,8 @@ share/python-wheels/
 *.egg
 MANIFEST
 
-# Custom
-stream/table*/*.png
+# Type checking
+.pytype
+
+# Application specific
+stream/window*/*.png

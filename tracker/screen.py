@@ -1,21 +1,33 @@
 import logging
 import os
-from multiprocessing import Event, current_process
+from multiprocessing import current_process, synchronize
 from multiprocessing.queues import Queue
-from typing import Dict, List
+from typing import List
 
 import cv2
 import numpy as np
 from mss.linux import MSS as mss
+from typing_extensions import TypedDict  # pytype: disable=not-supported-yet
 
 from tracker.error import FrameError
+
+
+class WindowScreen(TypedDict):
+    left: int
+    top: int
+    width: int
+    height: int
 
 
 class Screen:
     """Capture a window of a screen"""
 
     def __init__(
-        self, queue: Queue, events: List[Event], stream_path: str, frame_format: str
+        self,
+        queue: Queue,
+        events: List[synchronize.Event],
+        stream_path: str,
+        frame_format: str,
     ) -> None:
         self.queue = queue
         self.events = events
@@ -62,13 +74,13 @@ class Screen:
                     return
 
     @staticmethod
-    def calculate_window_coords(
+    def get_window_screens(
         windows: List[int],
         screen_width: int,
         screen_height: int,
         left_margin: int,
         top_margin: int,
-    ) -> Dict[str, int]:
+    ) -> List[WindowScreen]:
         window_width = screen_width // 2
         window_height = (screen_height - top_margin) // 2
 

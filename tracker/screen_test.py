@@ -4,7 +4,7 @@ from tracker.screen import Screen
 
 
 class TestScreen(unittest.TestCase):
-    def test_calculate_window_coords(self):
+    def test_get_window_screens(self):
         tests = [
             {
                 "name": "full hd",
@@ -32,7 +32,7 @@ class TestScreen(unittest.TestCase):
 
         for t in tests:
             with self.subTest(f"calculate {t['name']} window coordinates"):
-                wc = Screen.calculate_window_coords(
+                wc = Screen.get_window_screens(
                     [0, 1, 2, 3], t["width"], t["height"], 0, 0
                 )
                 self.assertTupleEqual(tuple(wc), t["coords"])

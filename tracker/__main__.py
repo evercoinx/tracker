@@ -135,14 +135,14 @@ def replay_session(args: Dict[str, Any]) -> None:
 
 
 def play_session(args: Dict[str, Any]) -> None:
-    win_coords = Screen.calculate_window_coords(
+    win_screens = Screen.get_window_screens(
         args["windows"],
         args["screen_width"],
         args["screen_height"],
         args["left_margin"],
         args["top_margin"],
     )
-    win_count = len(win_coords)
+    win_count = len(win_screens)
 
     queue = Queue(win_count)
     events = [Event() for _ in range(win_count)]
@@ -154,8 +154,8 @@ def play_session(args: Dict[str, Any]) -> None:
     object_recognition = ObjectRecognition()
 
     player = StreamPlayer(
-        queue,
-        events,
+        queue=queue,
+        events=events,
         stream_path=STREAM_PATH,
         frame_format=IMAGE_FORMAT,
         region_detection=region_detection,
@@ -165,7 +165,7 @@ def play_session(args: Dict[str, Any]) -> None:
     screen = Screen(queue, events, stream_path=STREAM_PATH, frame_format=IMAGE_FORMAT)
     procs: List[Process] = []
 
-    for (i, wc) in enumerate(win_coords):
+    for (i, wc) in enumerate(win_screens):
         sp = Process(
             name=f"screen-{i}",
             target=screen.capture,

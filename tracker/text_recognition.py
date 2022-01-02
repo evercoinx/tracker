@@ -4,7 +4,7 @@ from datetime import datetime
 import numpy as np
 from dateutil import parser as dateparser
 from PIL import Image
-from tesserocr import OEM, PSM, PyTessBaseAPI
+from tesserocr import OEM, PSM, PyTessBaseAPI  # pytype: disable=import-error
 
 from tracker.region_detection import Region
 

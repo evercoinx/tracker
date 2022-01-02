@@ -5,13 +5,13 @@ from collections import defaultdict
 from datetime import datetime
 from functools import reduce
 from glob import glob
-from multiprocessing import Event, Queue, current_process
+from multiprocessing import Queue, current_process, synchronize
 from pprint import pformat
 from typing import List, Optional
 
 import cv2
 import numpy as np
-from typing_extensions import TypedDict
+from typing_extensions import TypedDict  # pytype: disable=not-supported-yet
 
 from tracker.error import FrameError
 from tracker.object_recognition import ObjectRecognition
@@ -46,7 +46,7 @@ class StreamPlayer:
     def __init__(
         self,
         queue: Queue,
-        events: List[Event],
+        events: List[synchronize.Event],
         stream_path: str,
         frame_format: str,
         region_detection: RegionDetection,
@@ -117,14 +117,13 @@ class StreamPlayer:
         if self.is_debug():
             self.save_frame(inverted_frame, window_index, frame_index, "full")
 
-        text_data = self.process_texts(inverted_frame, window_index, frame_index)
-        if not text_data:
-            logging.warn(f"{self.log_prefix} unable to process texts on frame")
-            return
-
-        object_data = self.process_objects(inverted_frame, window_index, frame_index)
-        if not object_data:
-            logging.warn(f"{self.log_prefix} unable to process objects on frame")
+        try:
+            text_data = self.process_texts(inverted_frame, window_index, frame_index)
+            object_data = self.process_objects(
+                inverted_frame, window_index, frame_index
+            )
+        except FrameError as err:
+            logging.warn(f"{self.log_prefix} {err}")
             return
 
         indent = " " * 26
@@ -170,7 +169,9 @@ class StreamPlayer:
         hand_number = self.recognize_hand_number(frame, window_index, frame_index)
         if not hand_number:
             self.remove_frame(window_index, frame_index, "raw")
-            return
+            raise FrameError(
+                "unable to recognize frame", window_index, frame_index, "raw"
+            )
 
         hand_time = self.recognize_hand_time(frame, window_index, frame_index)
         total_pot = self.recognize_total_pot(frame, window_index, frame_index)
@@ -180,6 +181,7 @@ class StreamPlayer:
 
         self.text_recognition.clear_current_frame()
 
+        # pytype: disable=bad-return-type
         return {
             "hand_number": hand_number,
             "hand_time": hand_time,
@@ -187,6 +189,7 @@ class StreamPlayer:
             "total_pot": total_pot,
             "total_stakes": total_stakes,
         }
+        # pytype: enable=bad-return-type
 
     def process_objects(
         self, frame: np.ndarray, window_index: int, frame_index: int
@@ -195,9 +198,11 @@ class StreamPlayer:
             frame, window_index, frame_index
         )
 
+        # pytype: disable=bad-return-type
         return {
             "dealer_position": dealer_position,
         }
+        # pytype: enable=bad-return-type
 
     def recognize_hand_number(
         self, frame: np.ndarray, window_index: int, frame_index: int

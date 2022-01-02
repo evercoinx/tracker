@@ -34,8 +34,11 @@ imports:
 lint:
 	flake8 $(SOURCE_FILES)
 
+typecheck:
+	pytype $(SOURCE_FILES)
+
 .PHONY: test
-test:
+test: typecheck
 	python -m unittest discover -s $(PKG_NAME) -p "*_test.py"
 
 installdev: sourceonly
@@ -49,10 +52,10 @@ deploy: sourceonly
 	rsync -avh --delete --exclude stream $(PKG_NAME) stream template Makefile requirements.txt requirements-prod.txt setup.py \
 		pi@$(TARGET_HOST):$(NAMESPACE)/$(PKG_NAME)
 
-play: targetonly cleanall test
+play: targetonly cleanall
 	$(PKG_NAME) --windows 0 --display $(DISPLAY) --top-margin $(SCREEN_TOP_MARGIN)
 
-play4: targetonly cleanall test
+play4: targetonly cleanall
 	$(PKG_NAME) --windows 1234 --display $(DISPLAY) --top-margin $(SCREEN_TOP_MARGIN)
 
 replay: targetonly cleanproc
