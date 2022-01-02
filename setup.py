@@ -12,7 +12,7 @@ setup(
     author_email="xyz@evercloud.io",
     url=f"https://github.com/evercoinx/{pkg_name}",
     packages=[pkg_name],
-    install_requires=["mss", "numpy", "Pillow", "tesserocr"],
+    install_requires=["mss", "numpy", "Pillow", "tesserocr", "typing_extensions"],
     python_requires=">=3.7",
     entry_points={"console_scripts": [f"{pkg_name} = {pkg_name}.__main__:main"]},
 )

@@ -33,8 +33,8 @@ class ObjectDetection:
             end=Point(end_x, end_y),
         )
 
-    def get_point_position(
-        self, point: Point, dimensions: Dimensions, ratio: Tuple
+    def get_point_region_number(
+        self, point: Point, dimensions: Dimensions, *, ratio: Tuple
     ) -> int:
         regions = self.split_into_regions(dimensions, ratio)
         for i, region in enumerate(regions):

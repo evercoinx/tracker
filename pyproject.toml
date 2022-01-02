@@ -23,7 +23,6 @@ exclude = [
     "tracker.egg-info"
 ]
 ignore = []
-venvPath = "~/.virtualenvs"
 venv = "tracker"
 pythonVersion = "3.7"
 pythonPlatform = "Linux"
@@ -31,4 +30,3 @@ executionEnvironments = [
   { root = "tracker" }
 ]
 reportMissingImports = false
-reportMissingTypeStubs = false
