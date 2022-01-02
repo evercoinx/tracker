@@ -15,8 +15,9 @@ from typing_extensions import TypedDict
 
 from tracker.error import FrameError
 from tracker.object_detection import ObjectDetection
+from tracker.text_detection import TextDetection
 from tracker.text_recognition import TextRecognition
-from tracker.utils import Dimensions, Point, Region, calculate_end_point
+from tracker.utils import Dimensions, Point, Region
 
 
 class SeatData(TypedDict):
@@ -41,12 +42,15 @@ class ObjectData(TypedDict):
 class StreamPlayer:
     """Plays a live stream or replays a saved one"""
 
+    TOTAL_SEATS = 6
+
     def __init__(
         self,
         queue: Queue,
         events: List[Event],
         stream_path: str,
         frame_format: str,
+        text_detectoin: TextDetection,
         text_recognition: TextRecognition,
         object_detection: ObjectDetection,
     ):
@@ -54,6 +58,7 @@ class StreamPlayer:
         self.events = events
         self.stream_path = stream_path
         self.frame_format = frame_format
+        self.text_detection = text_detectoin
         self.text_recognition = text_recognition
         self.object_detection = object_detection
         self.log_prefix = ""
@@ -203,93 +208,44 @@ class StreamPlayer:
     def recognize_hand_number(
         self, frame: np.ndarray, window_index: int, frame_index: int
     ) -> int:
-        region = Region(start=Point(73, 24), end=Point(174, 39))
+        region = self.text_detection.get_hand_number_region(frame)
         hand_number = self.text_recognition.get_hand_number(region)
 
         if self.is_debug():
             self.save_frame(frame, window_index, frame_index, "hand_number", region)
-
         return hand_number
 
     def recognize_hand_time(
         self, frame: np.ndarray, window_index: int, frame_index: int
     ) -> datetime:
-        region = Region(start=Point(857, 22), end=Point(912, 36))
+        region = self.text_detection.get_hand_time_region(frame)
         hand_time = self.text_recognition.get_hand_time(region)
 
         if self.is_debug():
             self.save_frame(frame, window_index, frame_index, "hand_time", region)
-
         return hand_time
 
     def recognize_total_pot(
-        self,
-        frame: np.ndarray,
-        window_index: int,
-        frame_index: int,
+        self, frame: np.ndarray, window_index: int, frame_index: int
     ) -> float:
-        region = Region(start=Point(462, 160), end=Point(553, 181))
+        region = self.text_detection.get_total_pot_region(frame)
         total_pot = self.text_recognition.get_total_pot(region)
 
         if self.is_debug():
             self.save_frame(frame, window_index, frame_index, "total_pot", region)
-
         return total_pot
 
     def recognize_seats(
         self, frame: np.ndarray, window_index: int, frame_index: int
     ) -> List[SeatData]:
-        action_points = [
-            Point(138, 321),
-            Point(172, 100),
-            Point(433, 68),
-            Point(664, 100),
-            Point(682, 321),
-            Point(431, 328),
-        ]
-        action_dimensions = Dimensions(119, 14)
-
-        number_points = [
-            Point(138, 334),
-            Point(172, 113),
-            Point(433, 81),
-            Point(664, 113),
-            Point(682, 334),
-            Point(431, 342),
-        ]
-        number_dimensions = Dimensions(119, 15)
-
-        balance_points = [
-            Point(138, 351),
-            Point(172, 130),
-            Point(433, 98),
-            Point(664, 130),
-            Point(682, 351),
-            Point(431, 357),
-        ]
-        balance_dimensions = Dimensions(119, 16)
-
-        stake_points = [
-            Point(287, 288),
-            Point(294, 154),
-            Point(423, 131),
-            Point(602, 153),
-            Point(595, 290),
-            Point(0, 0),
-        ]
-        stake_dimensions = Dimensions(56, 19)
-
         seats = []
 
-        for i in range(len(number_points)):
+        for i in range(StreamPlayer.TOTAL_SEATS):
             # last player is a hero
-            if i == len(number_points) - 1:
+            if i == StreamPlayer.TOTAL_SEATS - 1:
                 number = 9
             else:
-                region = Region(
-                    start=number_points[i],
-                    end=calculate_end_point(number_points[i], number_dimensions),
-                )
+                region = self.text_detection.get_seat_number_region(frame, i)
                 number = self.text_recognition.get_seat_number(region)
 
             if self.is_debug():
@@ -301,30 +257,21 @@ class StreamPlayer:
             if not number:
                 continue
 
-            region = Region(
-                start=action_points[i],
-                end=calculate_end_point(action_points[i], action_dimensions),
-            )
+            region = self.text_detection.get_seat_action_region(frame, i)
             action = self.text_recognition.get_seat_action(region)
             if self.is_debug():
                 self.save_frame(
                     frame, window_index, frame_index, f"seat_action_{i}", region
                 )
 
-            region = Region(
-                start=stake_points[i],
-                end=calculate_end_point(stake_points[i], stake_dimensions),
-            )
+            region = self.text_detection.get_seat_stake_region(frame, i)
             stake = self.text_recognition.get_seat_money(region)
             if self.is_debug():
                 self.save_frame(
                     frame, window_index, frame_index, f"seat_stake_{i}", region
                 )
 
-            region = Region(
-                start=balance_points[i],
-                end=calculate_end_point(balance_points[i], balance_dimensions),
-            )
+            region = self.text_detection.get_seat_balance_region(frame, i)
             balance = self.text_recognition.get_seat_money(region)
             if self.is_debug():
                 self.save_frame(

@@ -11,6 +11,7 @@ from tracker.error import ValidationError
 from tracker.object_detection import ObjectDetection
 from tracker.screen import Screen
 from tracker.stream_player import StreamPlayer
+from tracker.text_detection import TextDetection
 from tracker.text_recognition import TextRecognition
 
 STREAM_PATH = "./stream"
@@ -118,6 +119,7 @@ def replay_session(args: Dict[str, Any]) -> None:
     object_detection = ObjectDetection(
         template_path=TEMPLATE_PATH, template_format=IMAGE_FORMAT
     )
+    text_detection = TextDetection()
     text_recognition = TextRecognition()
 
     player = StreamPlayer(
@@ -125,6 +127,7 @@ def replay_session(args: Dict[str, Any]) -> None:
         events=[],
         stream_path=STREAM_PATH,
         frame_format=IMAGE_FORMAT,
+        text_detectoin=text_detection,
         text_recognition=text_recognition,
         object_detection=object_detection,
     )
@@ -145,14 +148,18 @@ def play_session(args: Dict[str, Any]) -> None:
     events = [Event() for _ in range(win_count)]
 
     object_detection = ObjectDetection(
-        template_path=TEMPLATE_PATH, template_format=IMAGE_FORMAT
+        template_path=TEMPLATE_PATH,
+        template_format=IMAGE_FORMAT,
     )
+    text_detection = TextDetection()
     text_recognition = TextRecognition()
+
     player = StreamPlayer(
         queue,
         events,
         stream_path=STREAM_PATH,
         frame_format=IMAGE_FORMAT,
+        text_detectoin=text_detection,
         text_recognition=text_recognition,
         object_detection=object_detection,
     )
