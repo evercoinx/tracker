@@ -173,7 +173,6 @@ class StreamPlayer:
             return
 
         hand_time = self.recognize_hand_time(frame, window_index, frame_index)
-
         total_pot = self.recognize_total_pot(frame, window_index, frame_index)
 
         seats = self.recognize_seats(
@@ -196,9 +195,8 @@ class StreamPlayer:
     def process_objects(
         self, frame: np.ndarray, window_index: int, frame_index: int
     ) -> ObjectData:
-        region = self.object_detection.get_dealer_region(frame)
         dealer_position = self.recognize_dealer_position(
-            frame, window_index, frame_index, region
+            frame, window_index, frame_index
         )
 
         return {
@@ -209,36 +207,33 @@ class StreamPlayer:
         self, frame: np.ndarray, window_index: int, frame_index: int
     ) -> int:
         region = self.text_detection.get_hand_number_region(frame)
-        hand_number = self.text_recognition.get_hand_number(region)
-
         if self.is_debug():
             self.save_frame(frame, window_index, frame_index, "hand_number", region)
-        return hand_number
+
+        return self.text_recognition.get_hand_number(region)
 
     def recognize_hand_time(
         self, frame: np.ndarray, window_index: int, frame_index: int
     ) -> datetime:
         region = self.text_detection.get_hand_time_region(frame)
-        hand_time = self.text_recognition.get_hand_time(region)
-
         if self.is_debug():
             self.save_frame(frame, window_index, frame_index, "hand_time", region)
-        return hand_time
+
+        return self.text_recognition.get_hand_time(region)
 
     def recognize_total_pot(
         self, frame: np.ndarray, window_index: int, frame_index: int
     ) -> float:
         region = self.text_detection.get_total_pot_region(frame)
-        total_pot = self.text_recognition.get_total_pot(region)
-
         if self.is_debug():
             self.save_frame(frame, window_index, frame_index, "total_pot", region)
-        return total_pot
+
+        return self.text_recognition.get_total_pot(region)
 
     def recognize_seats(
         self, frame: np.ndarray, window_index: int, frame_index: int
     ) -> List[SeatData]:
-        seats = []
+        seats: List[SeatData] = []
 
         for i in range(StreamPlayer.TOTAL_SEATS):
             # last player is a hero
@@ -290,8 +285,9 @@ class StreamPlayer:
         return seats
 
     def recognize_dealer_position(
-        self, frame: np.ndarray, window_index: int, frame_index: int, region: Region
+        self, frame: np.ndarray, window_index: int, frame_index: int
     ) -> int:
+        region = self.object_detection.get_dealer_region(frame)
         if self.is_debug():
             dealer_frame = cv2.rectangle(
                 frame.copy(),
@@ -303,12 +299,11 @@ class StreamPlayer:
             self.save_frame(dealer_frame, window_index, frame_index, "dealer")
 
         (h, w) = frame.shape[:2]
-        dealer_position = self.object_detection.get_point_region_number(
+        return self.object_detection.get_point_region_number(
             Point(region.end.x, region.end.y),
             Dimensions(w, h),
             ratio=(3, 2),
         )
-        return dealer_position
 
     def save_frame(
         self,
