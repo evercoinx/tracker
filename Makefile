@@ -8,6 +8,7 @@ EFFECTIVE_HOST = $(shell hostname)
 
 DISPLAY = :10.0
 SCREEN_TOP_MARGIN = 98
+STREAM_PATH=/mnt/usb1/stream
 
 all: check deploy
 
@@ -49,26 +50,26 @@ install: targetonly
 	pip install -e .
 
 deploy: sourceonly
-	rsync -avh --delete --exclude stream $(PKG_NAME) stream template Makefile requirements.txt requirements-prod.txt setup.py \
+	rsync -avh --delete $(PKG_NAME) template Makefile requirements.txt requirements-prod.txt setup.py \
 		pi@$(TARGET_HOST):$(NAMESPACE)/$(PKG_NAME)
 
 play: targetonly cleanall
-	$(PKG_NAME) --windows 0 --display $(DISPLAY) --top-margin $(SCREEN_TOP_MARGIN)
+	$(PKG_NAME) --windows 0 --display $(DISPLAY) --top-margin $(SCREEN_TOP_MARGIN) --stream-path $(STREAM_PATH)
 
 play4: targetonly cleanall
-	$(PKG_NAME) --windows 1234 --display $(DISPLAY) --top-margin $(SCREEN_TOP_MARGIN)
+	$(PKG_NAME) --windows 1234 --display $(DISPLAY) --top-margin $(SCREEN_TOP_MARGIN) --stream-path $(STREAM_PATH)
 
 replay: targetonly cleanproc
-	$(PKG_NAME) --windows 0 --replay
+	$(PKG_NAME) --windows 0 --replay --stream-path $(STREAM_PATH)
 
 replay4: targetonly cleanproc
-	$(PKG_NAME) --windows 0123 --replay
+	$(PKG_NAME) --windows 0123 --replay --stream-path $(STREAM_PATH)
 
 version: targetonly
 	$(PKG_NAME) --version
 
 cleanall:
-	rm -rf stream/window{0,1,2,3}/*
+	rm -rf $(STREAM_PATH)/window{0,1,2,3}/*
 
 cleanproc:
-	find stream -maxdepth 2 -name "*_processed.png" -type f -delete
+	find $(STREAM_PATH) -maxdepth 2 -name "*_processed.png" -type f -delete

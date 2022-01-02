@@ -96,7 +96,7 @@ class StreamPlayer:
         for path in sorted(raw_frame_paths):
             frame = cv2.imread(path, cv2.IMREAD_UNCHANGED)
             if frame is None:
-                raise FrameError(f"frame {path} is not found", -1, -1, "raw")
+                raise FrameError(f"unable to read frame path {path}", -1, -1, "raw")
 
             matches = re.findall(raw_frame_path_pattern, path)
             if not matches:
@@ -116,6 +116,8 @@ class StreamPlayer:
         inverted_frame = cv2.bitwise_not(frame)
         if self.is_debug():
             self.save_frame(inverted_frame, window_index, frame_index, "full")
+
+        self.detect_text_contours(frame, window_index, frame_index)
 
         try:
             text_data = self.process_texts(inverted_frame, window_index, frame_index)
@@ -179,7 +181,7 @@ class StreamPlayer:
         seats = self.recognize_seats(frame, window_index, frame_index)
         total_stakes = reduce(lambda accum, seat: accum + seat["stake"], seats, 0)
 
-        self.text_recognition.clear_current_frame()
+        self.text_recognition.clear_frame_results()
 
         # pytype: disable=bad-return-type
         return {
@@ -303,6 +305,51 @@ class StreamPlayer:
         return self.object_recognition.get_dealer_position(
             region.end, width=w, height=h, ratio=(3, 2)
         )
+
+    def detect_text_contours(
+        self, frame: np.ndarray, window_index: int, frame_index: int
+    ) -> None:
+        rectKernel = cv2.getStructuringElement(cv2.MORPH_RECT, (10, 5))
+        sqKernel = cv2.getStructuringElement(cv2.MORPH_RECT, (5, 5))
+
+        gray = cv2.GaussianBlur(frame, (3, 3), 0)
+        blackhat = cv2.morphologyEx(gray, cv2.MORPH_BLACKHAT, rectKernel)
+
+        gradX = cv2.Sobel(blackhat, ddepth=cv2.CV_32F, dx=1, dy=0, ksize=-1)
+        gradX = np.absolute(gradX)
+        (minVal, maxVal) = np.min(gradX), np.max(gradX)
+        gradX = (gradX - minVal) / (maxVal - minVal)
+        gradX = (gradX * 255).astype("uint8")
+
+        gradX = cv2.morphologyEx(gradX, cv2.MORPH_CLOSE, rectKernel)
+        thresh = cv2.threshold(gradX, 40, 255, cv2.THRESH_BINARY)[1]
+
+        thresh = cv2.morphologyEx(thresh, cv2.MORPH_CLOSE, sqKernel)
+        thresh = cv2.erode(thresh, None, iterations=2)
+
+        cnts = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)[0]
+
+        for i, c in enumerate(cnts):
+            (x, y, w, h) = cv2.boundingRect(c)
+            ar = w / float(h)
+            crWidth = w / float(gray.shape[1])
+
+            if ar > 0.5 and crWidth > 0.01:
+                pad_x = int((x + w) * 0.03)
+                pad_y = int((y + h) * 0.03)
+
+                (x, y) = (x - pad_x, y - pad_y)
+                (w, h) = (w + (pad_x * 2), h + (pad_y * 2))
+
+                y2 = y + h
+                x2 = x + w
+                roi = frame[y:y2, x:x2].copy()
+
+                cv2.rectangle(frame, (x, y), (x + w, y + h), (255, 255, 255), 1)
+                if self.is_debug():
+                    self.save_frame(roi, window_index, frame_index, f"contour_{i}")
+
+        self.save_frame(frame, window_index, frame_index, "countours")
 
     def save_frame(
         self,

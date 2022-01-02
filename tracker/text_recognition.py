@@ -29,7 +29,7 @@ class TextRecognition:
     def set_frame(self, frame: np.ndarray) -> None:
         self.tess_api.SetImage(Image.fromarray(frame))
 
-    def clear_current_frame(self) -> None:
+    def clear_frame_results(self) -> None:
         self.tess_api.Clear()
 
     def get_hand_number(self, region: Region) -> int:
@@ -60,7 +60,11 @@ class TextRecognition:
         matches = re.findall(TextRecognition.REGEX_TIME_WITH_ZONE, line.strip())
         if not matches:
             return datetime.min
-        return dateparser.parse(matches[0])
+
+        try:
+            return dateparser.parse(matches[0])
+        except Exception:
+            return datetime.min
 
     def get_total_pot(self, region: Region) -> float:
         self.tess_api.SetVariable("tessedit_char_whitelist", "pot:€.0123456789")

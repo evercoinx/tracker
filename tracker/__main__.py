@@ -14,7 +14,6 @@ from tracker.screen import Screen
 from tracker.stream_player import StreamPlayer
 from tracker.text_recognition import TextRecognition
 
-STREAM_PATH = "./stream"
 TEMPLATE_PATH = "./template"
 IMAGE_FORMAT = "png"
 
@@ -40,6 +39,12 @@ def parse_args() -> Dict[str, Any]:
         dest="replay",
         action="store_true",
         help="replay saved session",
+    )
+    ap.add_argument(
+        "--stream-path",
+        type=str,
+        required=True,
+        help="stream path",
     )
     ap.add_argument(
         "--display", type=str, default=":0.0", help="display number; defaults to :0.0"
@@ -125,7 +130,7 @@ def replay_session(args: Dict[str, Any]) -> None:
     player = StreamPlayer(
         queue=None,
         events=[],
-        stream_path=STREAM_PATH,
+        stream_path=args["stream_path"],
         frame_format=IMAGE_FORMAT,
         region_detection=region_detection,
         text_recognition=text_recognition,
@@ -156,13 +161,18 @@ def play_session(args: Dict[str, Any]) -> None:
     player = StreamPlayer(
         queue=queue,
         events=events,
-        stream_path=STREAM_PATH,
+        stream_path=args["stream_path"],
         frame_format=IMAGE_FORMAT,
         region_detection=region_detection,
         text_recognition=text_recognition,
         object_recognition=object_recognition,
     )
-    screen = Screen(queue, events, stream_path=STREAM_PATH, frame_format=IMAGE_FORMAT)
+    screen = Screen(
+        queue=queue,
+        events=events,
+        stream_path=args["stream_path"],
+        frame_format=IMAGE_FORMAT,
+    )
     procs: List[Process] = []
 
     for (i, wc) in enumerate(win_screens):
