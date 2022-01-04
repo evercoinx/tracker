@@ -5,28 +5,25 @@ from tracker.region_detection import Point, Region
 
 
 class TestScreen(unittest.TestCase):
-    def test_split_into_regions(self):
+    def test_get_player_regions(self):
         tests = [
             {
                 "width": 960,
-                "height": 480,
-                "ratio": (3, 2),
+                "height": 491,
                 "regions": [
-                    Region(start=Point(0, 0), end=Point(320, 240)),
-                    Region(start=Point(320, 0), end=Point(640, 240)),
-                    Region(start=Point(640, 0), end=Point(960, 240)),
-                    Region(start=Point(0, 240), end=Point(320, 480)),
-                    Region(start=Point(320, 240), end=Point(640, 480)),
-                    Region(start=Point(640, 240), end=Point(960, 480)),
+                    Region(start=Point(96, 24), end=Point(384, 220)),
+                    Region(start=Point(384, 24), end=Point(576, 220)),
+                    Region(start=Point(576, 24), end=Point(816, 220)),
+                    Region(start=Point(96, 220), end=Point(384, 392)),
+                    Region(start=Point(384, 220), end=Point(576, 392)),
+                    Region(start=Point(576, 220), end=Point(816, 392)),
                 ],
             }
         ]
 
         for t in tests:
             with self.subTest("split regions"):
-                regions = ObjectRecognition.split_into_regions(
-                    t["width"], t["height"], t["ratio"]
-                )
+                regions = ObjectRecognition.get_player_regions(t["width"], t["height"])
                 self.assertListEqual(regions, t["regions"])
 
 

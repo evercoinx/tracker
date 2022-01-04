@@ -1,4 +1,4 @@
-from typing import List, Tuple
+from typing import List
 
 from tracker.region_detection import Point, Region
 
@@ -6,41 +6,46 @@ from tracker.region_detection import Point, Region
 class ObjectRecognition:
     """Recognizes objects on an window frame"""
 
-    def get_dealer_position(
-        self, point: Point, width: int, height: int, ratio: Tuple[int]
-    ) -> int:
-        regions = self.split_into_regions(width, height, ratio)
-        for i, region in enumerate(regions):
-            if (
-                region.start.x < point.x < region.end.x
-                and region.start.y < point.y < region.end.y
-            ):
+    def get_dealer_position(self, point: Point, width: int, height: int) -> int:
+        regions = self.get_player_regions(width, height)
+        for i, r in enumerate(regions):
+            if (r.start.x < point.x < r.end.x) and (r.start.y < point.y < r.end.y):
                 return i
         return -1
 
     @staticmethod
-    def split_into_regions(width: int, height: int, ratio: Tuple[int]) -> List[Region]:
-        w = width // ratio[0]
-        h = height // ratio[1]
+    def get_player_regions(width: int, height: int) -> List[Region]:
+        percents = [
+            (0.10, 0.05),
+            (0.40, 0.45),
+            (0.40, 0.05),
+            (0.60, 0.45),
+            (0.60, 0.05),
+            (0.85, 0.45),
+            (0.10, 0.45),
+            (0.40, 0.80),
+            (0.40, 0.45),
+            (0.60, 0.80),
+            (0.60, 0.45),
+            (0.85, 0.80),
+        ]
 
-        iterations = ratio[0] * ratio[1]
         regions: List[Region] = []
+        points: List[Point] = []
+        for i, (x, y) in enumerate(percents):
+            p = ObjectRecognition.get_scaled_point(x, y, width, height)
+            points.append(p)
 
-        x, y = 0, 0
-        for _ in range(iterations // 2):
-            r = Region(
-                start=Point(x, y),
-                end=Point(x + w, y + h),
-            )
-            regions.append(r)
-            x += w
-
-        x, y = 0, h
-        for _ in range(iterations // 2):
-            r = Region(
-                start=Point(x, y),
-                end=Point(x + w, y + h),
-            )
-            regions.append(r)
-            x += w
+            if i % 2 != 0:
+                r = Region(start=points[0], end=points[1])
+                regions.append(r)
+                points = []
         return regions
+
+    @staticmethod
+    def get_scaled_point(
+        percent_x: float, percent_y: float, width: int, height: int
+    ) -> Point:
+        x = int(percent_x * width)
+        y = int(percent_y * height)
+        return Point(x, y)

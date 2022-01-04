@@ -117,7 +117,19 @@ class StreamPlayer:
         if self.is_debug():
             self.save_frame(inverted_frame, window_index, frame_index, "full")
 
-        self.detect_text_contours(frame, window_index, frame_index)
+        # self.detect_text_contours(frame, window_index, frame_index)
+
+        (h, w) = frame.shape[:2]
+        regions = self.object_recognition.get_player_regions(w, h)
+        for r in regions:
+            cv2.rectangle(
+                frame,
+                (r.start.x, r.start.y),
+                (r.end.x, r.end.y),
+                (255, 255, 255),
+                1,
+            )
+        # self.save_frame(frame, window_index, frame_index, "regions")
 
         try:
             text_data = self.process_texts(inverted_frame, window_index, frame_index)
@@ -303,7 +315,7 @@ class StreamPlayer:
 
         (h, w) = frame.shape[:2]
         return self.object_recognition.get_dealer_position(
-            region.end, width=w, height=h, ratio=(3, 2)
+            point=region.start, width=w, height=h
         )
 
     def detect_text_contours(
