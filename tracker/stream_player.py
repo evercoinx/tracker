@@ -23,6 +23,7 @@ class SeatData(TypedDict):
     action: str
     stake: float
     balance: float
+    playing: bool
 
 
 class TextData(TypedDict):
@@ -34,6 +35,7 @@ class TextData(TypedDict):
 
 class ObjectData(TypedDict):
     dealer_position: int
+    playing_seats: List[bool]
 
 
 class StreamPlayer:
@@ -91,14 +93,14 @@ class StreamPlayer:
             recursive=True,
         )
 
-        for path in sorted(raw_frame_paths):
-            frame = cv2.imread(path, cv2.IMREAD_UNCHANGED)
+        for p in sorted(raw_frame_paths):
+            frame = cv2.imread(p, cv2.IMREAD_UNCHANGED)
             if frame is None:
-                raise FrameError(f"unable to read frame path {path}", -1, -1, "raw")
+                raise FrameError(f"unable to read frame path {p}", -1, -1, "raw")
 
-            matches = re.findall(raw_frame_path_pattern, path)
+            matches = re.findall(raw_frame_path_pattern, p)
             if not matches:
-                raise FrameError(f"unable to parse frame path {path}", -1, -1, "raw")
+                raise FrameError(f"unable to parse frame path {p}", -1, -1, "raw")
 
             (window_index, frame_index) = matches[0]
             self.log_prefix = self.get_log_prefix(window_index, frame_index)
@@ -138,23 +140,31 @@ class StreamPlayer:
             logging.warn(f"{self.log_prefix} {err}")
             return
 
+        if len(text_data["seats"]) != len(object_data["playing_seats"]):
+            logging.warn("unrecognized seats are detected")
+            return
+
         indent = " " * 26
         seat_data: List[SeatData] = []
 
-        for seat in text_data["seats"]:
+        for i, s in enumerate(text_data["seats"]):
+            if s is None:
+                seat_data.append(f"{indent}{self.log_prefix} {i}: seat is out")
+                continue
+
+            playing = "yes" if object_data["playing_seats"][i] else "no"
             seat_data.append(
-                indent
-                + f"{self.log_prefix} seat {seat['number']}, "
-                + f"balance: {seat['balance']:.2f}, "
-                + f"stake: {seat['stake']:.2f}, "
-                + f"action: {seat['action']}"
+                f"{indent}{self.log_prefix} {i}: seat {s['number']}, "
+                + f"playing: {playing}, "
+                + f"balance: {s['balance']:.2f}, "
+                + f"stake: {s['stake']:.2f}, "
+                + f"action: {s['action']}"
             )
 
         logging.info(
             f"{self.log_prefix} hand number: {text_data['hand_number']} "
             + f"at {text_data['hand_time'].strftime('%H:%M%z')}\n"
-            + indent
-            + f"{self.log_prefix} total pot: {text_data['total_pot']:.2f}, "
+            + f"{indent}{self.log_prefix} total pot: {text_data['total_pot']:.2f}, "
             + f"dealer position: {object_data['dealer_position']}\n"
             + "\n".join(seat_data)
             + "\n"
@@ -204,10 +214,12 @@ class StreamPlayer:
         dealer_position = self.recognize_dealer_position(
             frame, window_index, frame_index
         )
+        playing_seats = self.recognize_playing_seats(frame, window_index, frame_index)
 
         # pytype: disable=bad-return-type
         return {
             "dealer_position": dealer_position,
+            "playing_seats": playing_seats,
         }
         # pytype: enable=bad-return-type
 
@@ -240,24 +252,19 @@ class StreamPlayer:
 
     def recognize_seats(
         self, frame: np.ndarray, window_index: int, frame_index: int
-    ) -> List[SeatData]:
-        seats: List[SeatData] = []
+    ) -> List[Optional[SeatData]]:
+        seats: List[Optional[SeatData]] = []
 
         for i in range(StreamPlayer.TOTAL_SEATS):
-            # last player is a hero
-            if i == StreamPlayer.TOTAL_SEATS - 1:
-                number = 9
-            else:
-                region = self.region_detection.get_seat_number_region(frame, i)
-                number = self.text_recognition.get_seat_number(region)
-
+            region = self.region_detection.get_seat_number_region(frame, i)
+            number = self.text_recognition.get_seat_number(region)
             if self.is_debug():
                 self.save_frame(
                     frame, window_index, frame_index, f"seat_number_{i}", region
                 )
 
-            # if we failed to detect a seat number it is unreasonable to look further
             if not number:
+                seats.append(None)
                 continue
 
             region = self.region_detection.get_seat_action_region(frame, i)
@@ -296,6 +303,9 @@ class StreamPlayer:
         self, frame: np.ndarray, window_index: int, frame_index: int
     ) -> int:
         region = self.region_detection.get_dealer_region(frame)
+        if region is None:
+            return -1
+
         if self.is_debug():
             dealer_frame = cv2.rectangle(
                 frame.copy(),
@@ -307,9 +317,27 @@ class StreamPlayer:
             self.save_frame(dealer_frame, window_index, frame_index, "dealer")
 
         (h, w) = frame.shape[:2]
-        return self.object_recognition.get_dealer_position(
-            target=region, width=w, height=h
-        )
+        return self.object_recognition.get_dealer_position(region, w, h)
+
+    def recognize_playing_seats(
+        self, frame: np.ndarray, window_index: int, frame_index: int
+    ) -> List[bool]:
+        regions = self.region_detection.get_cards_regions(frame)
+
+        if self.is_debug():
+            cards_frame = frame.copy()
+            for r in regions:
+                if r is not None:
+                    cards_frame = cv2.rectangle(
+                        cards_frame,
+                        (r.start.x, r.start.y),
+                        (r.end.x, r.end.y),
+                        (0, 0, 0),
+                        2,
+                    )
+            self.save_frame(cards_frame, window_index, frame_index, "cards")
+
+        return [r is not None for r in regions]
 
     def detect_text_contours(
         self, frame: np.ndarray, window_index: int, frame_index: int

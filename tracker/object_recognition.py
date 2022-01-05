@@ -6,7 +6,7 @@ from tracker.region_detection import Point, Region
 class ObjectRecognition:
     """Recognizes objects on an window frame"""
 
-    PLAYER_REGION_PERCENTS = [
+    PLAYER_REGION_PERCENTAGE = [
         # top left
         (0.125, 0.05),
         (0.40, 0.45),
@@ -30,12 +30,12 @@ class ObjectRecognition:
     def __init__(self) -> None:
         self.player_regions: Dict[Tuple, List[Region]] = {}
 
-    def get_dealer_position(self, target: Region, width: int, height: int) -> int:
-        regions = self.get_player_regions(width, height)
-        for i, r in enumerate(regions):
-            if self.point_in_region(
-                point=target.start, region=r
-            ) and self.point_in_region(point=target.end, region=r):
+    def get_dealer_position(self, region: Region, width: int, height: int) -> int:
+        player_regions = self.get_player_regions(width, height)
+        for i, r in enumerate(player_regions):
+            if self.point_in_region(region.start, r) and self.point_in_region(
+                region.end, r
+            ):
                 return i
         return -1
 
@@ -46,8 +46,8 @@ class ObjectRecognition:
 
         regions: List[Region] = []
         points: List[Point] = []
-        for i, (x, y) in enumerate(ObjectRecognition.PLAYER_REGION_PERCENTS):
-            p = self.get_scaled_point(x, y, width, height)
+        for i, (x, y) in enumerate(ObjectRecognition.PLAYER_REGION_PERCENTAGE):
+            p = self.get_point_by_percentage(x, y, width, height)
             points.append(p)
 
             if i % 2 != 0:
@@ -65,9 +65,12 @@ class ObjectRecognition:
         )
 
     @staticmethod
-    def get_scaled_point(
-        percent_x: float, percent_y: float, width: int, height: int
+    def get_point_by_percentage(
+        width_percentage: float,
+        height_percentage: float,
+        total_width: int,
+        total_height: int,
     ) -> Point:
-        x = int(percent_x * width)
-        y = int(percent_y * height)
+        x = int(width_percentage * total_width)
+        y = int(height_percentage * total_height)
         return Point(x, y)

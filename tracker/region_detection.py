@@ -1,4 +1,4 @@
-from typing import NamedTuple
+from typing import List, NamedTuple, Optional
 
 import cv2
 import numpy as np
@@ -19,26 +19,27 @@ class Region(NamedTuple):
 class RegionDetection:
     """Detects regions on an window frame"""
 
+    MIN_TEMPLATE_CONFIDENCE = 0.8
+
     def __init__(self, template_path: str, template_format: str) -> None:
         self.template_path = template_path
         self.template_format = template_format
 
-        self.dealer_tmpl = cv2.imread(
+        self.dealer_template = cv2.imread(
             f"{self.template_path}/dealer.{self.template_format}", cv2.IMREAD_UNCHANGED
         )
-        if self.dealer_tmpl is None:
+        if self.dealer_template is None:
             raise TemplateError("dealer template is not found")
 
-    def get_dealer_region(self, frame: np.ndarray) -> Region:
-        result = cv2.matchTemplate(frame, self.dealer_tmpl, cv2.TM_CCOEFF_NORMED)
-        max_loc = cv2.minMaxLoc(result)[3]
-
-        (start_x, start_y) = max_loc
-        start_point = Point(start_x, start_y)
-
-        h, w = self.dealer_tmpl.shape[:2]
-        end_point = Point(start_point.x + w, start_point.y + h)
-        return Region(start=start_point, end=end_point)
+        self.cards_templates: List[np.ndarray] = []
+        for i in range(6):
+            cards_template = cv2.imread(
+                f"{self.template_path}/cards_{i}.{self.template_format}",
+                cv2.IMREAD_UNCHANGED,
+            )
+            if cards_template is None:
+                raise TemplateError(f"cards template #{i} is not found")
+            self.cards_templates.append(cards_template)
 
     def get_hand_number_region(self, frame: np.ndarray) -> Region:
         return Region(
@@ -60,12 +61,12 @@ class RegionDetection:
 
     def get_seat_number_region(self, frame: np.ndarray, index: int) -> Region:
         start_points = [
-            Point(138, 334),
             Point(172, 113),
             Point(433, 81),
             Point(664, 113),
-            Point(682, 334),
+            Point(138, 334),
             Point(431, 342),
+            Point(682, 334),
         ]
         if index > len(start_points) - 1:
             raise ValueError(f"invalid seat number index: {index}")
@@ -76,12 +77,12 @@ class RegionDetection:
 
     def get_seat_action_region(self, frame: np.ndarray, index: int) -> Region:
         start_points = [
-            Point(138, 321),
             Point(172, 100),
             Point(433, 68),
             Point(664, 100),
-            Point(682, 321),
+            Point(138, 321),
             Point(431, 328),
+            Point(682, 321),
         ]
         if index > len(start_points) - 1:
             raise ValueError(f"invalid seat action index: {index}")
@@ -92,12 +93,12 @@ class RegionDetection:
 
     def get_seat_stake_region(self, frame: np.ndarray, index: int) -> Region:
         start_points = [
-            Point(287, 288),
             Point(294, 154),
             Point(423, 131),
             Point(602, 153),
-            Point(595, 290),
+            Point(287, 288),
             Point(0, 0),
+            Point(595, 290),
         ]
         if index > len(start_points) - 1:
             raise ValueError(f"invalid seat stake index: {index}")
@@ -108,12 +109,12 @@ class RegionDetection:
 
     def get_seat_balance_region(self, frame: np.ndarray, index: int) -> Region:
         start_points = [
-            Point(138, 351),
             Point(172, 130),
             Point(433, 98),
             Point(664, 130),
-            Point(682, 351),
+            Point(138, 351),
             Point(431, 357),
+            Point(682, 351),
         ]
         if index > len(start_points) - 1:
             raise ValueError(f"invalid seat balance index: {index}")
@@ -121,3 +122,39 @@ class RegionDetection:
         (w, h) = 119, 16
         end_point = Point(start_points[index].x + w, start_points[index].y + h)
         return Region(start=start_points[index], end=end_point)
+
+    def get_dealer_region(self, frame: np.ndarray) -> Optional[Region]:
+        result = cv2.matchTemplate(frame, self.dealer_template, cv2.TM_CCOEFF_NORMED)
+        _, max_val, _, max_loc = cv2.minMaxLoc(result)
+
+        if max_val < RegionDetection.MIN_TEMPLATE_CONFIDENCE:
+            return None
+
+        (start_x, start_y) = max_loc
+        start_point = Point(start_x, start_y)
+
+        h, w = self.dealer_template.shape[:2]
+        end_point = Point(start_point.x + w, start_point.y + h)
+        return Region(start=start_point, end=end_point)
+
+    def get_cards_regions(self, frame: np.ndarray) -> List[Region]:
+        regions: List[Region] = []
+
+        for tpl in self.cards_templates:
+            result = cv2.matchTemplate(frame, tpl, cv2.TM_CCOEFF_NORMED)
+            _, max_val, _, max_loc = cv2.minMaxLoc(result)
+
+            if max_val < RegionDetection.MIN_TEMPLATE_CONFIDENCE:
+                regions.append(None)
+                continue
+
+            (start_x, start_y) = max_loc
+            start_point = Point(start_x, start_y)
+
+            h, w = tpl.shape[:2]
+            end_point = Point(start_point.x + w, start_point.y + h)
+
+            r = Region(start=start_point, end=end_point)
+            regions.append(r)
+
+        return regions
