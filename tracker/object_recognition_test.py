@@ -22,8 +22,9 @@ class TestScreen(unittest.TestCase):
         ]
 
         for t in tests:
-            with self.subTest("split regions"):
-                regions = ObjectRecognition.get_player_regions(t["width"], t["height"])
+            object_recognition = ObjectRecognition()
+            with self.subTest("get player regions"):
+                regions = object_recognition.get_player_regions(t["width"], t["height"])
                 self.assertListEqual(regions, t["regions"])
 
 

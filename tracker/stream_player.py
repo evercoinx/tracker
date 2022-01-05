@@ -3,7 +3,6 @@ import os
 import re
 from collections import defaultdict
 from datetime import datetime
-from functools import reduce
 from glob import glob
 from multiprocessing import Queue, current_process, synchronize
 from pprint import pformat
@@ -29,9 +28,8 @@ class SeatData(TypedDict):
 class TextData(TypedDict):
     hand_number: int
     hand_time: datetime
-    seats: List[SeatData]
     total_pot: float
-    total_stakes: float
+    seats: List[SeatData]
 
 
 class ObjectData(TypedDict):
@@ -157,7 +155,6 @@ class StreamPlayer:
             + f"at {text_data['hand_time'].strftime('%H:%M%z')}\n"
             + indent
             + f"{self.log_prefix} total pot: {text_data['total_pot']:.2f}, "
-            + f"total stakes: {text_data['total_stakes']:.2f}, "
             + f"dealer position: {object_data['dealer_position']}\n"
             + "\n".join(seat_data)
             + "\n"
@@ -169,7 +166,6 @@ class StreamPlayer:
                 "frame_index": frame_index,
                 "hand_time": text_data["hand_time"],
                 "total_pot": text_data["total_pot"],
-                "total_stakes": text_data["total_stakes"],
                 "dealer_position": object_data["dealer_position"],
                 "seats": text_data["seats"],
             }
@@ -189,9 +185,7 @@ class StreamPlayer:
 
         hand_time = self.recognize_hand_time(frame, window_index, frame_index)
         total_pot = self.recognize_total_pot(frame, window_index, frame_index)
-
         seats = self.recognize_seats(frame, window_index, frame_index)
-        total_stakes = reduce(lambda accum, seat: accum + seat["stake"], seats, 0)
 
         self.text_recognition.clear_frame_results()
 
@@ -199,9 +193,8 @@ class StreamPlayer:
         return {
             "hand_number": hand_number,
             "hand_time": hand_time,
-            "seats": seats,
             "total_pot": total_pot,
-            "total_stakes": total_stakes,
+            "seats": seats,
         }
         # pytype: enable=bad-return-type
 
@@ -315,7 +308,7 @@ class StreamPlayer:
 
         (h, w) = frame.shape[:2]
         return self.object_recognition.get_dealer_position(
-            point=region.start, width=w, height=h
+            target=region, width=w, height=h
         )
 
     def detect_text_contours(
