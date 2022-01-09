@@ -125,21 +125,19 @@ class StreamPlayer:
     ) -> None:
         inverted_frame = cv2.bitwise_not(frame)
         if self.is_debug():
+            (h, w) = frame.shape[:2]
+            for r in self.object_recognition.get_player_regions(w, h):
+                cv2.rectangle(
+                    inverted_frame,
+                    (r.start.x, r.start.y),
+                    (r.end.x, r.end.y),
+                    (255, 255, 255),
+                    1,
+                )
             self.save_frame(inverted_frame, window_index, frame_index, "full")
 
-        # self.save_text_contours(frame, window_index, frame_index)
-
-        (h, w) = frame.shape[:2]
-        regions = self.object_recognition.get_player_regions(w, h)
-        for r in regions:
-            cv2.rectangle(
-                frame,
-                (r.start.x, r.start.y),
-                (r.end.x, r.end.y),
-                (255, 255, 255),
-                1,
-            )
-        # self.save_frame(frame, window_index, frame_index, "regions")
+        # TODO Implement automatic text contour detection
+        # self.save_text_contours(invereted_frame, window_index, frame_index)
 
         try:
             text_data = self.process_texts(inverted_frame, window_index, frame_index)
