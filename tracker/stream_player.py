@@ -155,13 +155,10 @@ class StreamPlayer:
         seat_data: List[SeatData] = []
 
         for i, s in enumerate(text_data["seats"]):
-            if s is None:
-                seat_data.append(f"{indent}{self.log_prefix} {i}: seat is out")
-                continue
-
             playing = "yes" if object_data["playing_seats"][i] else "no"
+            number = s["number"] if s["number"] != -1 else "?"
             seat_data.append(
-                f"{indent}{self.log_prefix} {i}: seat {s['number']}, "
+                f"{indent}{self.log_prefix} {i}: seat {number}, "
                 + f"playing: {playing}, "
                 + f"balance: {s['balance']:.2f}, "
                 + f"stake: {s['stake']:.2f}, "
@@ -257,7 +254,7 @@ class StreamPlayer:
 
     def get_seats(
         self, frame: np.ndarray, window_index: int, frame_index: int
-    ) -> List[Optional[SeatData]]:
+    ) -> List[SeatData]:
         seats: List[Optional[SeatData]] = []
 
         for i in range(StreamPlayer.TOTAL_SEATS):
@@ -267,10 +264,6 @@ class StreamPlayer:
                 self.save_frame(
                     frame, window_index, frame_index, f"seat_number_{i}", region
                 )
-
-            if not number:
-                seats.append(None)
-                continue
 
             region = self.object_detection.detect_seat_action(frame, i)
             action = self.text_recognition.recognize_seat_action(region)
@@ -313,7 +306,7 @@ class StreamPlayer:
         for i, r in enumerate(player_regions):
             roi = self.crop_frame(frame, r)
             region = self.object_detection.detect_dealer(roi)
-            if region is not None:
+            if region:
                 if self.is_debug():
                     dealer_frame = self.highlight_frame_region(frame.copy(), r)
                     self.save_frame(dealer_frame, window_index, frame_index, "dealer")
@@ -331,7 +324,7 @@ class StreamPlayer:
         for i, r in enumerate(player_regions):
             roi = self.crop_frame(frame, r)
             region = self.object_detection.detect_hand_card(roi, i)
-            if region is not None:
+            if region:
                 if self.is_debug():
                     playing_seats_frame = self.highlight_frame_region(frame.copy(), r)
                     self.save_frame(

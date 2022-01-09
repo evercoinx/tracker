@@ -93,7 +93,7 @@ class TextRecognition:
         line = self.tess_api.GetUTF8Text()
         matches = re.findall(TextRecognition.REGEX_SINGLE_DIGIT, line.strip())
         if not matches:
-            return 0
+            return -1
         return int(matches[0])
 
     def recognize_seat_money(self, region: Region) -> float:
