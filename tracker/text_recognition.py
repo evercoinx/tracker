@@ -20,6 +20,8 @@ class TextRecognition:
     REGEX_SINGLE_DIGIT = re.compile(r"(\d)")
     REGEX_TIME_WITH_ZONE = re.compile(r"\d{2}:\d{2}\+\d{2}")
 
+    tess_api: PyTessBaseAPI
+
     def __init__(self) -> None:
         self.tess_api = PyTessBaseAPI(psm=PSM.SINGLE_LINE, oem=OEM.LSTM_ONLY)
 
@@ -32,7 +34,7 @@ class TextRecognition:
     def clear_frame_results(self) -> None:
         self.tess_api.Clear()
 
-    def get_hand_number(self, region: Region) -> int:
+    def recognize_hand_number(self, region: Region) -> int:
         self.tess_api.SetVariable("tessedit_char_whitelist", "Hand:#0123456789")
         self.tess_api.SetRectangle(
             region.start.x,
@@ -47,7 +49,7 @@ class TextRecognition:
             return 0
         return int(matches[0])
 
-    def get_hand_time(self, region: Region) -> datetime:
+    def recognize_hand_time(self, region: Region) -> datetime:
         self.tess_api.SetVariable("tessedit_char_whitelist", ":+0123456789")
         self.tess_api.SetRectangle(
             region.start.x,
@@ -66,7 +68,7 @@ class TextRecognition:
         except Exception:
             return datetime.min
 
-    def get_total_pot(self, region: Region) -> float:
+    def recognize_total_pot(self, region: Region) -> float:
         self.tess_api.SetVariable("tessedit_char_whitelist", "pot:€.0123456789")
         self.tess_api.SetRectangle(
             region.start.x,
@@ -81,7 +83,7 @@ class TextRecognition:
             return 0.0
         return float(matches[0])
 
-    def get_seat_number(self, region: Region) -> int:
+    def recognize_seat_number(self, region: Region) -> int:
         self.tess_api.SetVariable("tessedit_char_whitelist", "Seat123456")
         self.tess_api.SetRectangle(
             region.start.x,
@@ -96,7 +98,7 @@ class TextRecognition:
             return 0
         return int(matches[0])
 
-    def get_seat_money(self, region: Region) -> float:
+    def recognize_seat_money(self, region: Region) -> float:
         self.tess_api.SetVariable("tessedit_char_whitelist", "€.0123456789")
         self.tess_api.SetRectangle(
             region.start.x,
@@ -111,7 +113,7 @@ class TextRecognition:
             return 0.0
         return float(matches[0])
 
-    def get_seat_action(self, region: Region) -> str:
+    def recognize_seat_action(self, region: Region) -> str:
         self.tess_api.SetVariable(
             "tessedit_char_whitelist", "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
         )

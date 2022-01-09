@@ -47,9 +47,9 @@ class StreamPlayer:
     events: List[synchronize.Event]
     stream_path: str
     frame_format: str
-    region_detection: ObjectDetection
-    text_recognition: TextRecognition
+    object_detection: ObjectDetection
     object_recognition: ObjectRecognition
+    text_recognition: TextRecognition
     log_prefix: str
     session: DefaultDict[int, List[Any]]
 
@@ -59,17 +59,17 @@ class StreamPlayer:
         events: List[synchronize.Event],
         stream_path: str,
         frame_format: str,
-        region_detection: ObjectDetection,
         text_recognition: TextRecognition,
+        object_detection: ObjectDetection,
         object_recognition: ObjectRecognition,
     ):
         self.queue = queue
         self.events = events
         self.stream_path = stream_path
         self.frame_format = frame_format
-        self.region_detection = region_detection
-        self.text_recognition = text_recognition
+        self.object_detection = object_detection
         self.object_recognition = object_recognition
+        self.text_recognition = text_recognition
         self.log_prefix = ""
         self.session = defaultdict(list)
 
@@ -127,7 +127,7 @@ class StreamPlayer:
         if self.is_debug():
             self.save_frame(inverted_frame, window_index, frame_index, "full")
 
-        # self.detect_text_contours(frame, window_index, frame_index)
+        # self.save_text_contours(frame, window_index, frame_index)
 
         (h, w) = frame.shape[:2]
         regions = self.object_recognition.get_player_regions(w, h)
@@ -196,16 +196,16 @@ class StreamPlayer:
     ) -> TextData:
         self.text_recognition.set_frame(frame)
 
-        hand_number = self.recognize_hand_number(frame, window_index, frame_index)
+        hand_number = self.get_hand_number(frame, window_index, frame_index)
         if not hand_number:
             self.remove_frame(window_index, frame_index, "raw")
             raise FrameError(
                 "unable to recognize frame", window_index, frame_index, "raw"
             )
 
-        hand_time = self.recognize_hand_time(frame, window_index, frame_index)
-        total_pot = self.recognize_total_pot(frame, window_index, frame_index)
-        seats = self.recognize_seats(frame, window_index, frame_index)
+        hand_time = self.get_hand_time(frame, window_index, frame_index)
+        total_pot = self.get_total_pot(frame, window_index, frame_index)
+        seats = self.get_seats(frame, window_index, frame_index)
 
         self.text_recognition.clear_frame_results()
 
@@ -221,10 +221,8 @@ class StreamPlayer:
     def process_objects(
         self, frame: np.ndarray, window_index: int, frame_index: int
     ) -> ObjectData:
-        dealer_position = self.recognize_dealer_position(
-            frame, window_index, frame_index
-        )
-        playing_seats = self.recognize_playing_seats(frame, window_index, frame_index)
+        dealer_position = self.get_dealer_position(frame, window_index, frame_index)
+        playing_seats = self.get_playing_seats(frame, window_index, frame_index)
 
         # pytype: disable=bad-return-type
         return {
@@ -233,41 +231,41 @@ class StreamPlayer:
         }
         # pytype: enable=bad-return-type
 
-    def recognize_hand_number(
+    def get_hand_number(
         self, frame: np.ndarray, window_index: int, frame_index: int
     ) -> int:
-        region = self.region_detection.detect_hand_number(frame)
+        region = self.object_detection.detect_hand_number(frame)
         if self.is_debug():
             self.save_frame(frame, window_index, frame_index, "hand_number", region)
 
-        return self.text_recognition.get_hand_number(region)
+        return self.text_recognition.recognize_hand_number(region)
 
-    def recognize_hand_time(
+    def get_hand_time(
         self, frame: np.ndarray, window_index: int, frame_index: int
     ) -> datetime:
-        region = self.region_detection.detect_hand_time(frame)
+        region = self.object_detection.detect_hand_time(frame)
         if self.is_debug():
             self.save_frame(frame, window_index, frame_index, "hand_time", region)
 
-        return self.text_recognition.get_hand_time(region)
+        return self.text_recognition.recognize_hand_time(region)
 
-    def recognize_total_pot(
+    def get_total_pot(
         self, frame: np.ndarray, window_index: int, frame_index: int
     ) -> float:
-        region = self.region_detection.detect_total_pot(frame)
+        region = self.object_detection.detect_total_pot(frame)
         if self.is_debug():
             self.save_frame(frame, window_index, frame_index, "total_pot", region)
 
-        return self.text_recognition.get_total_pot(region)
+        return self.text_recognition.recognize_total_pot(region)
 
-    def recognize_seats(
+    def get_seats(
         self, frame: np.ndarray, window_index: int, frame_index: int
     ) -> List[Optional[SeatData]]:
         seats: List[Optional[SeatData]] = []
 
         for i in range(StreamPlayer.TOTAL_SEATS):
-            region = self.region_detection.detect_seat_number(frame, i)
-            number = self.text_recognition.get_seat_number(region)
+            region = self.object_detection.detect_seat_number(frame, i)
+            number = self.text_recognition.recognize_seat_number(region)
             if self.is_debug():
                 self.save_frame(
                     frame, window_index, frame_index, f"seat_number_{i}", region
@@ -277,22 +275,22 @@ class StreamPlayer:
                 seats.append(None)
                 continue
 
-            region = self.region_detection.detect_seat_action(frame, i)
-            action = self.text_recognition.get_seat_action(region)
+            region = self.object_detection.detect_seat_action(frame, i)
+            action = self.text_recognition.recognize_seat_action(region)
             if self.is_debug():
                 self.save_frame(
                     frame, window_index, frame_index, f"seat_action_{i}", region
                 )
 
-            region = self.region_detection.detect_seat_stake(frame, i)
-            stake = self.text_recognition.get_seat_money(region)
+            region = self.object_detection.detect_seat_stake(frame, i)
+            stake = self.text_recognition.recognize_seat_money(region)
             if self.is_debug():
                 self.save_frame(
                     frame, window_index, frame_index, f"seat_stake_{i}", region
                 )
 
-            region = self.region_detection.detect_seat_balance(frame, i)
-            balance = self.text_recognition.get_seat_money(region)
+            region = self.object_detection.detect_seat_balance(frame, i)
+            balance = self.text_recognition.recognize_seat_money(region)
             if self.is_debug():
                 self.save_frame(
                     frame, window_index, frame_index, f"seat_balance_{i}", region
@@ -309,10 +307,10 @@ class StreamPlayer:
 
         return seats
 
-    def recognize_dealer_position(
+    def get_dealer_position(
         self, frame: np.ndarray, window_index: int, frame_index: int
     ) -> int:
-        region = self.region_detection.detect_dealer(frame)
+        region = self.object_detection.detect_dealer(frame)
         if region is None:
             return -1
 
@@ -327,12 +325,12 @@ class StreamPlayer:
             self.save_frame(dealer_frame, window_index, frame_index, "dealer")
 
         (h, w) = frame.shape[:2]
-        return self.object_recognition.get_dealer_position(region, w, h)
+        return self.object_recognition.recognize_dealer_position(region, w, h)
 
-    def recognize_playing_seats(
+    def get_playing_seats(
         self, frame: np.ndarray, window_index: int, frame_index: int
     ) -> List[bool]:
-        regions = self.region_detection.detect_hand_cards(frame)
+        regions = self.object_detection.detect_hand_cards(frame)
 
         if self.is_debug():
             cards_frame = frame.copy()
@@ -349,7 +347,7 @@ class StreamPlayer:
 
         return [r is not None for r in regions]
 
-    def detect_text_contours(
+    def save_text_contours(
         self, frame: np.ndarray, window_index: int, frame_index: int
     ) -> None:
         rectKernel = cv2.getStructuringElement(cv2.MORPH_RECT, (10, 5))

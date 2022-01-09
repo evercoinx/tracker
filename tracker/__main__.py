@@ -121,20 +121,20 @@ def validate_args(args: Dict[str, Any]) -> Dict[str, Any]:
 
 
 def replay_session(args: Dict[str, Any]) -> None:
-    region_detection = ObjectDetection(
+    object_detection = ObjectDetection(
         template_path=TEMPLATE_PATH, template_format=IMAGE_FORMAT
     )
-    text_recognition = TextRecognition()
     object_recognition = ObjectRecognition()
+    text_recognition = TextRecognition()
 
     player = StreamPlayer(
         queue=None,
         events=[],
         stream_path=args["stream_path"],
         frame_format=IMAGE_FORMAT,
-        region_detection=region_detection,
-        text_recognition=text_recognition,
+        object_detection=object_detection,
         object_recognition=object_recognition,
+        text_recognition=text_recognition,
     )
     player.replay(args["windows"])
 
@@ -152,7 +152,7 @@ def play_session(args: Dict[str, Any]) -> None:
     queue = Queue(win_count)
     events = [Event() for _ in range(win_count)]
 
-    region_detection = ObjectDetection(
+    object_detection = ObjectDetection(
         template_path=TEMPLATE_PATH, template_format=IMAGE_FORMAT
     )
     text_recognition = TextRecognition()
@@ -163,7 +163,7 @@ def play_session(args: Dict[str, Any]) -> None:
         events=events,
         stream_path=args["stream_path"],
         frame_format=IMAGE_FORMAT,
-        region_detection=region_detection,
+        object_detection=object_detection,
         text_recognition=text_recognition,
         object_recognition=object_recognition,
     )
