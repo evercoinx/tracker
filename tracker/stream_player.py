@@ -6,15 +6,15 @@ from datetime import datetime
 from glob import glob
 from multiprocessing import Queue, current_process, synchronize
 from pprint import pformat
-from typing import List, Optional
+from typing import Any, DefaultDict, List, Optional
 
 import cv2
 import numpy as np
 from typing_extensions import TypedDict  # pytype: disable=not-supported-yet
 
 from tracker.error import FrameError
+from tracker.object_detection import ObjectDetection, Region
 from tracker.object_recognition import ObjectRecognition
-from tracker.region_detection import Region, RegionDetection
 from tracker.text_recognition import TextRecognition
 
 
@@ -43,13 +43,23 @@ class StreamPlayer:
 
     TOTAL_SEATS = 6
 
+    queue: Queue
+    events: List[synchronize.Event]
+    stream_path: str
+    frame_format: str
+    region_detection: ObjectDetection
+    text_recognition: TextRecognition
+    object_recognition: ObjectRecognition
+    log_prefix: str
+    session: DefaultDict[int, List[Any]]
+
     def __init__(
         self,
         queue: Queue,
         events: List[synchronize.Event],
         stream_path: str,
         frame_format: str,
-        region_detection: RegionDetection,
+        region_detection: ObjectDetection,
         text_recognition: TextRecognition,
         object_recognition: ObjectRecognition,
     ):
@@ -226,7 +236,7 @@ class StreamPlayer:
     def recognize_hand_number(
         self, frame: np.ndarray, window_index: int, frame_index: int
     ) -> int:
-        region = self.region_detection.get_hand_number_region(frame)
+        region = self.region_detection.detect_hand_number(frame)
         if self.is_debug():
             self.save_frame(frame, window_index, frame_index, "hand_number", region)
 
@@ -235,7 +245,7 @@ class StreamPlayer:
     def recognize_hand_time(
         self, frame: np.ndarray, window_index: int, frame_index: int
     ) -> datetime:
-        region = self.region_detection.get_hand_time_region(frame)
+        region = self.region_detection.detect_hand_time(frame)
         if self.is_debug():
             self.save_frame(frame, window_index, frame_index, "hand_time", region)
 
@@ -244,7 +254,7 @@ class StreamPlayer:
     def recognize_total_pot(
         self, frame: np.ndarray, window_index: int, frame_index: int
     ) -> float:
-        region = self.region_detection.get_total_pot_region(frame)
+        region = self.region_detection.detect_total_pot(frame)
         if self.is_debug():
             self.save_frame(frame, window_index, frame_index, "total_pot", region)
 
@@ -256,7 +266,7 @@ class StreamPlayer:
         seats: List[Optional[SeatData]] = []
 
         for i in range(StreamPlayer.TOTAL_SEATS):
-            region = self.region_detection.get_seat_number_region(frame, i)
+            region = self.region_detection.detect_seat_number(frame, i)
             number = self.text_recognition.get_seat_number(region)
             if self.is_debug():
                 self.save_frame(
@@ -267,21 +277,21 @@ class StreamPlayer:
                 seats.append(None)
                 continue
 
-            region = self.region_detection.get_seat_action_region(frame, i)
+            region = self.region_detection.detect_seat_action(frame, i)
             action = self.text_recognition.get_seat_action(region)
             if self.is_debug():
                 self.save_frame(
                     frame, window_index, frame_index, f"seat_action_{i}", region
                 )
 
-            region = self.region_detection.get_seat_stake_region(frame, i)
+            region = self.region_detection.detect_seat_stake(frame, i)
             stake = self.text_recognition.get_seat_money(region)
             if self.is_debug():
                 self.save_frame(
                     frame, window_index, frame_index, f"seat_stake_{i}", region
                 )
 
-            region = self.region_detection.get_seat_balance_region(frame, i)
+            region = self.region_detection.detect_seat_balance(frame, i)
             balance = self.text_recognition.get_seat_money(region)
             if self.is_debug():
                 self.save_frame(
@@ -302,7 +312,7 @@ class StreamPlayer:
     def recognize_dealer_position(
         self, frame: np.ndarray, window_index: int, frame_index: int
     ) -> int:
-        region = self.region_detection.get_dealer_region(frame)
+        region = self.region_detection.detect_dealer(frame)
         if region is None:
             return -1
 
@@ -322,7 +332,7 @@ class StreamPlayer:
     def recognize_playing_seats(
         self, frame: np.ndarray, window_index: int, frame_index: int
     ) -> List[bool]:
-        regions = self.region_detection.get_cards_regions(frame)
+        regions = self.region_detection.detect_hand_cards(frame)
 
         if self.is_debug():
             cards_frame = frame.copy()

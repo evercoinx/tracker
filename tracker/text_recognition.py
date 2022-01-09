@@ -6,7 +6,7 @@ from dateutil import parser as dateparser
 from PIL import Image
 from tesserocr import OEM, PSM, PyTessBaseAPI  # pytype: disable=import-error
 
-from tracker.region_detection import Region
+from tracker.object_detection import Region
 
 
 class TextRecognition:

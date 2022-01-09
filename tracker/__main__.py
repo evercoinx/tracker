@@ -8,8 +8,8 @@ from typing import Any, Dict, List
 
 from tracker import __version__
 from tracker.error import ValidationError
+from tracker.object_detection import ObjectDetection
 from tracker.object_recognition import ObjectRecognition
-from tracker.region_detection import RegionDetection
 from tracker.screen import Screen
 from tracker.stream_player import StreamPlayer
 from tracker.text_recognition import TextRecognition
@@ -121,7 +121,7 @@ def validate_args(args: Dict[str, Any]) -> Dict[str, Any]:
 
 
 def replay_session(args: Dict[str, Any]) -> None:
-    region_detection = RegionDetection(
+    region_detection = ObjectDetection(
         template_path=TEMPLATE_PATH, template_format=IMAGE_FORMAT
     )
     text_recognition = TextRecognition()
@@ -152,7 +152,7 @@ def play_session(args: Dict[str, Any]) -> None:
     queue = Queue(win_count)
     events = [Event() for _ in range(win_count)]
 
-    region_detection = RegionDetection(
+    region_detection = ObjectDetection(
         template_path=TEMPLATE_PATH, template_format=IMAGE_FORMAT
     )
     text_recognition = TextRecognition()

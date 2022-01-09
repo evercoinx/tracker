@@ -1,7 +1,7 @@
 import unittest
 
+from tracker.object_detection import Point, Region
 from tracker.object_recognition import ObjectRecognition
-from tracker.region_detection import Point, Region
 
 
 class TestScreen(unittest.TestCase):
