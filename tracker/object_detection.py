@@ -44,14 +44,14 @@ class ObjectDetection:
 
     template_path: str
     template_format: str
-    player_regions: Dict[Tuple, List[Region]]
+    player_regions_cache: Dict[Tuple, List[Region]]
     dealer_template: np.ndarray
     hand_cards_templates: List[np.ndarray]
 
     def __init__(self, template_path: str, template_format: str) -> None:
         self.template_path = template_path
         self.template_format = template_format
-        self.player_regions: Dict[Tuple, List[Region]] = {}
+        self.player_regions_cache: Dict[Tuple, List[Region]] = {}
 
         self.dealer_template = cv2.imread(
             f"{self.template_path}/dealer.{self.template_format}", cv2.IMREAD_UNCHANGED
@@ -68,6 +68,25 @@ class ObjectDetection:
             if hand_cards_template is None:
                 raise TemplateError(f"cards template #{i} is not found")
             self.hand_cards_templates.append(hand_cards_template)
+
+    def get_player_regions(self, width: int, height: int) -> List[Region]:
+        cache_key = (width, height)
+        if cache_key in self.player_regions_cache:
+            return self.player_regions_cache[cache_key]
+
+        regions: List[Region] = []
+        points: List[Point] = []
+        for i, (x, y) in enumerate(ObjectDetection.PLAYER_REGION_PERCENTAGE):
+            p = self.get_point_by_percentage(x, y, width, height)
+            points.append(p)
+
+            if i % 2 != 0:
+                r = Region(start=points[0], end=points[1])
+                regions.append(r)
+                points = []
+
+        self.player_regions_cache[cache_key] = regions
+        return regions
 
     def detect_hand_number(self, frame: np.ndarray) -> Region:
         return Region(
@@ -152,7 +171,15 @@ class ObjectDetection:
         return Region(start=start_points[index], end=end_point)
 
     def detect_dealer(self, frame: np.ndarray) -> Optional[Region]:
-        result = cv2.matchTemplate(frame, self.dealer_template, cv2.TM_CCOEFF_NORMED)
+        return self.detect_object_by_template(frame, self.dealer_template)
+
+    def detect_hand_card(self, frame: np.ndarray, index: int) -> Optional[Region]:
+        return self.detect_object_by_template(frame, self.hand_cards_templates[index])
+
+    def detect_object_by_template(
+        self, frame: np.ndarray, template: np.ndarray
+    ) -> Optional[Region]:
+        result = cv2.matchTemplate(frame, template, cv2.TM_CCOEFF_NORMED)
         _, max_val, _, max_loc = cv2.minMaxLoc(result)
 
         if max_val < ObjectDetection.MIN_TEMPLATE_CONFIDENCE:
@@ -161,50 +188,9 @@ class ObjectDetection:
         (start_x, start_y) = max_loc
         start_point = Point(start_x, start_y)
 
-        h, w = self.dealer_template.shape[:2]
+        h, w = template.shape[:2]
         end_point = Point(start_point.x + w, start_point.y + h)
         return Region(start=start_point, end=end_point)
-
-    def detect_hand_cards(self, frame: np.ndarray) -> List[Region]:
-        regions: List[Region] = []
-
-        for tpl in self.hand_cards_templates:
-            result = cv2.matchTemplate(frame, tpl, cv2.TM_CCOEFF_NORMED)
-            _, max_val, _, max_loc = cv2.minMaxLoc(result)
-
-            if max_val < ObjectDetection.MIN_TEMPLATE_CONFIDENCE:
-                regions.append(None)
-                continue
-
-            (start_x, start_y) = max_loc
-            start_point = Point(start_x, start_y)
-
-            h, w = tpl.shape[:2]
-            end_point = Point(start_point.x + w, start_point.y + h)
-
-            r = Region(start=start_point, end=end_point)
-            regions.append(r)
-
-        return regions
-
-    def get_player_regions(self, width: int, height: int) -> List[Region]:
-        cache_key = (width, height)
-        if cache_key in self.player_regions:
-            return self.player_regions[cache_key]
-
-        regions: List[Region] = []
-        points: List[Point] = []
-        for i, (x, y) in enumerate(ObjectDetection.PLAYER_REGION_PERCENTAGE):
-            p = self.get_point_by_percentage(x, y, width, height)
-            points.append(p)
-
-            if i % 2 != 0:
-                r = Region(start=points[0], end=points[1])
-                regions.append(r)
-                points = []
-
-        self.player_regions[cache_key] = regions
-        return regions
 
     @staticmethod
     def point_in_region(point: Point, region: Region) -> bool:

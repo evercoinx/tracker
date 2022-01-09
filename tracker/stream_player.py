@@ -145,7 +145,10 @@ class StreamPlayer:
             return
 
         if len(text_data["seats"]) != len(object_data["playing_seats"]):
-            logging.warn("unrecognized seats are detected")
+            logging.warn(
+                "invalid number of seats detected: "
+                + f"{text_data['seats']} != {object_data['playing_seats']}"
+            )
             return
 
         indent = " " * 26
@@ -312,13 +315,7 @@ class StreamPlayer:
             region = self.object_detection.detect_dealer(roi)
             if region is not None:
                 if self.is_debug():
-                    dealer_frame = cv2.rectangle(
-                        frame.copy(),
-                        (r.start.x, r.start.y),
-                        (r.end.x, r.end.y),
-                        (255, 255, 255),
-                        2,
-                    )
+                    dealer_frame = self.highlight_frame_region(frame.copy(), r)
                     self.save_frame(dealer_frame, window_index, frame_index, "dealer")
                 return i
 
@@ -327,22 +324,27 @@ class StreamPlayer:
     def get_playing_seats(
         self, frame: np.ndarray, window_index: int, frame_index: int
     ) -> List[bool]:
-        regions = self.object_detection.detect_hand_cards(frame)
+        (h, w) = frame.shape[:2]
+        player_regions = self.object_detection.get_player_regions(w, h)
 
-        if self.is_debug():
-            cards_frame = frame.copy()
-            for r in regions:
-                if r is not None:
-                    cards_frame = cv2.rectangle(
-                        cards_frame,
-                        (r.start.x, r.start.y),
-                        (r.end.x, r.end.y),
-                        (0, 0, 0),
-                        2,
+        playing_seats: List[bool] = []
+        for i, r in enumerate(player_regions):
+            roi = self.crop_frame(frame, r)
+            region = self.object_detection.detect_hand_card(roi, i)
+            if region is not None:
+                if self.is_debug():
+                    playing_seats_frame = self.highlight_frame_region(frame.copy(), r)
+                    self.save_frame(
+                        playing_seats_frame,
+                        window_index,
+                        frame_index,
+                        f"hand_cards_{i}",
                     )
-            self.save_frame(cards_frame, window_index, frame_index, "cards")
+                playing_seats.append(True)
+            else:
+                playing_seats.append(False)
 
-        return [r is not None for r in regions]
+        return playing_seats
 
     def save_text_contours(
         self, frame: np.ndarray, window_index: int, frame_index: int
@@ -397,14 +399,14 @@ class StreamPlayer:
         name: str,
         region: Optional[Region] = None,
     ) -> None:
-        cropped_frame = self.crop_frame(frame, region) if region else frame
+        roi = self.crop_frame(frame, region) if region else frame
         saved = cv2.imwrite(
             os.path.join(
                 self.stream_path,
                 f"window{window_index}",
                 f"{frame_index}_{name}_processed.{self.frame_format}",
             ),
-            cropped_frame,
+            roi,
         )
         if not saved:
             raise FrameError(
@@ -428,6 +430,17 @@ class StreamPlayer:
         x1, x2 = region.start.x, region.end.x
         y1, y2 = region.start.y, region.end.y
         return frame[y1:y2, x1:x2]
+
+    @staticmethod
+    def highlight_frame_region(frame: np.ndarray, region: Region) -> np.ndarray:
+        color = (255, 255, 255)
+        return cv2.rectangle(
+            frame,
+            (region.start.x, region.start.y),
+            (region.end.x, region.end.y),
+            color,
+            2,
+        )
 
     @staticmethod
     def is_debug() -> bool:
