@@ -14,7 +14,6 @@ from typing_extensions import TypedDict  # pytype: disable=not-supported-yet
 
 from tracker.error import FrameError
 from tracker.object_detection import ObjectDetection, Region
-from tracker.object_recognition import ObjectRecognition
 from tracker.text_recognition import TextRecognition
 
 
@@ -47,9 +46,8 @@ class StreamPlayer:
     events: List[synchronize.Event]
     stream_path: str
     frame_format: str
-    object_detection: ObjectDetection
-    object_recognition: ObjectRecognition
     text_recognition: TextRecognition
+    object_detection: ObjectDetection
     log_prefix: str
     session: DefaultDict[int, List[Any]]
 
@@ -61,15 +59,13 @@ class StreamPlayer:
         frame_format: str,
         text_recognition: TextRecognition,
         object_detection: ObjectDetection,
-        object_recognition: ObjectRecognition,
     ):
         self.queue = queue
         self.events = events
         self.stream_path = stream_path
         self.frame_format = frame_format
-        self.object_detection = object_detection
-        self.object_recognition = object_recognition
         self.text_recognition = text_recognition
+        self.object_detection = object_detection
         self.log_prefix = ""
         self.session = defaultdict(list)
 
@@ -126,7 +122,7 @@ class StreamPlayer:
         inverted_frame = cv2.bitwise_not(frame)
         if self.is_debug():
             (h, w) = frame.shape[:2]
-            for r in self.object_recognition.get_player_regions(w, h):
+            for r in self.object_detection.get_player_regions(w, h):
                 cv2.rectangle(
                     inverted_frame,
                     (r.start.x, r.start.y),
@@ -308,22 +304,25 @@ class StreamPlayer:
     def get_dealer_position(
         self, frame: np.ndarray, window_index: int, frame_index: int
     ) -> int:
-        region = self.object_detection.detect_dealer(frame)
-        if region is None:
-            return -1
-
-        if self.is_debug():
-            dealer_frame = cv2.rectangle(
-                frame.copy(),
-                (region.start.x, region.start.y),
-                (region.end.x, region.end.y),
-                (255, 255, 255),
-                2,
-            )
-            self.save_frame(dealer_frame, window_index, frame_index, "dealer")
-
         (h, w) = frame.shape[:2]
-        return self.object_recognition.recognize_dealer_position(region, w, h)
+        player_regions = self.object_detection.get_player_regions(w, h)
+
+        for i, r in enumerate(player_regions):
+            roi = self.crop_frame(frame, r)
+            region = self.object_detection.detect_dealer(roi)
+            if region is not None:
+                if self.is_debug():
+                    dealer_frame = cv2.rectangle(
+                        frame.copy(),
+                        (r.start.x, r.start.y),
+                        (r.end.x, r.end.y),
+                        (255, 255, 255),
+                        2,
+                    )
+                    self.save_frame(dealer_frame, window_index, frame_index, "dealer")
+                return i
+
+        return -1
 
     def get_playing_seats(
         self, frame: np.ndarray, window_index: int, frame_index: int
@@ -398,19 +397,14 @@ class StreamPlayer:
         name: str,
         region: Optional[Region] = None,
     ) -> None:
-        roi = frame
-        if region:
-            x1, x2 = region.start.x, region.end.x
-            y1, y2 = region.start.y, region.end.y
-            roi = frame[y1:y2, x1:x2]
-
+        cropped_frame = self.crop_frame(frame, region) if region else frame
         saved = cv2.imwrite(
             os.path.join(
                 self.stream_path,
                 f"window{window_index}",
                 f"{frame_index}_{name}_processed.{self.frame_format}",
             ),
-            roi,
+            cropped_frame,
         )
         if not saved:
             raise FrameError(
@@ -428,6 +422,12 @@ class StreamPlayer:
             )
         except OSError:
             raise FrameError("unable to remove frame", window_index, frame_index, name)
+
+    @staticmethod
+    def crop_frame(frame: np.ndarray, region: Region) -> np.ndarray:
+        x1, x2 = region.start.x, region.end.x
+        y1, y2 = region.start.y, region.end.y
+        return frame[y1:y2, x1:x2]
 
     @staticmethod
     def is_debug() -> bool:

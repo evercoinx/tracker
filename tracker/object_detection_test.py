@@ -1,7 +1,6 @@
 import unittest
 
-from tracker.object_detection import Point, Region
-from tracker.object_recognition import ObjectRecognition
+from tracker.object_detection import ObjectDetection, Point, Region
 
 
 class TestScreen(unittest.TestCase):
@@ -22,9 +21,9 @@ class TestScreen(unittest.TestCase):
         ]
 
         for t in tests:
-            object_recognition = ObjectRecognition()
+            od = ObjectDetection()
             with self.subTest("get player regions"):
-                regions = object_recognition.get_player_regions(t["width"], t["height"])
+                regions = od.get_player_regions(t["width"], t["height"])
                 self.assertListEqual(regions, t["regions"])
 
 

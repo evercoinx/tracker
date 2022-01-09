@@ -1,4 +1,4 @@
-from typing import List, NamedTuple, Optional
+from typing import Dict, List, NamedTuple, Optional, Tuple
 
 import cv2
 import numpy as np
@@ -19,16 +19,39 @@ class Region(NamedTuple):
 class ObjectDetection:
     """Detects object regions on an window frame"""
 
+    PLAYER_REGION_PERCENTAGE = [
+        # top left
+        (0.125, 0.05),
+        (0.40, 0.45),
+        # top middle
+        (0.40, 0.05),
+        (0.60, 0.45),
+        # top right
+        (0.60, 0.05),
+        (0.85, 0.45),
+        # bottom left
+        (0.125, 0.45),
+        (0.40, 0.80),
+        # bottom middle
+        (0.40, 0.45),
+        (0.60, 0.80),
+        # bottom right
+        (0.60, 0.45),
+        (0.85, 0.80),
+    ]
+
     MIN_TEMPLATE_CONFIDENCE = 0.8
 
     template_path: str
     template_format: str
+    player_regions: Dict[Tuple, List[Region]]
     dealer_template: np.ndarray
     hand_cards_templates: List[np.ndarray]
 
     def __init__(self, template_path: str, template_format: str) -> None:
         self.template_path = template_path
         self.template_format = template_format
+        self.player_regions: Dict[Tuple, List[Region]] = {}
 
         self.dealer_template = cv2.imread(
             f"{self.template_path}/dealer.{self.template_format}", cv2.IMREAD_UNCHANGED
@@ -163,3 +186,39 @@ class ObjectDetection:
             regions.append(r)
 
         return regions
+
+    def get_player_regions(self, width: int, height: int) -> List[Region]:
+        cache_key = (width, height)
+        if cache_key in self.player_regions:
+            return self.player_regions[cache_key]
+
+        regions: List[Region] = []
+        points: List[Point] = []
+        for i, (x, y) in enumerate(ObjectDetection.PLAYER_REGION_PERCENTAGE):
+            p = self.get_point_by_percentage(x, y, width, height)
+            points.append(p)
+
+            if i % 2 != 0:
+                r = Region(start=points[0], end=points[1])
+                regions.append(r)
+                points = []
+
+        self.player_regions[cache_key] = regions
+        return regions
+
+    @staticmethod
+    def point_in_region(point: Point, region: Region) -> bool:
+        return (region.start.x < point.x < region.end.x) and (
+            region.start.y < point.y < region.end.y
+        )
+
+    @staticmethod
+    def get_point_by_percentage(
+        width_percentage: float,
+        height_percentage: float,
+        total_width: int,
+        total_height: int,
+    ) -> Point:
+        x = int(width_percentage * total_width)
+        y = int(height_percentage * total_height)
+        return Point(x, y)

@@ -9,7 +9,6 @@ from typing import Any, Dict, List
 from tracker import __version__
 from tracker.error import ValidationError
 from tracker.object_detection import ObjectDetection
-from tracker.object_recognition import ObjectRecognition
 from tracker.screen import Screen
 from tracker.stream_player import StreamPlayer
 from tracker.text_recognition import TextRecognition
@@ -121,20 +120,16 @@ def validate_args(args: Dict[str, Any]) -> Dict[str, Any]:
 
 
 def replay_session(args: Dict[str, Any]) -> None:
-    object_detection = ObjectDetection(
-        template_path=TEMPLATE_PATH, template_format=IMAGE_FORMAT
-    )
-    object_recognition = ObjectRecognition()
-    text_recognition = TextRecognition()
+    tr = TextRecognition()
+    od = ObjectDetection(template_path=TEMPLATE_PATH, template_format=IMAGE_FORMAT)
 
     player = StreamPlayer(
         queue=None,
         events=[],
         stream_path=args["stream_path"],
         frame_format=IMAGE_FORMAT,
-        object_detection=object_detection,
-        object_recognition=object_recognition,
-        text_recognition=text_recognition,
+        text_recognition=tr,
+        object_detection=od,
     )
     player.replay(args["windows"])
 
@@ -152,29 +147,25 @@ def play_session(args: Dict[str, Any]) -> None:
     queue = Queue(win_count)
     events = [Event() for _ in range(win_count)]
 
-    object_detection = ObjectDetection(
-        template_path=TEMPLATE_PATH, template_format=IMAGE_FORMAT
-    )
-    text_recognition = TextRecognition()
-    object_recognition = ObjectRecognition()
-
+    tr = TextRecognition()
+    od = ObjectDetection(template_path=TEMPLATE_PATH, template_format=IMAGE_FORMAT)
     player = StreamPlayer(
         queue=queue,
         events=events,
         stream_path=args["stream_path"],
         frame_format=IMAGE_FORMAT,
-        object_detection=object_detection,
-        text_recognition=text_recognition,
-        object_recognition=object_recognition,
+        text_recognition=tr,
+        object_detection=od,
     )
+
     screen = Screen(
         queue=queue,
         events=events,
         stream_path=args["stream_path"],
         frame_format=IMAGE_FORMAT,
     )
-    procs: List[Process] = []
 
+    procs: List[Process] = []
     for (i, wc) in enumerate(win_screens):
         sp = Process(
             name=f"screen-{i}",
