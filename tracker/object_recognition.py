@@ -30,7 +30,7 @@ class ObjectRecognition:
     def __init__(self) -> None:
         self.player_regions: Dict[Tuple, List[Region]] = {}
 
-    def get_dealer_position(self, region: Region, width: int, height: int) -> int:
+    def recognize_dealer_position(self, region: Region, width: int, height: int) -> int:
         player_regions = self.get_player_regions(width, height)
         for i, r in enumerate(player_regions):
             if self.point_in_region(region.start, r) and self.point_in_region(

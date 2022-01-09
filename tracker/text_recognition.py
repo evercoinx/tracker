@@ -20,8 +20,6 @@ class TextRecognition:
     REGEX_SINGLE_DIGIT = re.compile(r"(\d)")
     REGEX_TIME_WITH_ZONE = re.compile(r"\d{2}:\d{2}\+\d{2}")
 
-    tess_api: PyTessBaseAPI
-
     def __init__(self) -> None:
         self.tess_api = PyTessBaseAPI(psm=PSM.SINGLE_LINE, oem=OEM.LSTM_ONLY)
 

@@ -39,7 +39,7 @@ class ObjectDetection:
         self.hand_cards_templates = []
         for i in range(6):
             hand_cards_template = cv2.imread(
-                f"{self.template_path}/cards_{i}.{self.template_format}",
+                f"{self.template_path}/hand_cards_{i}.{self.template_format}",
                 cv2.IMREAD_UNCHANGED,
             )
             if hand_cards_template is None:
