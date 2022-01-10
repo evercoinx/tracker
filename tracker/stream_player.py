@@ -324,6 +324,7 @@ class StreamPlayer:
         for i, r in enumerate(seat_regions):
             roi = self.crop_frame(frame, r)
             region = self.object_detection.detect_pocket_cards(roi, i)
+
             if region:
                 if self.is_debug():
                     playing_seats_frame = self.highlight_frame_region(frame.copy(), r)
