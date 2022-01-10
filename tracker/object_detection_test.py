@@ -4,7 +4,7 @@ from tracker.object_detection import ObjectDetection, Point, Region
 
 
 class TestScreen(unittest.TestCase):
-    def test_get_player_regions(self):
+    def test_get_seat_regions(self):
         tests = [
             {
                 "width": 960,
@@ -23,7 +23,7 @@ class TestScreen(unittest.TestCase):
         for t in tests:
             od = ObjectDetection(template_path="./template", template_format="png")
             with self.subTest("get player regions"):
-                regions = od.get_player_regions(t["width"], t["height"])
+                regions = od.get_seat_regions(t["width"], t["height"])
                 self.assertListEqual(regions, t["regions"])
 
 

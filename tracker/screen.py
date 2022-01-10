@@ -22,6 +22,12 @@ class WindowScreen(TypedDict):
 class Screen:
     """Capture a window of a screen"""
 
+    queue: Queue
+    events: List[synchronize.Event]
+    stream_path: str
+    frame_format: str
+    log_prefix: str
+
     def __init__(
         self,
         queue: Queue,
@@ -76,10 +82,10 @@ class Screen:
     @staticmethod
     def get_window_screens(
         windows: List[int],
-        screen_width: int,
-        screen_height: int,
         left_margin: int,
         top_margin: int,
+        screen_width: int,
+        screen_height: int,
     ) -> List[WindowScreen]:
         window_width = screen_width // 2
         window_height = (screen_height - top_margin) // 2

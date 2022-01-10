@@ -8,6 +8,9 @@ class TestScreen(unittest.TestCase):
         tests = [
             {
                 "name": "full hd",
+                "windows": [0, 1, 2, 3],
+                "left_margin": 0,
+                "top_margin": 0,
                 "width": 1920,
                 "height": 1080,
                 "coords": (
@@ -19,6 +22,9 @@ class TestScreen(unittest.TestCase):
             },
             {
                 "name": "hd",
+                "windows": [0, 1, 2, 3],
+                "left_margin": 0,
+                "top_margin": 0,
                 "width": 1280,
                 "height": 720,
                 "coords": (
@@ -33,7 +39,11 @@ class TestScreen(unittest.TestCase):
         for t in tests:
             with self.subTest(f"calculate {t['name']} window coordinates"):
                 wc = Screen.get_window_screens(
-                    [0, 1, 2, 3], t["width"], t["height"], 0, 0
+                    t["windows"],
+                    t["left_margin"],
+                    t["top_margin"],
+                    t["width"],
+                    t["height"],
                 )
                 self.assertTupleEqual(tuple(wc), t["coords"])
 

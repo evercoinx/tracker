@@ -1,5 +1,6 @@
 import re
 from datetime import datetime
+from typing import Tuple
 
 import numpy as np
 from dateutil import parser as dateparser
@@ -34,12 +35,9 @@ class TextRecognition:
 
     def recognize_hand_number(self, region: Region) -> int:
         self.tess_api.SetVariable("tessedit_char_whitelist", "Hand:#0123456789")
-        self.tess_api.SetRectangle(
-            region.start.x,
-            region.start.y,
-            region.end.x - region.start.x,
-            region.end.y - region.start.y,
-        )
+
+        dims = self.calculate_rectangle_dimensions(region)
+        self.tess_api.SetRectangle(*dims)
 
         line = self.tess_api.GetUTF8Text()
         matches = re.findall(TextRecognition.REGEX_MULTIPLE_DIGITS, line.strip())
@@ -49,12 +47,9 @@ class TextRecognition:
 
     def recognize_hand_time(self, region: Region) -> datetime:
         self.tess_api.SetVariable("tessedit_char_whitelist", ":+0123456789")
-        self.tess_api.SetRectangle(
-            region.start.x,
-            region.start.y,
-            region.end.x - region.start.x,
-            region.end.y - region.start.y,
-        )
+
+        dims = self.calculate_rectangle_dimensions(region)
+        self.tess_api.SetRectangle(*dims)
 
         line = self.tess_api.GetUTF8Text()
         matches = re.findall(TextRecognition.REGEX_TIME_WITH_ZONE, line.strip())
@@ -68,12 +63,9 @@ class TextRecognition:
 
     def recognize_total_pot(self, region: Region) -> float:
         self.tess_api.SetVariable("tessedit_char_whitelist", "pot:€.0123456789")
-        self.tess_api.SetRectangle(
-            region.start.x,
-            region.start.y,
-            region.end.x - region.start.x,
-            region.end.y - region.start.y,
-        )
+
+        dims = self.calculate_rectangle_dimensions(region)
+        self.tess_api.SetRectangle(*dims)
 
         line = self.tess_api.GetUTF8Text()
         matches = re.findall(TextRecognition.REGEX_MONEY, line.strip())
@@ -83,12 +75,9 @@ class TextRecognition:
 
     def recognize_seat_number(self, region: Region) -> int:
         self.tess_api.SetVariable("tessedit_char_whitelist", "Seat123456")
-        self.tess_api.SetRectangle(
-            region.start.x,
-            region.start.y,
-            region.end.x - region.start.x,
-            region.end.y - region.start.y,
-        )
+
+        dims = self.calculate_rectangle_dimensions(region)
+        self.tess_api.SetRectangle(*dims)
 
         line = self.tess_api.GetUTF8Text()
         matches = re.findall(TextRecognition.REGEX_SINGLE_DIGIT, line.strip())
@@ -98,12 +87,9 @@ class TextRecognition:
 
     def recognize_seat_money(self, region: Region) -> float:
         self.tess_api.SetVariable("tessedit_char_whitelist", "€.0123456789")
-        self.tess_api.SetRectangle(
-            region.start.x,
-            region.start.y,
-            region.end.x - region.start.x,
-            region.end.y - region.start.y,
-        )
+
+        dims = self.calculate_rectangle_dimensions(region)
+        self.tess_api.SetRectangle(*dims)
 
         line = self.tess_api.GetUTF8Text()
         matches = re.findall(TextRecognition.REGEX_MONEY, line.strip())
@@ -115,12 +101,9 @@ class TextRecognition:
         self.tess_api.SetVariable(
             "tessedit_char_whitelist", "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
         )
-        self.tess_api.SetRectangle(
-            region.start.x,
-            region.start.y,
-            region.end.x - region.start.x,
-            region.end.y - region.start.y,
-        )
+
+        dims = self.calculate_rectangle_dimensions(region)
+        self.tess_api.SetRectangle(*dims)
 
         line = self.tess_api.GetUTF8Text()
         matches = re.findall(TextRecognition.REGEX_ACTION, line.strip())
@@ -133,3 +116,12 @@ class TextRecognition:
         elif match == "waitingforbb":
             return "waiting for bb"
         return match
+
+    @staticmethod
+    def calculate_rectangle_dimensions(region: Region) -> Tuple[int]:
+        return (
+            region.start.x,
+            region.start.y,
+            region.end.x - region.start.x,
+            region.end.y - region.start.y,
+        )

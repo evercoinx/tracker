@@ -137,10 +137,10 @@ def replay_session(args: Dict[str, Any]) -> None:
 def play_session(args: Dict[str, Any]) -> None:
     win_screens = Screen.get_window_screens(
         args["windows"],
-        args["screen_width"],
-        args["screen_height"],
         args["left_margin"],
         args["top_margin"],
+        args["screen_width"],
+        args["screen_height"],
     )
     win_count = len(win_screens)
 

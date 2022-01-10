@@ -19,39 +19,39 @@ class Region(NamedTuple):
 class ObjectDetection:
     """Detects object regions on an window frame"""
 
-    PLAYER_REGION_PERCENTAGE = [
-        # top left
+    SEAT_REGION_PERCENTAGES = [
+        # top left region, index 0
         (0.125, 0.05),
         (0.40, 0.45),
-        # top middle
+        # top middle region, index 1
         (0.40, 0.05),
         (0.60, 0.45),
-        # top right
+        # top right region, index 2
         (0.60, 0.05),
         (0.85, 0.45),
-        # bottom left
+        # bottom left region, index 3
         (0.125, 0.45),
         (0.40, 0.80),
-        # bottom middle
+        # bottom middle region, index 4
         (0.40, 0.45),
         (0.60, 0.80),
-        # bottom right
+        # bottom right region, index 5
         (0.60, 0.45),
         (0.85, 0.80),
     ]
 
-    MIN_TEMPLATE_CONFIDENCE = 0.8
+    MIN_TEMPLATE_CONFIDENCE = 0.9
 
     template_path: str
     template_format: str
-    player_regions_cache: Dict[Tuple, List[Region]]
+    seat_regions_cache: Dict[Tuple, List[Region]]
     dealer_template: np.ndarray
-    hand_cards_templates: List[np.ndarray]
+    pocket_cards_templates: List[np.ndarray]
 
     def __init__(self, template_path: str, template_format: str) -> None:
         self.template_path = template_path
         self.template_format = template_format
-        self.player_regions_cache: Dict[Tuple, List[Region]] = {}
+        self.seat_regions_cache = {}
 
         self.dealer_template = cv2.imread(
             f"{self.template_path}/dealer.{self.template_format}", cv2.IMREAD_UNCHANGED
@@ -59,25 +59,25 @@ class ObjectDetection:
         if self.dealer_template is None:
             raise TemplateError("dealer template is not found")
 
-        self.hand_cards_templates = []
-        for i in range(6):
-            hand_cards_template = cv2.imread(
-                f"{self.template_path}/hand_cards_{i}.{self.template_format}",
+        self.pocket_cards_templates = []
+        for i in range(len(ObjectDetection.SEAT_REGION_PERCENTAGES) // 2):
+            pocket_cards_template = cv2.imread(
+                f"{self.template_path}/pocket_cards_{i}.{self.template_format}",
                 cv2.IMREAD_UNCHANGED,
             )
-            if hand_cards_template is None:
-                raise TemplateError(f"cards template #{i} is not found")
-            self.hand_cards_templates.append(hand_cards_template)
+            if pocket_cards_template is None:
+                raise TemplateError(f"pocket cards template #{i} is not found")
+            self.pocket_cards_templates.append(pocket_cards_template)
 
-    def get_player_regions(self, width: int, height: int) -> List[Region]:
-        cache_key = (width, height)
-        if cache_key in self.player_regions_cache:
-            return self.player_regions_cache[cache_key]
+    def get_seat_regions(self, frame_width: int, frame_height: int) -> List[Region]:
+        cache_key = (frame_width, frame_height)
+        if cache_key in self.seat_regions_cache:
+            return self.seat_regions_cache[cache_key]
 
         regions: List[Region] = []
         points: List[Point] = []
-        for i, (x, y) in enumerate(ObjectDetection.PLAYER_REGION_PERCENTAGE):
-            p = self.get_point_by_percentage(x, y, width, height)
+        for i, (x, y) in enumerate(ObjectDetection.SEAT_REGION_PERCENTAGES):
+            p = self.get_point_by_percentage(x, y, frame_width, frame_height)
             points.append(p)
 
             if i % 2 != 0:
@@ -85,7 +85,7 @@ class ObjectDetection:
                 regions.append(r)
                 points = []
 
-        self.player_regions_cache[cache_key] = regions
+        self.seat_regions_cache[cache_key] = regions
         return regions
 
     def detect_hand_number(self, frame: np.ndarray) -> Region:
@@ -173,8 +173,8 @@ class ObjectDetection:
     def detect_dealer(self, frame: np.ndarray) -> Optional[Region]:
         return self.detect_object_by_template(frame, self.dealer_template)
 
-    def detect_hand_card(self, frame: np.ndarray, index: int) -> Optional[Region]:
-        return self.detect_object_by_template(frame, self.hand_cards_templates[index])
+    def detect_pocket_cards(self, frame: np.ndarray, index: int) -> Optional[Region]:
+        return self.detect_object_by_template(frame, self.pocket_cards_templates[index])
 
     def detect_object_by_template(
         self, frame: np.ndarray, template: np.ndarray
@@ -193,18 +193,18 @@ class ObjectDetection:
         return Region(start=start_point, end=end_point)
 
     @staticmethod
-    def point_in_region(point: Point, region: Region) -> bool:
-        return (region.start.x < point.x < region.end.x) and (
-            region.start.y < point.y < region.end.y
-        )
-
-    @staticmethod
     def get_point_by_percentage(
-        width_percentage: float,
-        height_percentage: float,
-        total_width: int,
-        total_height: int,
+        x_percentage: float,
+        y_percentage: float,
+        frame_width: int,
+        frame_height: int,
     ) -> Point:
-        x = int(width_percentage * total_width)
-        y = int(height_percentage * total_height)
+        x = int(x_percentage * frame_width)
+        y = int(y_percentage * frame_height)
         return Point(x, y)
+
+    # @staticmethod
+    # def point_in_region(point: Point, region: Region) -> bool:
+    #     return (region.start.x < point.x < region.end.x) and (
+    #         region.start.y < point.y < region.end.y
+    #     )

@@ -122,7 +122,7 @@ class StreamPlayer:
         inverted_frame = cv2.bitwise_not(frame)
         if self.is_debug():
             (h, w) = frame.shape[:2]
-            for r in self.object_detection.get_player_regions(w, h):
+            for r in self.object_detection.get_seat_regions(w, h):
                 cv2.rectangle(
                     inverted_frame,
                     (r.start.x, r.start.y),
@@ -301,9 +301,9 @@ class StreamPlayer:
         self, frame: np.ndarray, window_index: int, frame_index: int
     ) -> int:
         (h, w) = frame.shape[:2]
-        player_regions = self.object_detection.get_player_regions(w, h)
+        seat_regions = self.object_detection.get_seat_regions(w, h)
 
-        for i, r in enumerate(player_regions):
+        for i, r in enumerate(seat_regions):
             roi = self.crop_frame(frame, r)
             region = self.object_detection.detect_dealer(roi)
             if region:
@@ -318,12 +318,12 @@ class StreamPlayer:
         self, frame: np.ndarray, window_index: int, frame_index: int
     ) -> List[bool]:
         (h, w) = frame.shape[:2]
-        player_regions = self.object_detection.get_player_regions(w, h)
+        seat_regions = self.object_detection.get_seat_regions(w, h)
 
         playing_seats: List[bool] = []
-        for i, r in enumerate(player_regions):
+        for i, r in enumerate(seat_regions):
             roi = self.crop_frame(frame, r)
-            region = self.object_detection.detect_hand_card(roi, i)
+            region = self.object_detection.detect_pocket_cards(roi, i)
             if region:
                 if self.is_debug():
                     playing_seats_frame = self.highlight_frame_region(frame.copy(), r)
