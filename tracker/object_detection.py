@@ -40,7 +40,7 @@ class ObjectDetection:
         (0.85, 0.80),
     ]
 
-    MIN_TEMPLATE_CONFIDENCE = 0.9
+    MIN_TEMPLATE_CONFIDENCE = 0.8
 
     template_path: str
     template_format: str
@@ -60,7 +60,9 @@ class ObjectDetection:
             raise TemplateError("dealer template is not found")
 
         self.pocket_cards_templates = []
-        for i in range(len(ObjectDetection.SEAT_REGION_PERCENTAGES) // 2):
+        seat_count = self.get_seat_count()
+
+        for i in range(seat_count):
             pocket_cards_template = cv2.imread(
                 f"{self.template_path}/pocket_cards_{i}.{self.template_format}",
                 cv2.IMREAD_UNCHANGED,
@@ -68,6 +70,10 @@ class ObjectDetection:
             if pocket_cards_template is None:
                 raise TemplateError(f"pocket cards template #{i} is not found")
             self.pocket_cards_templates.append(pocket_cards_template)
+
+    @classmethod
+    def get_seat_count(cls) -> int:
+        return len(cls.SEAT_REGION_PERCENTAGES) // 2
 
     def get_seat_regions(self, frame_width: int, frame_height: int) -> List[Region]:
         cache_key = (frame_width, frame_height)

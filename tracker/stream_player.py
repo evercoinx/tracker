@@ -6,7 +6,7 @@ from datetime import datetime
 from glob import glob
 from multiprocessing import Queue, current_process, synchronize
 from pprint import pformat
-from typing import Any, DefaultDict, List, Optional
+from typing import DefaultDict, List, Optional
 
 import cv2
 import numpy as np
@@ -37,10 +37,17 @@ class ObjectData(TypedDict):
     playing_seats: List[bool]
 
 
+class SessionData(TypedDict):
+    window_index: int
+    frame_index: int
+    hand_time: datetime
+    total_pot: float
+    dealer_position: int
+    seats: List[SeatData]
+
+
 class StreamPlayer:
     """Plays a live stream or replays a saved one"""
-
-    TOTAL_SEATS = 6
 
     queue: Queue
     events: List[synchronize.Event]
@@ -49,7 +56,7 @@ class StreamPlayer:
     text_recognition: TextRecognition
     object_detection: ObjectDetection
     log_prefix: str
-    session: DefaultDict[int, List[Any]]
+    session: DefaultDict[int, List[SessionData]]
 
     def __init__(
         self,
@@ -256,8 +263,9 @@ class StreamPlayer:
         self, frame: np.ndarray, window_index: int, frame_index: int
     ) -> List[SeatData]:
         seats: List[Optional[SeatData]] = []
+        seat_count = self.object_detection.get_seat_count()
 
-        for i in range(StreamPlayer.TOTAL_SEATS):
+        for i in range(seat_count):
             region = self.object_detection.detect_seat_number(frame, i)
             number = self.text_recognition.recognize_seat_number(region)
             if self.is_debug():
