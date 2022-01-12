@@ -57,23 +57,26 @@ class ObjectDetection:
             f"{self.template_path}/dealer.{self.template_format}", cv2.IMREAD_UNCHANGED
         )
         if self.dealer_template is None:
-            raise TemplateError("dealer template is not found")
+            raise TemplateError("unable to load dealer template")
 
         self.pocket_cards_templates = []
-        seat_count = self.get_seat_count()
 
-        for i in range(seat_count):
+        for i in range(self.seat_count):
             pocket_cards_template = cv2.imread(
                 f"{self.template_path}/pocket_cards_{i}.{self.template_format}",
                 cv2.IMREAD_UNCHANGED,
             )
             if pocket_cards_template is None:
-                raise TemplateError(f"pocket cards template #{i} is not found")
+                raise TemplateError(f"unable to load pocket card template #{i}")
             self.pocket_cards_templates.append(pocket_cards_template)
 
-    @classmethod
-    def get_seat_count(cls) -> int:
-        return len(cls.SEAT_REGION_PERCENTAGES) // 2
+    @property
+    def seat_count(self) -> int:
+        return len(ObjectDetection.SEAT_REGION_PERCENTAGES) // 2
+
+    @property
+    def table_card_count(self) -> int:
+        return 5
 
     def get_seat_regions(self, frame_width: int, frame_height: int) -> List[Region]:
         cache_key = (frame_width, frame_height)
@@ -176,7 +179,7 @@ class ObjectDetection:
         end_point = Point(start_points[index].x + w, start_points[index].y + h)
         return Region(start=start_points[index], end=end_point)
 
-    def detect_table_card_region(self, frame: np.ndarray, index: int) -> Region:
+    def detect_table_card(self, frame: np.ndarray, index: int) -> Region:
         start_points = [
             Point(368, 185),
             Point(414, 185),

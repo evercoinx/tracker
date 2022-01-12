@@ -20,13 +20,19 @@ IMAGE_FORMAT = "png"
 
 
 def main() -> None:
+    tr = TextRecognition()
+    od = ObjectDetection(template_path=TEMPLATE_PATH, template_format=IMAGE_FORMAT)
+
+    ic = ImageClassifier(dataset_path=DATASET_PATH, image_format=IMAGE_FORMAT)
+    ic.train()
+
     try:
         args = validate_args(parse_args())
         if args["replay"]:
-            replay_session(args)
+            replay_session(args, tr, od, ic)
             return
 
-        play_session(args)
+        play_session(args, tr, od, ic)
     except Exception as e:
         logging.critical(e)
         traceback.print_exc()
@@ -121,26 +127,30 @@ def validate_args(args: Dict[str, Any]) -> Dict[str, Any]:
     }
 
 
-def replay_session(args: Dict[str, Any]) -> None:
-    tr = TextRecognition()
-    od = ObjectDetection(template_path=TEMPLATE_PATH, template_format=IMAGE_FORMAT)
-
-    ic = ImageClassifier(dataset_path=DATASET_PATH, image_format=IMAGE_FORMAT)
-    ic.train()
-
+def replay_session(
+    args: Dict[str, Any],
+    text_recognition: TextRecognition,
+    object_detection: ObjectDetection,
+    image_classifier: ImageClassifier,
+) -> None:
     player = StreamPlayer(
         queue=None,
         events=[],
         stream_path=args["stream_path"],
         frame_format=IMAGE_FORMAT,
-        text_recognition=tr,
-        object_detection=od,
-        image_classifier=ic,
+        text_recognition=text_recognition,
+        object_detection=object_detection,
+        image_classifier=image_classifier,
     )
     player.replay(args["windows"])
 
 
-def play_session(args: Dict[str, Any]) -> None:
+def play_session(
+    args: Dict[str, Any],
+    text_recognition: TextRecognition,
+    object_detection: ObjectDetection,
+    image_classifier: ImageClassifier,
+) -> None:
     win_screens = Screen.get_window_screens(
         args["windows"],
         args["left_margin"],
@@ -153,20 +163,14 @@ def play_session(args: Dict[str, Any]) -> None:
     queue = Queue(win_count)
     events = [Event() for _ in range(win_count)]
 
-    tr = TextRecognition()
-    od = ObjectDetection(template_path=TEMPLATE_PATH, template_format=IMAGE_FORMAT)
-
-    ic = ImageClassifier(dataset_path=DATASET_PATH, image_format=IMAGE_FORMAT)
-    ic.train()
-
     player = StreamPlayer(
         queue=queue,
         events=events,
         stream_path=args["stream_path"],
         frame_format=IMAGE_FORMAT,
-        text_recognition=tr,
-        object_detection=od,
-        image_classifier=ic,
+        text_recognition=text_recognition,
+        object_detection=object_detection,
+        image_classifier=image_classifier,
     )
 
     screen = Screen(
