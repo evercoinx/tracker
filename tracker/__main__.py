@@ -8,12 +8,14 @@ from typing import Any, Dict, List
 
 from tracker import __version__
 from tracker.error import ValidationError
+from tracker.image_classifier import ImageClassifier
 from tracker.object_detection import ObjectDetection
 from tracker.screen import Screen
 from tracker.stream_player import StreamPlayer
 from tracker.text_recognition import TextRecognition
 
 TEMPLATE_PATH = "./template"
+DATASET_PATH = "./dataset"
 IMAGE_FORMAT = "png"
 
 
@@ -123,6 +125,9 @@ def replay_session(args: Dict[str, Any]) -> None:
     tr = TextRecognition()
     od = ObjectDetection(template_path=TEMPLATE_PATH, template_format=IMAGE_FORMAT)
 
+    ic = ImageClassifier(dataset_path=DATASET_PATH, image_format=IMAGE_FORMAT)
+    ic.train()
+
     player = StreamPlayer(
         queue=None,
         events=[],
@@ -130,6 +135,7 @@ def replay_session(args: Dict[str, Any]) -> None:
         frame_format=IMAGE_FORMAT,
         text_recognition=tr,
         object_detection=od,
+        image_classifier=ic,
     )
     player.replay(args["windows"])
 
@@ -149,6 +155,10 @@ def play_session(args: Dict[str, Any]) -> None:
 
     tr = TextRecognition()
     od = ObjectDetection(template_path=TEMPLATE_PATH, template_format=IMAGE_FORMAT)
+
+    ic = ImageClassifier(dataset_path=DATASET_PATH, image_format=IMAGE_FORMAT)
+    ic.train()
+
     player = StreamPlayer(
         queue=queue,
         events=events,
@@ -156,6 +166,7 @@ def play_session(args: Dict[str, Any]) -> None:
         frame_format=IMAGE_FORMAT,
         text_recognition=tr,
         object_detection=od,
+        image_classifier=ic,
     )
 
     screen = Screen(

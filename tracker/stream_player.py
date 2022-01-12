@@ -13,8 +13,14 @@ import numpy as np
 from typing_extensions import TypedDict  # pytype: disable=not-supported-yet
 
 from tracker.error import FrameError
+from tracker.image_classifier import ImageClassifier
 from tracker.object_detection import ObjectDetection, Region
 from tracker.text_recognition import TextRecognition
+
+
+class CardData(TypedDict):
+    rank: str
+    suit: str
 
 
 class SeatData(TypedDict):
@@ -35,6 +41,7 @@ class TextData(TypedDict):
 class ObjectData(TypedDict):
     dealer_position: int
     playing_seats: List[bool]
+    table_cards: List[CardData]
 
 
 class SessionData(TypedDict):
@@ -44,6 +51,7 @@ class SessionData(TypedDict):
     total_pot: float
     dealer_position: int
     seats: List[SeatData]
+    table_cards: List[CardData]
 
 
 class StreamPlayer:
@@ -55,6 +63,7 @@ class StreamPlayer:
     frame_format: str
     text_recognition: TextRecognition
     object_detection: ObjectDetection
+    image_classifier: ImageClassifier
     log_prefix: str
     session: DefaultDict[int, List[SessionData]]
 
@@ -66,6 +75,7 @@ class StreamPlayer:
         frame_format: str,
         text_recognition: TextRecognition,
         object_detection: ObjectDetection,
+        image_classifier: ImageClassifier,
     ):
         self.queue = queue
         self.events = events
@@ -73,6 +83,7 @@ class StreamPlayer:
         self.frame_format = frame_format
         self.text_recognition = text_recognition
         self.object_detection = object_detection
+        self.image_classifier = image_classifier
         self.log_prefix = ""
         self.session = defaultdict(list)
 
@@ -159,12 +170,12 @@ class StreamPlayer:
             return
 
         indent = " " * 26
-        seat_data: List[SeatData] = []
 
+        seat_strs: List[str] = []
         for i, s in enumerate(text_data["seats"]):
             playing = "yes" if object_data["playing_seats"][i] else "no"
             number = s["number"] if s["number"] != -1 else "?"
-            seat_data.append(
+            seat_strs.append(
                 f"{indent}{self.log_prefix} {i}: seat {number}, "
                 + f"playing: {playing}, "
                 + f"balance: {s['balance']:.2f}, "
@@ -172,12 +183,22 @@ class StreamPlayer:
                 + f"action: {s['action']}"
             )
 
+        table_card_strs: List[str] = []
+        for c in object_data["table_cards"]:
+            table_card_strs.append(f"{c['rank']}{c['suit']}")
+
+        if not len(table_card_strs):
+            table_card_strs.append("-")
+
         logging.info(
             f"{self.log_prefix} hand number: {text_data['hand_number']} "
             + f"at {text_data['hand_time'].strftime('%H:%M%z')}\n"
             + f"{indent}{self.log_prefix} total pot: {text_data['total_pot']:.2f}, "
             + f"dealer position: {object_data['dealer_position']}\n"
-            + "\n".join(seat_data)
+            + f"{indent}{self.log_prefix} table cards: "
+            + " ".join(table_card_strs)
+            + "\n"
+            + "\n".join(seat_strs)
             + "\n"
         )
 
@@ -189,6 +210,7 @@ class StreamPlayer:
                 "total_pot": text_data["total_pot"],
                 "dealer_position": object_data["dealer_position"],
                 "seats": text_data["seats"],
+                "table_cards": object_data["table_cards"],
             }
         )
 
@@ -224,11 +246,13 @@ class StreamPlayer:
     ) -> ObjectData:
         dealer_position = self.get_dealer_position(frame, window_index, frame_index)
         playing_seats = self.get_playing_seats(frame, window_index, frame_index)
+        table_cards = self.get_table_cards(frame, window_index, frame_index)
 
         # pytype: disable=bad-return-type
         return {
             "dealer_position": dealer_position,
             "playing_seats": playing_seats,
+            "table_cards": table_cards,
         }
         # pytype: enable=bad-return-type
 
@@ -347,6 +371,35 @@ class StreamPlayer:
                 playing_seats.append(False)
 
         return playing_seats
+
+    def get_table_cards(
+        self, frame: np.ndarray, window_index: int, frame_index: int
+    ) -> List[CardData]:
+        table_cards: List[CardData] = []
+
+        for i in range(5):
+            region = self.object_detection.detect_table_card_region(frame, i)
+            roi = self.crop_frame(frame, region)
+
+            if self.is_debug():
+                table_card_frame = self.highlight_frame_region(frame.copy(), region)
+                self.save_frame(
+                    table_card_frame,
+                    window_index,
+                    frame_index,
+                    f"table_card_{i}",
+                )
+
+            card_data = self.image_classifier.predict(roi)
+            if card_data:
+                table_cards.append(
+                    {
+                        "rank": card_data[0],
+                        "suit": card_data[1],
+                    }
+                )
+
+        return table_cards
 
     def save_text_contours(
         self, frame: np.ndarray, window_index: int, frame_index: int

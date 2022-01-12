@@ -18,6 +18,7 @@ setup(
         "Pillow",
         "python-dateutil",
         "pytype",
+        "scikit-learn",
         "tesserocr",
         "typing_extensions",
     ],

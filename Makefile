@@ -50,7 +50,7 @@ install: targetonly
 	pip install -e .
 
 deploy: sourceonly
-	rsync -avh --delete $(PKG_NAME) template Makefile requirements.txt requirements-prod.txt setup.py \
+	rsync -avh --delete $(PKG_NAME) dataset template Makefile requirements.txt requirements-prod.txt setup.py \
 		pi@$(TARGET_HOST):$(NAMESPACE)/$(PKG_NAME)
 
 play: targetonly cleanall

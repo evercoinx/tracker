@@ -24,3 +24,7 @@ class FrameError(Exception):
 
 class TemplateError(Exception):
     """Raises an error when a template is unable to be loaded"""
+
+
+class DatasetImageError(Exception):
+    """Raises an error when a dataset image is unable to be loaded"""

@@ -176,6 +176,21 @@ class ObjectDetection:
         end_point = Point(start_points[index].x + w, start_points[index].y + h)
         return Region(start=start_points[index], end=end_point)
 
+    def detect_table_card_region(self, frame: np.ndarray, index: int) -> Region:
+        start_points = [
+            Point(368, 185),
+            Point(414, 185),
+            Point(460, 185),
+            Point(506, 185),
+            Point(554, 185),
+        ]
+        if index > len(start_points) - 1:
+            raise ValueError(f"invalid table card index: {index}")
+
+        (w, h) = 38, 32
+        end_point = Point(start_points[index].x + w, start_points[index].y + h)
+        return Region(start=start_points[index], end=end_point)
+
     def detect_dealer(self, frame: np.ndarray) -> Optional[Region]:
         return self.detect_object_by_template(frame, self.dealer_template)
 
