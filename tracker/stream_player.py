@@ -6,7 +6,7 @@ from datetime import datetime
 from glob import glob
 from multiprocessing import Queue, current_process, synchronize
 from pprint import pformat
-from typing import DefaultDict, List, Optional
+from typing import Callable, DefaultDict, List, Optional, Tuple
 
 import cv2
 import numpy as np
@@ -117,16 +117,14 @@ class StreamPlayer:
             recursive=True,
         )
 
-        for p in sorted(raw_frame_paths):
+        for p in sorted(raw_frame_paths, key=self.sort_path(raw_frame_path_pattern)):
             frame = cv2.imread(p, cv2.IMREAD_UNCHANGED)
             if frame is None:
                 raise FrameError(f"unable to read frame path {p}", -1, -1, "raw")
 
             matches = re.findall(raw_frame_path_pattern, p)
-            if not matches:
-                raise FrameError(f"unable to parse frame path {p}", -1, -1, "raw")
-
             (window_index, frame_index) = matches[0]
+
             self.log_prefix = self.get_log_prefix(window_index, frame_index)
             self.process_frame(frame, int(window_index), int(frame_index))
 
@@ -138,17 +136,13 @@ class StreamPlayer:
         self, frame: np.ndarray, window_index: int, frame_index: int
     ) -> None:
         inverted_frame = cv2.bitwise_not(frame)
+
         if self.is_debug():
+            full_frame = inverted_frame.copy()
             (h, w) = frame.shape[:2]
             for r in self.object_detection.get_seat_regions(w, h):
-                cv2.rectangle(
-                    inverted_frame,
-                    (r.start.x, r.start.y),
-                    (r.end.x, r.end.y),
-                    (255, 255, 255),
-                    1,
-                )
-            self.save_frame(inverted_frame, window_index, frame_index, "full")
+                full_frame = self.highlight_frame_region(full_frame, r)
+            self.save_frame(full_frame, window_index, frame_index, "full")
 
         try:
             text_data = self.process_texts(inverted_frame, window_index, frame_index)
@@ -429,6 +423,22 @@ class StreamPlayer:
             )
         except OSError:
             raise FrameError("unable to remove frame", window_index, frame_index, name)
+
+    # pytype: disable=bad-return-type
+    @staticmethod
+    def sort_path(pattern: re.Pattern) -> Callable[[str], Tuple[int]]:
+        def match(path: str):
+            matches = re.findall(pattern, path)
+            if not matches:
+                raise FrameError(f"unable to parse frame path {path}", -1, -1, "raw")
+            return (
+                int(matches[0][0]),
+                int(matches[0][1]),
+            )
+
+        return match
+
+    # pytype: enable=bad-return-type
 
     @staticmethod
     def crop_frame(frame: np.ndarray, region: Region) -> np.ndarray:
