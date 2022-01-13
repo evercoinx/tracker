@@ -21,7 +21,7 @@ IMAGE_FORMAT = "png"
 
 def main() -> None:
     tr = TextRecognition()
-    od = ObjectDetection(template_path=TEMPLATE_PATH, template_format=IMAGE_FORMAT)
+    od = ObjectDetection(template_path=TEMPLATE_PATH, image_format=IMAGE_FORMAT)
 
     ic = ImageClassifier(dataset_path=DATASET_PATH, image_format=IMAGE_FORMAT)
     ic.train()

@@ -177,8 +177,7 @@ class StreamPlayer:
         table_card_strs: List[str] = []
         for c in object_data["table_cards"]:
             table_card_strs.append(f"{c['rank']}{c['suit']}")
-
-        if not len(table_card_strs):
+        if not table_card_strs:
             table_card_strs.append("-")
 
         logging.info(
@@ -277,7 +276,7 @@ class StreamPlayer:
     def get_seats(
         self, frame: np.ndarray, window_index: int, frame_index: int
     ) -> List[SeatData]:
-        seats: List[Optional[SeatData]] = []
+        seats: List[SeatData] = []
 
         for i in range(self.object_detection.seat_count):
             region = self.object_detection.detect_seat_number(frame, i)
@@ -426,8 +425,8 @@ class StreamPlayer:
 
     # pytype: disable=bad-return-type
     @staticmethod
-    def sort_path(pattern: re.Pattern) -> Callable[[str], Tuple[int]]:
-        def match(path: str):
+    def sort_path(pattern: re.Pattern) -> Callable[[str], Tuple[int, int]]:
+        def match(path: str) -> Tuple[int, int]:
             matches = re.findall(pattern, path)
             if not matches:
                 raise FrameError(f"unable to parse frame path {path}", -1, -1, "raw")

@@ -90,7 +90,7 @@ class Screen:
         window_width = screen_width // 2
         window_height = (screen_height - top_margin) // 2
 
-        window_coords = (
+        window_coords = [
             # top left window, index 0
             {
                 "left": left_margin,
@@ -119,7 +119,7 @@ class Screen:
                 "width": window_width,
                 "height": window_height,
             },
-        )
+        ]
 
         return [window_coords[i] for i in windows]
 

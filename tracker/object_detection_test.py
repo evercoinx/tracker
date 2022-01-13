@@ -21,7 +21,7 @@ class TestScreen(unittest.TestCase):
         ]
 
         for t in tests:
-            od = ObjectDetection(template_path="./template", template_format="png")
+            od = ObjectDetection(template_path="./template", image_format="png")
             with self.subTest("get player regions"):
                 regions = od.get_seat_regions(t["width"], t["height"])
                 self.assertListEqual(regions, t["regions"])

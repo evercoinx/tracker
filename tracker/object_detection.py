@@ -1,9 +1,10 @@
-from typing import Dict, List, NamedTuple, Optional, Tuple
+from typing import ClassVar, Dict, List, NamedTuple, Optional, Tuple
 
 import cv2
 import numpy as np
+from typing_extensions import Literal
 
-from tracker.error import TemplateError
+from tracker.error import ImageError
 
 
 class Point(NamedTuple):
@@ -19,7 +20,7 @@ class Region(NamedTuple):
 class ObjectDetection:
     """Detects object regions on an window frame"""
 
-    SEAT_REGION_PERCENTAGES = [
+    seat_region_percentages: ClassVar[List[Tuple[float, float]]] = [
         # top left region, index 0
         (0.125, 0.05),
         (0.40, 0.45),
@@ -40,42 +41,41 @@ class ObjectDetection:
         (0.85, 0.80),
     ]
 
-    MIN_TEMPLATE_CONFIDENCE = 0.8
+    min_template_confidence: ClassVar[float] = 0.8
 
     template_path: str
-    template_format: str
-    seat_regions_cache: Dict[Tuple, List[Region]]
+    image_format: str
+    seat_regions_cache: Dict[Tuple[int, int], List[Region]]
     dealer_template: np.ndarray
     pocket_cards_templates: List[np.ndarray]
 
-    def __init__(self, template_path: str, template_format: str) -> None:
+    def __init__(self, template_path: str, image_format: str) -> None:
         self.template_path = template_path
-        self.template_format = template_format
+        self.image_format = image_format
         self.seat_regions_cache = {}
 
-        self.dealer_template = cv2.imread(
-            f"{self.template_path}/dealer.{self.template_format}", cv2.IMREAD_UNCHANGED
-        )
-        if self.dealer_template is None:
-            raise TemplateError("unable to load dealer template")
+        dealer_path = f"{self.template_path}/dealer.{self.image_format}"
+        dealer_template = cv2.imread(dealer_path, cv2.IMREAD_UNCHANGED)
+        if dealer_template is None:
+            raise ImageError("unable to read template image of dealer", dealer_path)
+        self.dealer_template = dealer_template
 
         self.pocket_cards_templates = []
-
         for i in range(self.seat_count):
-            pocket_cards_template = cv2.imread(
-                f"{self.template_path}/pocket_cards_{i}.{self.template_format}",
-                cv2.IMREAD_UNCHANGED,
-            )
+            card_path = f"{self.template_path}/pocket_cards_{i}.{self.image_format}"
+            pocket_cards_template = cv2.imread(card_path, cv2.IMREAD_UNCHANGED)
             if pocket_cards_template is None:
-                raise TemplateError(f"unable to load pocket card template #{i}")
+                raise ImageError(
+                    "unable to read template image of pocket card", card_path
+                )
             self.pocket_cards_templates.append(pocket_cards_template)
 
     @property
     def seat_count(self) -> int:
-        return len(ObjectDetection.SEAT_REGION_PERCENTAGES) // 2
+        return len(type(self).seat_region_percentages) // 2
 
     @property
-    def table_card_count(self) -> int:
+    def table_card_count(self) -> Literal[5]:
         return 5
 
     def get_seat_regions(self, frame_width: int, frame_height: int) -> List[Region]:
@@ -85,7 +85,7 @@ class ObjectDetection:
 
         regions: List[Region] = []
         points: List[Point] = []
-        for i, (x, y) in enumerate(ObjectDetection.SEAT_REGION_PERCENTAGES):
+        for i, (x, y) in enumerate(type(self).seat_region_percentages):
             p = self.get_point_by_percentage(x, y, frame_width, frame_height)
             points.append(p)
 
@@ -206,7 +206,7 @@ class ObjectDetection:
         result = cv2.matchTemplate(frame, template, cv2.TM_CCOEFF_NORMED)
         _, max_val, _, max_loc = cv2.minMaxLoc(result)
 
-        if max_val < ObjectDetection.MIN_TEMPLATE_CONFIDENCE:
+        if max_val < type(self).min_template_confidence:
             return None
 
         (start_x, start_y) = max_loc
@@ -226,9 +226,3 @@ class ObjectDetection:
         x = int(x_percentage * frame_width)
         y = int(y_percentage * frame_height)
         return Point(x, y)
-
-    # @staticmethod
-    # def point_in_region(point: Point, region: Region) -> bool:
-    #     return (region.start.x < point.x < region.end.x) and (
-    #         region.start.y < point.y < region.end.y
-    #     )

@@ -1,16 +1,17 @@
 import re
 from glob import glob
-from typing import List, Optional, Tuple
+from typing import ClassVar, List, Optional, Tuple
 
 import cv2
 import numpy as np
 from sklearn.neighbors import KNeighborsClassifier
+from typing_extensions import Literal
 
-from tracker.error import DatasetImageError
+from tracker.error import ImageError
 
 
 class ImageClassifier:
-    PLACEHOLDER_LABEL = "0x"
+    placeholder_label: ClassVar[Literal["0x"]] = "0x"
 
     dataset_path: str
     image_format: str
@@ -36,14 +37,14 @@ class ImageClassifier:
         for p in sorted(image_paths):
             img = cv2.imread(p)
             if img is None:
-                raise DatasetImageError(f"unable to read table card image path {p}")
+                raise ImageError("unable to read dataset image of table card", p)
 
             feat = self.extract_feature(img)
             features.append(feat)
 
             matches = re.findall(image_path_pattern, p)
             if not matches:
-                raise DatasetImageError(f"unable to parse table card image path {p}")
+                raise ImageError("unable to parse dataset image of table card", p)
             labels.append(matches[0])
 
         self.model = KNeighborsClassifier(n_neighbors=1, n_jobs=1)
@@ -52,10 +53,10 @@ class ImageClassifier:
     def predict(self, image: np.ndarray) -> str:
         feat = self.extract_feature(image)
         labels = self.model.predict([feat])
-        return "" if labels[0] == ImageClassifier.PLACEHOLDER_LABEL else labels[0]
+        return "" if labels[0] == type(self).placeholder_label else labels[0]
 
     @staticmethod
-    def extract_feature(image: np.ndarray, bins: Tuple = (8,)) -> np.ndarray:
+    def extract_feature(image: np.ndarray, bins: Tuple[int] = (8,)) -> np.ndarray:
         hist = cv2.calcHist([image], [0], None, bins, [0, 256])
         cv2.normalize(hist, hist)
         return hist.flatten()

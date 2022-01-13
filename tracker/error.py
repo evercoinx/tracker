@@ -4,7 +4,12 @@ class ValidationError(Exception):
 
 
 class FrameError(Exception):
-    """Raises an error when a window frame is unable to be loaded or saved"""
+    """Raises an error when a window frame is unable to be read or written"""
+
+    message: str
+    window_index: int
+    frame_index: int
+    frame_name: str
 
     def __init__(
         self, message: str, window_index: int, frame_index: int, frame_name: str
@@ -22,9 +27,16 @@ class FrameError(Exception):
         )
 
 
-class TemplateError(Exception):
-    """Raises an error when a template is unable to be loaded"""
+class ImageError(Exception):
+    """Raises an error when an image is unable to be read or parsed"""
 
+    message: str
+    path: str
 
-class DatasetImageError(Exception):
-    """Raises an error when a dataset image is unable to be loaded"""
+    def __init__(self, message: str, path: str) -> None:
+        super().__init__(message)
+        self.message = message
+        self.path = path
+
+    def __str__(self) -> str:
+        return f"{self.message} at {self.path}"

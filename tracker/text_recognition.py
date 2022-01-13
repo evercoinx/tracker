@@ -1,6 +1,6 @@
 import re
 from datetime import datetime
-from typing import Tuple
+from typing import ClassVar, Tuple
 
 import numpy as np
 from dateutil import parser as dateparser
@@ -13,13 +13,13 @@ from tracker.object_detection import Region
 class TextRecognition:
     """Recognizes texts on a window frame"""
 
-    REGEX_ACTION = re.compile(
+    regex_action: ClassVar[re.Pattern] = re.compile(
         r"(bet|call|check|fold|raise|sittingin|waitingforbb)", flags=re.IGNORECASE
     )
-    REGEX_MONEY = re.compile(r"[$€]([.\d]+)")
-    REGEX_MULTIPLE_DIGITS = re.compile(r"(\d+)")
-    REGEX_SINGLE_DIGIT = re.compile(r"(\d)")
-    REGEX_TIME_WITH_ZONE = re.compile(r"\d{2}:\d{2}\+\d{2}")
+    regex_money: ClassVar[re.Pattern] = re.compile(r"[$€]([.\d]+)")
+    regex_multiple_digits: ClassVar[re.Pattern] = re.compile(r"(\d+)")
+    regex_single_digit: ClassVar[re.Pattern] = re.compile(r"(\d)")
+    regex_time_with_zone: ClassVar[re.Pattern] = re.compile(r"\d{2}:\d{2}\+\d{2}")
 
     def __init__(self) -> None:
         self.tess_api = PyTessBaseAPI(psm=PSM.SINGLE_LINE, oem=OEM.LSTM_ONLY)
@@ -40,7 +40,7 @@ class TextRecognition:
         self.tess_api.SetRectangle(*dims)
 
         line = self.tess_api.GetUTF8Text()
-        matches = re.findall(TextRecognition.REGEX_MULTIPLE_DIGITS, line.strip())
+        matches = re.findall(type(self).regex_multiple_digits, line.strip())
         if not matches:
             return 0
         return int(matches[0])
@@ -52,7 +52,7 @@ class TextRecognition:
         self.tess_api.SetRectangle(*dims)
 
         line = self.tess_api.GetUTF8Text()
-        matches = re.findall(TextRecognition.REGEX_TIME_WITH_ZONE, line.strip())
+        matches = re.findall(type(self).regex_time_with_zone, line.strip())
         if not matches:
             return datetime.min
 
@@ -68,7 +68,7 @@ class TextRecognition:
         self.tess_api.SetRectangle(*dims)
 
         line = self.tess_api.GetUTF8Text()
-        matches = re.findall(TextRecognition.REGEX_MONEY, line.strip())
+        matches = re.findall(type(self).regex_money, line.strip())
         if not matches:
             return 0.0
         return float(matches[0])
@@ -80,7 +80,7 @@ class TextRecognition:
         self.tess_api.SetRectangle(*dims)
 
         line = self.tess_api.GetUTF8Text()
-        matches = re.findall(TextRecognition.REGEX_SINGLE_DIGIT, line.strip())
+        matches = re.findall(type(self).regex_single_digit, line.strip())
         if not matches:
             return -1
         return int(matches[0])
@@ -92,7 +92,7 @@ class TextRecognition:
         self.tess_api.SetRectangle(*dims)
 
         line = self.tess_api.GetUTF8Text()
-        matches = re.findall(TextRecognition.REGEX_MONEY, line.strip())
+        matches = re.findall(type(self).regex_money, line.strip())
         if not matches:
             return 0.0
         return float(matches[0])
@@ -106,7 +106,7 @@ class TextRecognition:
         self.tess_api.SetRectangle(*dims)
 
         line = self.tess_api.GetUTF8Text()
-        matches = re.findall(TextRecognition.REGEX_ACTION, line.strip())
+        matches = re.findall(type(self).regex_action, line.strip())
         if not matches:
             return "none"
 
@@ -118,7 +118,7 @@ class TextRecognition:
         return match
 
     @staticmethod
-    def calculate_rectangle_dimensions(region: Region) -> Tuple[int]:
+    def calculate_rectangle_dimensions(region: Region) -> Tuple[int, int, int, int]:
         return (
             region.start.x,
             region.start.y,
