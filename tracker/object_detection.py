@@ -86,7 +86,7 @@ class ObjectDetection:
         regions: List[Region] = []
         points: List[Point] = []
         for i, (x, y) in enumerate(type(self).seat_region_percentages):
-            p = self.get_point_by_percentage(x, y, frame_width, frame_height)
+            p = self.get_scaled_point(x, y, frame_width, frame_height)
             points.append(p)
 
             if i % 2 != 0:
@@ -98,22 +98,22 @@ class ObjectDetection:
         return regions
 
     def detect_hand_number(self, frame: np.ndarray) -> Region:
-        return Region(
-            start=Point(73, 24),
-            end=Point(174, 39),
-        )
+        (h, w) = frame.shape[:2]
+        start = self.get_scaled_point(0.07, 0.05, w, h)
+        end = self.get_scaled_point(0.19, 0.08, w, h)
+        return Region(start, end)
 
     def detect_hand_time(self, frame: np.ndarray) -> Region:
-        return Region(
-            start=Point(857, 22),
-            end=Point(912, 36),
-        )
+        (h, w) = frame.shape[:2]
+        start = self.get_scaled_point(0.89, 0.04, w, h)
+        end = self.get_scaled_point(0.95, 0.08, w, h)
+        return Region(start, end)
 
     def detect_total_pot(self, frame: np.ndarray) -> Region:
-        return Region(
-            start=Point(462, 160),
-            end=Point(553, 181),
-        )
+        (h, w) = frame.shape[:2]
+        start = self.get_scaled_point(0.48, 0.32, w, h)
+        end = self.get_scaled_point(0.57, 0.37, w, h)
+        return Region(start, end)
 
     def detect_seat_number(self, frame: np.ndarray, index: int) -> Region:
         start_points = [
@@ -217,12 +217,12 @@ class ObjectDetection:
         return Region(start=start_point, end=end_point)
 
     @staticmethod
-    def get_point_by_percentage(
-        x_percentage: float,
-        y_percentage: float,
-        frame_width: int,
-        frame_height: int,
+    def get_scaled_point(
+        x_percent: float,
+        y_percent: float,
+        total_width: int,
+        total_height: int,
     ) -> Point:
-        x = int(x_percentage * frame_width)
-        y = int(y_percentage * frame_height)
+        x = int(x_percent * total_width)
+        y = int(y_percent * total_height)
         return Point(x, y)

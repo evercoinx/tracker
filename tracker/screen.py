@@ -81,7 +81,7 @@ class Screen:
 
     @staticmethod
     def get_window_screens(
-        windows: List[int],
+        windows: List[str],
         left_margin: int,
         top_margin: int,
         screen_width: int,
@@ -121,7 +121,7 @@ class Screen:
             },
         ]
 
-        return [window_coords[i] for i in windows]
+        return [window_coords[int(i)] for i in windows]
 
     @staticmethod
     def get_log_prefix(window_index: int, frame_index: int):

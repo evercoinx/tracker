@@ -100,12 +100,8 @@ def validate_args(args: Dict[str, Any]) -> Dict[str, Any]:
         datefmt="%H:%M:%S",
     )
 
-    windows_arg = args["windows"]
-    if len(windows_arg) > 4:
-        raise ValidationError(f"too many windows to play: {len(windows_arg)}")
-
-    if args["replay"]:
-        return args
+    if len(args["windows"]) > 4:
+        raise ValidationError(f"too many windows specified: {len(args['windows'])}")
 
     # the environment variable formatted as hostname:display.screen
     display_env = os.environ.get("DISPLAY", "").strip()
@@ -114,15 +110,17 @@ def validate_args(args: Dict[str, Any]) -> Dict[str, Any]:
 
     parsed_display = display_env.split(":")
     display = f":{parsed_display[1]}"
-    if display != args["display"]:
+    if not args["replay"] and display != args["display"]:
         raise ValidationError(f"display is {display}; want {args['display']}")
+
+    save_regions = os.environ.get("SAVE_REGIONS", "").split(",")
 
     return {
         **args,
         **{
             "log_level": log_level,
             "display": display,
-            "windows": [int(i) for i in windows_arg],
+            "save_regions": save_regions,
         },
     }
 
@@ -138,6 +136,7 @@ def replay_session(
         events=[],
         stream_path=args["stream_path"],
         frame_format=IMAGE_FORMAT,
+        save_regions=args["save_regions"],
         text_recognition=text_recognition,
         object_detection=object_detection,
         image_classifier=image_classifier,
@@ -168,6 +167,7 @@ def play_session(
         events=events,
         stream_path=args["stream_path"],
         frame_format=IMAGE_FORMAT,
+        save_regions=args["save_regions"],
         text_recognition=text_recognition,
         object_detection=object_detection,
         image_classifier=image_classifier,

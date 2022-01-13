@@ -61,6 +61,7 @@ class StreamPlayer:
     events: List[synchronize.Event]
     stream_path: str
     frame_format: str
+    save_regions: List[str]
     text_recognition: TextRecognition
     object_detection: ObjectDetection
     image_classifier: ImageClassifier
@@ -73,6 +74,7 @@ class StreamPlayer:
         events: List[synchronize.Event],
         stream_path: str,
         frame_format: str,
+        save_regions: List[str],
         text_recognition: TextRecognition,
         object_detection: ObjectDetection,
         image_classifier: ImageClassifier,
@@ -81,6 +83,7 @@ class StreamPlayer:
         self.events = events
         self.stream_path = stream_path
         self.frame_format = frame_format
+        self.save_regions = save_regions
         self.text_recognition = text_recognition
         self.object_detection = object_detection
         self.image_classifier = image_classifier
@@ -104,7 +107,7 @@ class StreamPlayer:
                 logging.warn(f"{self.log_prefix} interruption; exiting...")
                 return
 
-    def replay(self, windows: List[int]) -> None:
+    def replay(self, windows: List[str]) -> None:
         raw_frame_path_pattern = re.compile(
             r"window(["
             + re.escape(",".join(windows))
@@ -137,7 +140,7 @@ class StreamPlayer:
     ) -> None:
         inverted_frame = cv2.bitwise_not(frame)
 
-        if self.is_debug():
+        if self.should_save_frame("full"):
             full_frame = inverted_frame.copy()
             (h, w) = frame.shape[:2]
             for r in self.object_detection.get_seat_regions(w, h):
@@ -259,27 +262,24 @@ class StreamPlayer:
         self, frame: np.ndarray, window_index: int, frame_index: int
     ) -> int:
         region = self.object_detection.detect_hand_number(frame)
-        if self.is_debug():
+        if self.should_save_frame("hand_number"):
             self.save_frame(frame, window_index, frame_index, "hand_number", region)
-
         return self.text_recognition.recognize_hand_number(region)
 
     def get_hand_time(
         self, frame: np.ndarray, window_index: int, frame_index: int
     ) -> datetime:
         region = self.object_detection.detect_hand_time(frame)
-        if self.is_debug():
+        if self.should_save_frame("hand_time"):
             self.save_frame(frame, window_index, frame_index, "hand_time", region)
-
         return self.text_recognition.recognize_hand_time(region)
 
     def get_total_pot(
         self, frame: np.ndarray, window_index: int, frame_index: int
     ) -> float:
         region = self.object_detection.detect_total_pot(frame)
-        if self.is_debug():
+        if self.should_save_frame("total_pot"):
             self.save_frame(frame, window_index, frame_index, "total_pot", region)
-
         return self.text_recognition.recognize_total_pot(region)
 
     def get_seats(
@@ -290,28 +290,28 @@ class StreamPlayer:
         for i in range(self.object_detection.seat_count):
             region = self.object_detection.detect_seat_number(frame, i)
             number = self.text_recognition.recognize_seat_number(region)
-            if self.is_debug():
+            if self.should_save_frame("seat_numbers"):
                 self.save_frame(
                     frame, window_index, frame_index, f"seat_number_{i}", region
                 )
 
             region = self.object_detection.detect_seat_action(frame, i)
             action = self.text_recognition.recognize_seat_action(region)
-            if self.is_debug():
+            if self.should_save_frame("seat_actions"):
                 self.save_frame(
                     frame, window_index, frame_index, f"seat_action_{i}", region
                 )
 
             region = self.object_detection.detect_seat_stake(frame, i)
             stake = self.text_recognition.recognize_seat_money(region)
-            if self.is_debug():
+            if self.should_save_frame("seat_stakes"):
                 self.save_frame(
                     frame, window_index, frame_index, f"seat_stake_{i}", region
                 )
 
             region = self.object_detection.detect_seat_balance(frame, i)
             balance = self.text_recognition.recognize_seat_money(region)
-            if self.is_debug():
+            if self.should_save_frame("seat_balances"):
                 self.save_frame(
                     frame, window_index, frame_index, f"seat_balance_{i}", region
                 )
@@ -337,7 +337,7 @@ class StreamPlayer:
             cropped_frame = self.crop_frame(frame, r)
             region = self.object_detection.detect_dealer(cropped_frame)
             if region:
-                if self.is_debug():
+                if self.should_save_frame("dealer"):
                     dealer_frame = self.highlight_frame_region(frame.copy(), r)
                     self.save_frame(dealer_frame, window_index, frame_index, "dealer")
                 return i
@@ -356,7 +356,7 @@ class StreamPlayer:
             region = self.object_detection.detect_pocket_cards(cropped_frame, i)
 
             if region:
-                if self.is_debug():
+                if self.should_save_frame("hand_cards"):
                     playing_seats_frame = self.highlight_frame_region(frame.copy(), r)
                     self.save_frame(
                         playing_seats_frame,
@@ -377,7 +377,7 @@ class StreamPlayer:
 
         for i in range(self.object_detection.table_card_count):
             region = self.object_detection.detect_table_card(frame, i)
-            if self.is_debug():
+            if self.should_save_frame("table_cards"):
                 table_card_frame = self.highlight_frame_region(frame.copy(), region)
                 self.save_frame(
                     table_card_frame,
@@ -465,9 +465,11 @@ class StreamPlayer:
             2,
         )
 
-    @staticmethod
-    def is_debug() -> bool:
-        return logging.root.level == logging.DEBUG
+    def should_save_frame(self, region_name: str) -> bool:
+        is_debug = logging.root.level == logging.DEBUG
+        return is_debug and (
+            region_name in self.save_regions or "all" in self.save_regions
+        )
 
     @staticmethod
     def get_log_prefix(window_index: int, frame_index: int) -> str:
