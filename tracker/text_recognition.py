@@ -108,7 +108,7 @@ class TextRecognition:
         line = self.tess_api.GetUTF8Text()
         matches = re.findall(type(self).regex_action, line.strip())
         if not matches:
-            return "none"
+            return ""
 
         match = matches[0].lower()
         if match == "sittingin":

@@ -160,38 +160,6 @@ class StreamPlayer:
             )
             return
 
-        indent = " " * 26
-
-        seat_strs: List[str] = []
-        for i, s in enumerate(text_data["seats"]):
-            playing = "yes" if object_data["playing_seats"][i] else "no"
-            number = s["number"] if s["number"] != -1 else "?"
-            seat_strs.append(
-                f"{indent}{self.log_prefix} {i}: seat {number}, "
-                + f"playing: {playing}, "
-                + f"balance: {s['balance']:.2f}, "
-                + f"stake: {s['stake']:.2f}, "
-                + f"action: {s['action']}"
-            )
-
-        table_card_strs: List[str] = []
-        for c in object_data["table_cards"]:
-            table_card_strs.append(f"{c['rank']}{c['suit']}")
-        if not table_card_strs:
-            table_card_strs.append("-")
-
-        logging.info(
-            f"{self.log_prefix} hand number: {text_data['hand_number']} "
-            + f"at {text_data['hand_time'].strftime('%H:%M%z')}\n"
-            + f"{indent}{self.log_prefix} total pot: {text_data['total_pot']:.2f}, "
-            + f"dealer position: {object_data['dealer_position']}\n"
-            + f"{indent}{self.log_prefix} table cards: "
-            + " ".join(table_card_strs)
-            + "\n"
-            + "\n".join(seat_strs)
-            + "\n"
-        )
-
         self.session[text_data["hand_number"]].append(
             {
                 "window_index": window_index,
@@ -203,6 +171,8 @@ class StreamPlayer:
                 "table_cards": object_data["table_cards"],
             }
         )
+
+        self.print_frame_info(text_data, object_data)
 
     def process_texts(
         self, frame: np.ndarray, window_index: int, frame_index: int
@@ -245,6 +215,45 @@ class StreamPlayer:
             "table_cards": table_cards,
         }
         # pytype: enable=bad-return-type
+
+    def print_frame_info(self, text_data: TextData, object_data: ObjectData):
+        seat_strs: List[str] = []
+        for i, s in enumerate(text_data["seats"]):
+            playing = "✔" if object_data["playing_seats"][i] else " "
+            dealer = "●" if object_data["dealer_position"] == i else " "
+            number = s["number"] if s["number"] != -1 else "?"
+            balance = f"{s['balance']:.2f}" if s["balance"] > 0 else " "
+            stake = f"{s['stake']:.2f}" if s["stake"] > 0 else " "
+            action = s["action"] if s["action"] else " "
+
+            seat_strs.append(
+                f"{' ':<26}{self.log_prefix[:-2]} {i} {dealer} seat {number}  "
+                + f"playing: {playing}  "
+                + f"balance: {balance: >4}  "
+                + f"stake: {stake: >4}  "
+                + f"action: {action: <14}"
+            )
+
+        letterToSuit = {
+            "c": "♣",
+            "d": "♦",
+            "h": "♥",
+            "s": "♠",
+        }
+        table_card_strs = ["—" for _ in range(self.object_detection.table_card_count)]
+        for i, c in enumerate(object_data["table_cards"]):
+            table_card_strs[i] = f"{c['rank']}{letterToSuit[c['suit']]}"
+
+        logging.info(
+            f"{self.log_prefix} hand number: {text_data['hand_number']} "
+            + f"at {text_data['hand_time'].strftime('%H:%M%z')}\n"
+            + f"{' ':<26}{self.log_prefix} table cards: "
+            + " ".join(table_card_strs)
+            + "\n"
+            + f"{' ':<26}{self.log_prefix} total pot:   {text_data['total_pot']:.2f}\n"
+            + "\n".join(seat_strs)
+            + "\n"
+        )
 
     def get_hand_number(
         self, frame: np.ndarray, window_index: int, frame_index: int
