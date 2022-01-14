@@ -131,10 +131,6 @@ class StreamPlayer:
             self.log_prefix = self.get_log_prefix(window_index, frame_index)
             self.process_frame(frame, int(window_index), int(frame_index))
 
-        logging.debug(
-            f"{self.log_prefix} current session dump:\n{pformat(self.session)}"
-        )
-
     def process_frame(
         self, frame: np.ndarray, window_index: int, frame_index: int
     ) -> None:
@@ -220,7 +216,7 @@ class StreamPlayer:
         # pytype: enable=bad-return-type
 
     def print_frame_info(self, text_data: TextData, object_data: ObjectData):
-        seat_strs: List[str] = []
+        seat_lines: List[str] = []
         for i, s in enumerate(text_data["seats"]):
             playing = "✔" if object_data["playing_seats"][i] else " "
             dealer = "●" if object_data["dealer_position"] == i else " "
@@ -229,7 +225,7 @@ class StreamPlayer:
             stake = f"{s['stake']:.2f}" if s["stake"] > 0 else " "
             action = s["action"] if s["action"] else " "
 
-            seat_strs.append(
+            seat_lines.append(
                 f"{' ':<26}{self.log_prefix[:-2]} {i} {dealer} seat {number}  "
                 + f"playing: {playing}  "
                 + f"balance: {balance: >4}  "
@@ -237,25 +233,29 @@ class StreamPlayer:
                 + f"action: {action: <14}"
             )
 
-        letterToSuit = {
+        letter_to_suit = {
             "c": "♣",
             "d": "♦",
             "h": "♥",
             "s": "♠",
         }
-        table_card_strs = ["—" for _ in range(self.object_detection.table_card_count)]
+        table_card_lines = ["—" for _ in range(self.object_detection.table_card_count)]
         for i, c in enumerate(object_data["table_cards"]):
-            table_card_strs[i] = f"{c['rank']}{letterToSuit[c['suit']]}"
+            table_card_lines[i] = f"{c['rank']}{letter_to_suit[c['suit']]}"
 
         logging.info(
             f"{self.log_prefix} hand number: {text_data['hand_number']} "
             + f"at {text_data['hand_time'].strftime('%H:%M%z')}\n"
             + f"{' ':<26}{self.log_prefix} table cards: "
-            + " ".join(table_card_strs)
+            + " ".join(table_card_lines)
             + "\n"
             + f"{' ':<26}{self.log_prefix} total pot:   {text_data['total_pot']:.2f}\n"
-            + "\n".join(seat_strs)
+            + "\n".join(seat_lines)
             + "\n"
+        )
+
+        logging.debug(
+            f"{self.log_prefix} session data:\n" + f"{pformat(self.session, indent=4)}"
         )
 
     def get_hand_number(
