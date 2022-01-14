@@ -120,7 +120,7 @@ class StreamPlayer:
             recursive=True,
         )
 
-        for p in sorted(raw_frame_paths, key=self.sort_path(raw_frame_path_pattern)):
+        for p in sorted(raw_frame_paths, key=self._sort_path(raw_frame_path_pattern)):
             frame = cv2.imread(p, cv2.IMREAD_UNCHANGED)
             if frame is None:
                 raise FrameError(f"unable to read frame path {p}", -1, -1, "raw")
@@ -130,6 +130,22 @@ class StreamPlayer:
 
             self.log_prefix = self.get_log_prefix(window_index, frame_index)
             self.process_frame(frame, int(window_index), int(frame_index))
+
+    # pytype: disable=bad-return-type
+    @staticmethod
+    def _sort_path(pattern: re.Pattern) -> Callable[[str], Tuple[int, int]]:
+        def match(path: str) -> Tuple[int, int]:
+            matches = re.findall(pattern, path)
+            if not matches:
+                raise FrameError(f"unable to parse frame path {path}", -1, -1, "raw")
+            return (
+                int(matches[0][0]),
+                int(matches[0][1]),
+            )
+
+        return match
+
+    # pytype: enable=bad-return-type
 
     def process_frame(
         self, frame: np.ndarray, window_index: int, frame_index: int
@@ -228,8 +244,8 @@ class StreamPlayer:
             seat_lines.append(
                 f"{' ':<26}{self.log_prefix[:-2]} {i} {dealer} seat {number}  "
                 + f"playing: {playing}  "
-                + f"balance: {balance: >4}  "
-                + f"stake: {stake: >4}  "
+                + f"balance: {balance: <5} "
+                + f"stake: {stake: <5} "
                 + f"action: {action: <14}"
             )
 
@@ -378,12 +394,8 @@ class StreamPlayer:
         for i in range(self.object_detection.table_card_count):
             region = self.object_detection.detect_table_card(frame, i)
             if self.should_save_frame("table_cards"):
-                table_card_frame = self.highlight_frame_region(frame.copy(), region)
                 self.save_frame(
-                    table_card_frame,
-                    window_index,
-                    frame_index,
-                    f"table_card_{i}",
+                    frame, window_index, frame_index, f"table_card_{i}", region
                 )
 
             cropped_frame = self.crop_frame(frame, region)
@@ -432,22 +444,6 @@ class StreamPlayer:
         except OSError:
             raise FrameError("unable to remove frame", window_index, frame_index, name)
 
-    # pytype: disable=bad-return-type
-    @staticmethod
-    def sort_path(pattern: re.Pattern) -> Callable[[str], Tuple[int, int]]:
-        def match(path: str) -> Tuple[int, int]:
-            matches = re.findall(pattern, path)
-            if not matches:
-                raise FrameError(f"unable to parse frame path {path}", -1, -1, "raw")
-            return (
-                int(matches[0][0]),
-                int(matches[0][1]),
-            )
-
-        return match
-
-    # pytype: enable=bad-return-type
-
     @staticmethod
     def crop_frame(frame: np.ndarray, region: Region) -> np.ndarray:
         x1, x2 = region.start.x, region.end.x
@@ -466,10 +462,7 @@ class StreamPlayer:
         )
 
     def should_save_frame(self, region_name: str) -> bool:
-        is_debug = logging.root.level == logging.DEBUG
-        return is_debug and (
-            region_name in self.save_regions or "all" in self.save_regions
-        )
+        return region_name in self.save_regions or "all" in self.save_regions
 
     @staticmethod
     def get_log_prefix(window_index: int, frame_index: int) -> str:

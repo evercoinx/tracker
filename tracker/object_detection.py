@@ -86,7 +86,7 @@ class ObjectDetection:
         regions: List[Region] = []
         points: List[Point] = []
         for i, (x, y) in enumerate(type(self).seat_region_percentages):
-            p = self.get_scaled_point(x, y, frame_width, frame_height)
+            p = self._get_scaled_point(x, y, frame_width, frame_height)
             points.append(p)
 
             if i % 2 != 0:
@@ -99,108 +99,148 @@ class ObjectDetection:
 
     def detect_hand_number(self, frame: np.ndarray) -> Region:
         (h, w) = frame.shape[:2]
-        start = self.get_scaled_point(0.07, 0.05, w, h)
-        end = self.get_scaled_point(0.19, 0.08, w, h)
+        start = self._get_scaled_point(0.07, 0.05, w, h)
+        end = self._get_scaled_point(0.185, 0.08, w, h)
         return Region(start, end)
 
     def detect_hand_time(self, frame: np.ndarray) -> Region:
         (h, w) = frame.shape[:2]
-        start = self.get_scaled_point(0.89, 0.04, w, h)
-        end = self.get_scaled_point(0.95, 0.08, w, h)
+        start = self._get_scaled_point(0.89, 0.04, w, h)
+        end = self._get_scaled_point(0.955, 0.08, w, h)
         return Region(start, end)
 
     def detect_total_pot(self, frame: np.ndarray) -> Region:
         (h, w) = frame.shape[:2]
-        start = self.get_scaled_point(0.48, 0.32, w, h)
-        end = self.get_scaled_point(0.57, 0.37, w, h)
+        start = self._get_scaled_point(0.48, 0.32, w, h)
+        end = self._get_scaled_point(0.57, 0.37, w, h)
         return Region(start, end)
 
-    def detect_seat_number(self, frame: np.ndarray, index: int) -> Region:
-        start_points = [
-            Point(172, 113),
-            Point(433, 81),
-            Point(664, 113),
-            Point(138, 334),
-            Point(431, 342),
-            Point(682, 334),
-        ]
-        if index > len(start_points) - 1:
-            raise ValueError(f"invalid seat number index: {index}")
-
-        (w, h) = 199, 15
-        end_point = Point(start_points[index].x + w, start_points[index].y + h)
-        return Region(start=start_points[index], end=end_point)
+    @staticmethod
+    def _get_scaled_point(
+        x_percent: float,
+        y_percent: float,
+        total_width: int,
+        total_height: int,
+    ) -> Point:
+        x = int(x_percent * total_width)
+        y = int(y_percent * total_height)
+        return Point(x, y)
 
     def detect_seat_action(self, frame: np.ndarray, index: int) -> Region:
-        start_points = [
-            Point(172, 100),
-            Point(433, 68),
-            Point(664, 100),
-            Point(138, 321),
-            Point(431, 328),
-            Point(682, 321),
+        start_percents = [
+            (0.18, 0.205),
+            (0.455, 0.14),
+            (0.695, 0.205),
+            (0.145, 0.655),
+            (0.45, 0.665),
+            (0.715, 0.655),
         ]
-        if index > len(start_points) - 1:
-            raise ValueError(f"invalid seat action index: {index}")
+        return self._get_scaled_region(
+            frame,
+            start_percents,
+            index,
+            percent_width=0.12,
+            percent_height=0.03,
+        )
 
-        (w, h) = 119, 14
-        end_point = Point(start_points[index].x + w, start_points[index].y + h)
-        return Region(start=start_points[index], end=end_point)
-
-    def detect_seat_stake(self, frame: np.ndarray, index: int) -> Region:
-        start_points = [
-            Point(294, 154),
-            Point(423, 131),
-            Point(602, 153),
-            Point(287, 288),
-            Point(0, 0),
-            Point(595, 290),
+    def detect_seat_number(self, frame: np.ndarray, index: int) -> Region:
+        start_percents = [
+            (0.18, 0.23),
+            (0.455, 0.165),
+            (0.695, 0.23),
+            (0.145, 0.68),
+            (0.45, 0.695),
+            (0.715, 0.68),
         ]
-        if index > len(start_points) - 1:
-            raise ValueError(f"invalid seat stake index: {index}")
-
-        (w, h) = 56, 19
-        end_point = Point(start_points[index].x + w, start_points[index].y + h)
-        return Region(start=start_points[index], end=end_point)
+        return self._get_scaled_region(
+            frame,
+            start_percents,
+            index,
+            percent_width=0.12,
+            percent_height=0.035,
+        )
 
     def detect_seat_balance(self, frame: np.ndarray, index: int) -> Region:
-        start_points = [
-            Point(172, 130),
-            Point(433, 98),
-            Point(664, 130),
-            Point(138, 351),
-            Point(431, 357),
-            Point(682, 351),
+        start_percents = [
+            (0.18, 0.265),
+            (0.455, 0.20),
+            (0.695, 0.265),
+            (0.145, 0.715),
+            (0.45, 0.73),
+            (0.715, 0.715),
         ]
-        if index > len(start_points) - 1:
-            raise ValueError(f"invalid seat balance index: {index}")
+        return self._get_scaled_region(
+            frame,
+            start_percents,
+            index,
+            percent_width=0.12,
+            percent_height=0.035,
+        )
 
-        (w, h) = 119, 16
-        end_point = Point(start_points[index].x + w, start_points[index].y + h)
-        return Region(start=start_points[index], end=end_point)
+    def detect_seat_stake(self, frame: np.ndarray, index: int) -> Region:
+        start_percents = [
+            (0.305, 0.315),
+            (0.43, 0.27),
+            (0.615, 0.315),
+            (0.295, 0.585),
+            (0.0, 0.0),
+            (0.605, 0.59),
+        ]
+        return self._get_scaled_region(
+            frame,
+            start_percents,
+            index,
+            percent_width=0.075,
+            percent_height=0.04,
+        )
 
     def detect_table_card(self, frame: np.ndarray, index: int) -> Region:
-        start_points = [
-            Point(368, 185),
-            Point(414, 185),
-            Point(460, 185),
-            Point(506, 185),
-            Point(554, 185),
+        start_percents = [
+            (0.384, 0.377),
+            (0.432, 0.377),
+            (0.48, 0.377),
+            (0.528, 0.377),
+            (0.578, 0.377),
         ]
-        if index > len(start_points) - 1:
-            raise ValueError(f"invalid table card index: {index}")
+        return self._get_scaled_region(
+            frame,
+            start_percents,
+            index,
+            percent_width=0.039,
+            percent_height=0.065,
+        )
 
-        (w, h) = 38, 32
-        end_point = Point(start_points[index].x + w, start_points[index].y + h)
-        return Region(start=start_points[index], end=end_point)
+    def _get_scaled_region(
+        self,
+        frame: np.ndarray,
+        start_percents: List[Tuple[float, float]],
+        index: int,
+        *,
+        percent_width: float,
+        percent_height: float,
+    ) -> Region:
+        if index > len(start_percents) - 1:
+            raise ValueError(f"invalid index of start percents: {index}")
+
+        x_percent, y_percent = start_percents[index]
+        (frame_height, frame_width) = frame.shape[:2]
+
+        start = self._get_scaled_point(x_percent, y_percent, frame_width, frame_height)
+        end = self._get_scaled_point(
+            x_percent + percent_width,
+            y_percent + percent_height,
+            frame_width,
+            frame_height,
+        )
+        return Region(start, end)
 
     def detect_dealer(self, frame: np.ndarray) -> Optional[Region]:
-        return self.detect_object_by_template(frame, self.dealer_template)
+        return self._get_object_by_template(frame, self.dealer_template)
 
     def detect_pocket_cards(self, frame: np.ndarray, index: int) -> Optional[Region]:
-        return self.detect_object_by_template(frame, self.pocket_cards_templates[index])
+        return self._get_object_by_template(frame, self.pocket_cards_templates[index])
 
-    def detect_object_by_template(
+    def _get_object_by_template(
         self, frame: np.ndarray, template: np.ndarray
     ) -> Optional[Region]:
         result = cv2.matchTemplate(frame, template, cv2.TM_CCOEFF_NORMED)
@@ -215,14 +255,3 @@ class ObjectDetection:
         h, w = template.shape[:2]
         end_point = Point(start_point.x + w, start_point.y + h)
         return Region(start=start_point, end=end_point)
-
-    @staticmethod
-    def get_scaled_point(
-        x_percent: float,
-        y_percent: float,
-        total_width: int,
-        total_height: int,
-    ) -> Point:
-        x = int(x_percent * total_width)
-        y = int(y_percent * total_height)
-        return Point(x, y)
