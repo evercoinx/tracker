@@ -36,7 +36,7 @@ class TextRecognition:
     def recognize_hand_number(self, region: Region) -> int:
         self.tess_api.SetVariable("tessedit_char_whitelist", "Hand:#0123456789")
 
-        dims = self.calculate_rectangle_dimensions(region)
+        dims = self._calculate_rectangle_dimensions(region)
         self.tess_api.SetRectangle(*dims)
 
         line = self.tess_api.GetUTF8Text()
@@ -48,7 +48,7 @@ class TextRecognition:
     def recognize_hand_time(self, region: Region) -> datetime:
         self.tess_api.SetVariable("tessedit_char_whitelist", ":+0123456789")
 
-        dims = self.calculate_rectangle_dimensions(region)
+        dims = self._calculate_rectangle_dimensions(region)
         self.tess_api.SetRectangle(*dims)
 
         line = self.tess_api.GetUTF8Text()
@@ -64,7 +64,7 @@ class TextRecognition:
     def recognize_total_pot(self, region: Region) -> float:
         self.tess_api.SetVariable("tessedit_char_whitelist", "pot:€.0123456789")
 
-        dims = self.calculate_rectangle_dimensions(region)
+        dims = self._calculate_rectangle_dimensions(region)
         self.tess_api.SetRectangle(*dims)
 
         line = self.tess_api.GetUTF8Text()
@@ -76,7 +76,7 @@ class TextRecognition:
     def recognize_seat_number(self, region: Region) -> int:
         self.tess_api.SetVariable("tessedit_char_whitelist", "Seat123456")
 
-        dims = self.calculate_rectangle_dimensions(region)
+        dims = self._calculate_rectangle_dimensions(region)
         self.tess_api.SetRectangle(*dims)
 
         line = self.tess_api.GetUTF8Text()
@@ -88,7 +88,7 @@ class TextRecognition:
     def recognize_seat_money(self, region: Region) -> float:
         self.tess_api.SetVariable("tessedit_char_whitelist", "€.0123456789")
 
-        dims = self.calculate_rectangle_dimensions(region)
+        dims = self._calculate_rectangle_dimensions(region)
         self.tess_api.SetRectangle(*dims)
 
         line = self.tess_api.GetUTF8Text()
@@ -102,7 +102,7 @@ class TextRecognition:
             "tessedit_char_whitelist", "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
         )
 
-        dims = self.calculate_rectangle_dimensions(region)
+        dims = self._calculate_rectangle_dimensions(region)
         self.tess_api.SetRectangle(*dims)
 
         line = self.tess_api.GetUTF8Text()
@@ -118,7 +118,7 @@ class TextRecognition:
         return match
 
     @staticmethod
-    def calculate_rectangle_dimensions(region: Region) -> Tuple[int, int, int, int]:
+    def _calculate_rectangle_dimensions(region: Region) -> Tuple[int, int, int, int]:
         return (
             region.start.x,
             region.start.y,

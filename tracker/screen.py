@@ -45,7 +45,7 @@ class Screen:
         self, display: str, window_coords: List[dict], window_index: int
     ) -> None:
         frame_index = 0
-        self.log_prefix = self.get_log_prefix(window_index, frame_index)
+        self.log_prefix = self._get_log_prefix(window_index, frame_index)
 
         with mss(display) as screen:
             while True:
@@ -70,7 +70,7 @@ class Screen:
                     logging.info(f"{self.log_prefix} raw frame saved")
 
                     frame_index += 1
-                    self.log_prefix = self.get_log_prefix(window_index, frame_index)
+                    self.log_prefix = self._get_log_prefix(window_index, frame_index)
 
                     self.queue.put((window_index, gray_frame))
                     self.events[window_index].wait()
@@ -78,6 +78,10 @@ class Screen:
                 except (KeyboardInterrupt, SystemExit):
                     logging.warn(f"{self.log_prefix} interruption; exiting...")
                     return
+
+    @staticmethod
+    def _get_log_prefix(window_index: int, frame_index: int):
+        return f"{current_process().name}-w{window_index}-f{frame_index:<5} -"
 
     @staticmethod
     def get_window_screens(
@@ -122,7 +126,3 @@ class Screen:
         ]
 
         return [window_coords[int(i)] for i in windows]
-
-    @staticmethod
-    def get_log_prefix(window_index: int, frame_index: int):
-        return f"{current_process().name}-w{window_index}-f{frame_index:<5} -"

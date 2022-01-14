@@ -39,7 +39,7 @@ class ImageClassifier:
             if img is None:
                 raise ImageError("unable to read dataset image of table card", p)
 
-            feat = self.extract_feature(img)
+            feat = self._extract_feature(img)
             features.append(feat)
 
             matches = re.findall(image_path_pattern, p)
@@ -51,12 +51,12 @@ class ImageClassifier:
         self.model.fit(features, labels)
 
     def predict(self, image: np.ndarray) -> str:
-        feat = self.extract_feature(image)
+        feat = self._extract_feature(image)
         labels = self.model.predict([feat])
         return "" if labels[0] == type(self).placeholder_label else labels[0]
 
     @staticmethod
-    def extract_feature(image: np.ndarray, bins: Tuple[int] = (8,)) -> np.ndarray:
+    def _extract_feature(image: np.ndarray, bins: Tuple[int] = (8,)) -> np.ndarray:
         hist = cv2.calcHist([image], [0], None, bins, [0, 256])
         cv2.normalize(hist, hist)
         return hist.flatten()
