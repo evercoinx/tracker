@@ -11,7 +11,7 @@ from tracker.error import ValidationError
 from tracker.image_classifier import ImageClassifier
 from tracker.object_detection import ObjectDetection
 from tracker.screen import Screen
-from tracker.stream_player import StreamPlayer
+from tracker.stream_player import GameMode, StreamPlayer
 from tracker.text_recognition import TextRecognition
 
 TEMPLATE_PATH = "./template"
@@ -136,6 +136,7 @@ def replay_session(
         events=[],
         stream_path=args["stream_path"],
         frame_format=IMAGE_FORMAT,
+        game_mode=GameMode.REPLAY,
         save_regions=args["save_regions"],
         text_recognition=text_recognition,
         object_detection=object_detection,
@@ -167,6 +168,7 @@ def play_session(
         events=events,
         stream_path=args["stream_path"],
         frame_format=IMAGE_FORMAT,
+        game_mode=GameMode.PLAY,
         save_regions=args["save_regions"],
         text_recognition=text_recognition,
         object_detection=object_detection,

@@ -1,5 +1,4 @@
 import logging
-import os
 from multiprocessing import current_process, synchronize
 from multiprocessing.queues import Queue
 from typing import List
@@ -8,8 +7,6 @@ import cv2
 import numpy as np
 from mss.linux import MSS as mss
 from typing_extensions import TypedDict  # pytype: disable=not-supported-yet
-
-from tracker.error import FrameError
 
 
 class WindowScreen(TypedDict):
@@ -53,19 +50,6 @@ class Screen:
                     frame = screen.grab(window_coords)
                     frame_arr = np.asarray(frame, dtype=np.uint8)
                     gray_frame = cv2.cvtColor(frame_arr, cv2.COLOR_BGRA2GRAY)
-
-                    saved = cv2.imwrite(
-                        os.path.join(
-                            self.stream_path,
-                            f"window{window_index}",
-                            f"{frame_index}_raw.{self.frame_format}",
-                        ),
-                        gray_frame,
-                    )
-                    if not saved:
-                        raise FrameError("unable to save raw frame")
-
-                    logging.info(f"{self.log_prefix} raw frame saved")
 
                     frame_index += 1
                     self.log_prefix = self._get_log_prefix(window_index, frame_index)

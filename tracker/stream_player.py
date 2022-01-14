@@ -3,6 +3,7 @@ import os
 import re
 from collections import defaultdict
 from datetime import datetime
+from enum import Enum
 from glob import glob
 from multiprocessing import Queue, current_process, synchronize
 from pprint import pformat
@@ -54,6 +55,11 @@ class SessionData(TypedDict):
     table_cards: List[CardData]
 
 
+class GameMode(Enum):
+    PLAY = 0
+    REPLAY = 1
+
+
 class StreamPlayer:
     """Plays a live stream or replays a saved one"""
 
@@ -61,6 +67,7 @@ class StreamPlayer:
     events: List[synchronize.Event]
     stream_path: str
     frame_format: str
+    game_mode: GameMode
     save_regions: List[str]
     text_recognition: TextRecognition
     object_detection: ObjectDetection
@@ -74,6 +81,7 @@ class StreamPlayer:
         events: List[synchronize.Event],
         stream_path: str,
         frame_format: str,
+        game_mode: GameMode,
         save_regions: List[str],
         text_recognition: TextRecognition,
         object_detection: ObjectDetection,
@@ -83,6 +91,7 @@ class StreamPlayer:
         self.events = events
         self.stream_path = stream_path
         self.frame_format = frame_format
+        self.game_mode = game_mode
         self.save_regions = save_regions
         self.text_recognition = text_recognition
         self.object_detection = object_detection
@@ -203,8 +212,11 @@ class StreamPlayer:
 
         hand_number = self._get_hand_number(frame, window_index, frame_index)
         if not hand_number:
-            self._remove_frame(window_index, frame_index, "raw")
-            raise FrameError("unable to recognize frame as game table")
+            raise FrameError("unable to recognize frame as game window")
+
+        if self.game_mode == GameMode.PLAY:
+            self._save_frame(frame, window_index, frame_index, "raw")
+            logging.debug(f"{self.log_prefix} raw frame saved")
 
         hand_time = self._get_hand_time(frame, window_index, frame_index)
         total_pot = self._get_total_pot(frame, window_index, frame_index)
@@ -241,7 +253,7 @@ class StreamPlayer:
         for i, s in enumerate(text_data["seats"]):
             playing = "✔" if object_data["playing_seats"][i] else " "
             dealer = "●" if object_data["dealer_position"] == i else " "
-            number = s["number"] if s["number"] != -1 else "?"
+            number = s["number"] if s["number"] != -1 else "⨯"
             balance = f"{s['balance']:.2f}" if s["balance"] > 0 else " "
             stake = f"{s['stake']:.2f}" if s["stake"] > 0 else " "
             action = s["action"] if s["action"] else " "
@@ -436,18 +448,6 @@ class StreamPlayer:
         )
         if not saved:
             raise FrameError(f"unable to save {name} frame")
-
-    def _remove_frame(self, window_index: int, frame_index: int, name: str) -> None:
-        try:
-            os.remove(
-                os.path.join(
-                    self.stream_path,
-                    f"window{window_index}",
-                    f"{frame_index}_{name}.{self.frame_format}",
-                ),
-            )
-        except OSError:
-            raise FrameError(f"unable to remove {name} frame")
 
     @staticmethod
     def _crop_frame(frame: np.ndarray, region: Region) -> np.ndarray:
