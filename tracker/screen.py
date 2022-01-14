@@ -63,9 +63,7 @@ class Screen:
                         gray_frame,
                     )
                     if not saved:
-                        raise FrameError(
-                            "unable to save raw frame", window_index, frame_index, "raw"
-                        )
+                        raise FrameError("unable to save raw frame")
 
                     logging.info(f"{self.log_prefix} raw frame saved")
 

@@ -123,7 +123,7 @@ class StreamPlayer:
         for p in sorted(raw_frame_paths, key=self._sort_path(raw_frame_path_pattern)):
             frame = cv2.imread(p, cv2.IMREAD_UNCHANGED)
             if frame is None:
-                raise FrameError(f"unable to read frame path {p}", -1, -1, "raw")
+                raise FrameError(f"unable to read raw frame path {p}")
 
             matches = re.findall(raw_frame_path_pattern, p)
             (window_index, frame_index) = matches[0]
@@ -144,7 +144,7 @@ class StreamPlayer:
         def match(path: str) -> Tuple[int, int]:
             matches = re.findall(pattern, path)
             if not matches:
-                raise FrameError(f"unable to parse frame path {path}", -1, -1, "raw")
+                raise FrameError(f"unable to parse frame path {path}")
             return (
                 int(matches[0][0]),
                 int(matches[0][1]),
@@ -204,9 +204,7 @@ class StreamPlayer:
         hand_number = self._get_hand_number(frame, window_index, frame_index)
         if not hand_number:
             self._remove_frame(window_index, frame_index, "raw")
-            raise FrameError(
-                "unable to recognize frame", window_index, frame_index, "raw"
-            )
+            raise FrameError("unable to recognize frame as game table")
 
         hand_time = self._get_hand_time(frame, window_index, frame_index)
         total_pot = self._get_total_pot(frame, window_index, frame_index)
@@ -437,9 +435,7 @@ class StreamPlayer:
             cropped_frame,
         )
         if not saved:
-            raise FrameError(
-                "unable to save processed frame", window_index, frame_index, name
-            )
+            raise FrameError(f"unable to save {name} frame")
 
     def _remove_frame(self, window_index: int, frame_index: int, name: str) -> None:
         try:
@@ -451,7 +447,7 @@ class StreamPlayer:
                 ),
             )
         except OSError:
-            raise FrameError("unable to remove frame", window_index, frame_index, name)
+            raise FrameError(f"unable to remove {name} frame")
 
     @staticmethod
     def _crop_frame(frame: np.ndarray, region: Region) -> np.ndarray:

@@ -17,8 +17,8 @@ class TextRecognition:
         r"(bet|call|check|fold|raise|sittingin|waitingforbb)", flags=re.IGNORECASE
     )
     regex_money: ClassVar[re.Pattern] = re.compile(r"[$€]([.\d]+)")
-    regex_multiple_digits: ClassVar[re.Pattern] = re.compile(r"(\d+)")
-    regex_single_digit: ClassVar[re.Pattern] = re.compile(r"(\d)")
+    regex_hand_number: ClassVar[re.Pattern] = re.compile(r"(\d{10,})")
+    regex_seat_number: ClassVar[re.Pattern] = re.compile(r"([123456])")
     regex_time_with_zone: ClassVar[re.Pattern] = re.compile(r"\d{2}:\d{2}\+\d{2}")
 
     def __init__(self) -> None:
@@ -40,7 +40,7 @@ class TextRecognition:
         self.tess_api.SetRectangle(*dims)
 
         line = self.tess_api.GetUTF8Text()
-        matches = re.findall(type(self).regex_multiple_digits, line.strip())
+        matches = re.findall(type(self).regex_hand_number, line.strip())
         if not matches:
             return 0
         return int(matches[0])
@@ -80,7 +80,7 @@ class TextRecognition:
         self.tess_api.SetRectangle(*dims)
 
         line = self.tess_api.GetUTF8Text()
-        matches = re.findall(type(self).regex_single_digit, line.strip())
+        matches = re.findall(type(self).regex_seat_number, line.strip())
         if not matches:
             return -1
         return int(matches[0])
