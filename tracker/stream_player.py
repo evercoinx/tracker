@@ -153,7 +153,7 @@ class StreamPlayer:
         for p in sorted(raw_frame_paths, key=self._sort_path(raw_frame_path_pattern)):
             frame = cv2.imread(p, cv2.IMREAD_UNCHANGED)
             if frame is None:
-                raise FrameError(f"unable to read raw frame path {p}")
+                raise FrameError(f"Unable to read frame path {p}")
 
             matches = re.findall(raw_frame_path_pattern, p)
             (window_index, frame_index) = matches[0]
@@ -165,15 +165,15 @@ class StreamPlayer:
     def _get_log_prefix(window_index: int, frame_index: int) -> str:
         proc_name = current_process().name
         if proc_name == "MainProcess":  # no multiprocessing
-            proc_name = "player"
-        return f"{proc_name}-w{window_index}-f{frame_index:<5} -"
+            proc_name = "Game"
+        return f"{proc_name}-W{window_index}-F{frame_index:<5} -"
 
     @staticmethod
     def _sort_path(pattern: re.Pattern) -> Callable[[str], Tuple[int, int]]:
         def match(path: str) -> Tuple[int, int]:
             matches = re.findall(pattern, path)
             if not matches:
-                raise FrameError(f"unable to parse frame path {path}")
+                raise FrameError(f"Unable to parse frame path {path}")
             return (
                 int(matches[0][0]),
                 int(matches[0][1]),
@@ -230,7 +230,7 @@ class StreamPlayer:
 
         hand_number = self._get_hand_number(frame, window_index, frame_index)
         if not hand_number:
-            raise FrameError("unable to recognize frame as game window")
+            raise FrameError("Unable to recognize frame as game window")
 
         if self.game_mode == GameMode.PLAY:
             self._save_frame(frame, window_index, frame_index, "raw")
@@ -274,16 +274,16 @@ class StreamPlayer:
             playing = "✔" if object_data["playing_seats"][i] else " "
             dealer = "●" if object_data["dealer_position"] == i else " "
             number = s["number"] if s["number"] != -1 else "⨯"
-            balance = f"{s['balance']:.2f}" if s["balance"] > 0 else " "
-            stake = f"{s['stake']:.2f}" if s["stake"] > 0 else " "
+            balance = f"${s['balance']:.2f}" if playing else " "
+            stake = f"${s['stake']:.2f}" if s["stake"] > 0 else " "
             action = s["action"] if s["action"] else " "
 
             seat_lines.append(
-                f"{' ':<26}{self.log_prefix[:-2]} {i} {dealer} seat {number}  "
-                + f"playing: {playing}  "
-                + f"balance: {balance: <5} "
-                + f"stake: {stake: <5} "
-                + f"action: {action: <14}"
+                f"{' ':<26}{self.log_prefix[:-2]} {i} {dealer} Seat {number}:  "
+                + f"playing {playing}  "
+                + f"balance {balance: <5} "
+                + f"stake {stake: <5} "
+                + f"action {action: <14}"
             )
 
         letter_to_suit = {
@@ -301,12 +301,12 @@ class StreamPlayer:
             hand_time = hand_time[:-2]
 
         logging.info(
-            f"{self.log_prefix} hand number: {text_data['hand_number']} "
+            f"{self.log_prefix} Hand number #{text_data['hand_number']} "
             + f"at {hand_time}\n"
-            + f"{' ':<26}{self.log_prefix} table cards: "
+            + f"{' ':<26}{self.log_prefix} Total pot ${text_data['total_pot']:.2f}\n"
+            + f"{' ':<26}{self.log_prefix} Board     "
             + " ".join(table_card_lines)
             + "\n"
-            + f"{' ':<26}{self.log_prefix} total pot:   {text_data['total_pot']:.2f}\n"
             + "\n".join(seat_lines)
             + "\n"
         )
@@ -524,7 +524,7 @@ class StreamPlayer:
             cropped_frame,
         )
         if not saved:
-            raise FrameError(f"unable to save {name} frame")
+            raise FrameError(f"Unable to save {name} frame")
 
     @staticmethod
     def _crop_frame(frame: np.ndarray, region: Region) -> np.ndarray:

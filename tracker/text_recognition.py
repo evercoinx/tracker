@@ -65,7 +65,7 @@ class TextRecognition:
             return datetime.min
 
     def recognize_total_pot(self, region: Region) -> float:
-        self.tess_api.SetVariable("tessedit_char_whitelist", "pot:€0123456789")
+        self.tess_api.SetVariable("tessedit_char_whitelist", "pot:$€0123456789")
 
         dims = self._calculate_rectangle_dimensions(region)
         self.tess_api.SetRectangle(*dims)
@@ -89,7 +89,7 @@ class TextRecognition:
         return int(matches[0])
 
     def recognize_seat_money(self, region: Region) -> float:
-        self.tess_api.SetVariable("tessedit_char_whitelist", "€0123456789")
+        self.tess_api.SetVariable("tessedit_char_whitelist", "$€0123456789")
 
         dims = self._calculate_rectangle_dimensions(region)
         self.tess_api.SetRectangle(*dims)
