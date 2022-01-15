@@ -56,7 +56,7 @@ class ObjectDetection:
         dealer_path = f"{self.template_path}/dealer.{self.image_format}"
         dealer_template = cv2.imread(dealer_path, cv2.IMREAD_UNCHANGED)
         if dealer_template is None:
-            raise ImageError("unable to read template image of dealer", dealer_path)
+            raise ImageError("Unable to read template image of dealer", dealer_path)
         self.dealer_template = dealer_template
 
         self.pocket_cards_templates = []
@@ -65,7 +65,7 @@ class ObjectDetection:
             pocket_cards_template = cv2.imread(card_path, cv2.IMREAD_UNCHANGED)
             if pocket_cards_template is None:
                 raise ImageError(
-                    "unable to read template image of pocket card", card_path
+                    "Unable to read template image of pocket card", card_path
                 )
             self.pocket_cards_templates.append(pocket_cards_template)
 

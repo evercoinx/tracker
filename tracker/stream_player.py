@@ -8,7 +8,16 @@ from glob import glob
 from multiprocessing import Queue, current_process
 from multiprocessing.synchronize import Event
 from pprint import pformat
-from typing import Callable, DefaultDict, List, Optional, Tuple
+from typing import (
+    Callable,
+    ClassVar,
+    DefaultDict,
+    Dict,
+    FrozenSet,
+    List,
+    Optional,
+    Tuple,
+)
 
 import cv2
 import numpy as np
@@ -17,18 +26,20 @@ from typing_extensions import TypedDict
 from tracker.error import FrameError
 from tracker.image_classifier import ImageClassifier
 from tracker.object_detection import ObjectDetection, Region
-from tracker.text_recognition import TextRecognition
+from tracker.text_recognition import Money, TextRecognition
 
 
 class Card:
-    letter_to_suit = {
+    letter_to_suit: ClassVar[Dict[str, str]] = {
         "c": "♣",
         "d": "♦",
         "h": "♥",
         "s": "♠",
     }
 
-    ranks = frozenset(["2", "3", "4", "5", "6", "7", "8", "9", "T", "J", "Q", "K", "A"])
+    ranks: ClassVar[FrozenSet[str]] = frozenset(
+        ["2", "3", "4", "5", "6", "7", "8", "9", "T", "J", "Q", "K", "A"]
+    )
 
     rank: str
     suit: str
@@ -45,19 +56,22 @@ class Card:
     def __str__(self) -> str:
         return f"{self.rank}{self.letter_to_suit[self.suit]}"
 
+    def __repr__(self) -> str:
+        return f"Card('{self.rank}', '{self.suit}')"
+
 
 class SeatData(TypedDict):
     number: int
     action: str
-    stake: float
-    balance: float
+    stake: Money
+    balance: Money
     playing: bool
 
 
 class TextData(TypedDict):
     hand_number: int
     hand_time: datetime
-    total_pot: float
+    total_pot: Money
     seats: List[SeatData]
 
 
@@ -71,7 +85,7 @@ class FrameData(TypedDict):
     window_index: int
     frame_index: int
     hand_time: datetime
-    total_pot: float
+    total_pot: Money
     dealer_position: int
     seats: List[SeatData]
     board: List[Card]
@@ -288,15 +302,15 @@ class StreamPlayer:
             playing = "✔" if s["playing"] else " "
             dealer = "●" if frame_data["dealer_position"] == i else " "
             number = s["number"] if s["number"] != -1 else "⨯"
-            balance = f"${s['balance']:.2f}" if playing else " "
-            stake = f"${s['stake']:.2f}" if s["stake"] > 0 else " "
+            balance = s["balance"] if playing else " "
+            stake = s["stake"] if s["stake"] else " "
             action = s["action"] if s["action"] else " "
 
             seat_lines.append(
                 f"{' ':<26}{self.log_prefix[:-2]} {i} {dealer} Seat {number}:  "
                 + f"playing {playing}  "
-                + f"balance {balance: <6} "
-                + f"stake {stake: <6} "
+                + f"balance {balance} "
+                + f"stake {stake} "
                 + f"action {action: <14}"
             )
 
@@ -311,7 +325,7 @@ class StreamPlayer:
         logging.info(
             f"{self.log_prefix} Hand number #{hand_number} "
             + f"at {hand_time}\n"
-            + f"{' ':<26}{self.log_prefix} Total pot ${frame_data['total_pot']:.2f}\n"
+            + f"{' ':<26}{self.log_prefix} Total pot {frame_data['total_pot']}\n"
             + f"{' ':<26}{self.log_prefix} Board     "
             + " ".join(board_lines)
             + "\n"
@@ -341,7 +355,7 @@ class StreamPlayer:
 
     def _get_total_pot(
         self, frame: np.ndarray, window_index: int, frame_index: int
-    ) -> float:
+    ) -> Money:
         region = self.object_detection.detect_total_pot(frame)
         if self._should_save_frame("total_pot"):
             self._save_frame(frame, window_index, frame_index, "total_pot", region)
@@ -375,8 +389,8 @@ class StreamPlayer:
                     {
                         "number": number,
                         "action": "",
-                        "stake": 0,
-                        "balance": 0,
+                        "stake": Money(),
+                        "balance": Money(),
                         "playing": False,
                     }
                 )

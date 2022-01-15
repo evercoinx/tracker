@@ -10,6 +10,21 @@ from tesserocr import OEM, PSM, PyTessBaseAPI
 from tracker.object_detection import Region
 
 
+class Money:
+    def __init__(self, currency: str = "€", amount: float = 0) -> None:
+        self.currency = currency
+        self.amount = amount
+
+    def __nonzero__(self) -> bool:
+        return self.amount == 0
+
+    def __str__(self) -> str:
+        return f"{self.currency}{self.amount: <5.2f}"
+
+    def __repr__(self) -> str:
+        return f"Money('{self.currency}', {self.amount})"
+
+
 class TextRecognition:
     """Recognizes texts on a window frame"""
 
@@ -17,7 +32,7 @@ class TextRecognition:
         r"(bet|call|check|fold|raise|allin|sittingin|waitingforbb)",
         flags=re.IGNORECASE,
     )
-    regex_money: ClassVar[re.Pattern] = re.compile(r"[$€]([.\d]+)")
+    regex_money: ClassVar[re.Pattern] = re.compile(r"([$€])([.\d]+)")
     regex_hand_number: ClassVar[re.Pattern] = re.compile(r"(\d{10,})")
     regex_seat_number: ClassVar[re.Pattern] = re.compile(r"([123456])")
     regex_time_with_zone: ClassVar[re.Pattern] = re.compile(r"\d{2}:\d{2}\+\d{2}")
@@ -64,7 +79,7 @@ class TextRecognition:
         except Exception:
             return datetime.min
 
-    def recognize_total_pot(self, region: Region) -> float:
+    def recognize_total_pot(self, region: Region) -> Money:
         self.tess_api.SetVariable("tessedit_char_whitelist", "pot:$€0123456789")
 
         dims = self._calculate_rectangle_dimensions(region)
@@ -73,8 +88,8 @@ class TextRecognition:
         line = self.tess_api.GetUTF8Text()
         matches = re.findall(type(self).regex_money, line.strip())
         if not matches:
-            return 0.0
-        return self._convert_digits_money(matches[0])
+            return Money()
+        return self._to_money(currency=matches[0][0], digits=matches[0][1])
 
     def recognize_seat_number(self, region: Region) -> int:
         self.tess_api.SetVariable("tessedit_char_whitelist", "Seat123456")
@@ -88,7 +103,7 @@ class TextRecognition:
             return -1
         return int(matches[0])
 
-    def recognize_seat_money(self, region: Region) -> float:
+    def recognize_seat_money(self, region: Region) -> Money:
         self.tess_api.SetVariable("tessedit_char_whitelist", "$€0123456789")
 
         dims = self._calculate_rectangle_dimensions(region)
@@ -97,8 +112,8 @@ class TextRecognition:
         line = self.tess_api.GetUTF8Text()
         matches = re.findall(type(self).regex_money, line.strip())
         if not matches:
-            return 0.0
-        return self._convert_digits_money(matches[0])
+            return Money()
+        return self._to_money(currency=matches[0][0], digits=matches[0][1])
 
     def recognize_seat_action(self, region: Region) -> str:
         self.tess_api.SetVariable(
@@ -122,9 +137,10 @@ class TextRecognition:
         return replacements.get(match, match)
 
     @staticmethod
-    def _convert_digits_money(digits: str) -> float:
+    def _to_money(currency: str, digits: str) -> Money:
         cents = f"{digits:0<3}"
-        return round(float(cents) / 100, 2)
+        amount = round(float(cents) / 100, 2)
+        return Money(currency, amount)
 
     @staticmethod
     def _calculate_rectangle_dimensions(region: Region) -> Tuple[int, int, int, int]:

@@ -37,14 +37,14 @@ class ImageClassifier:
         for p in sorted(image_paths):
             img = cv2.imread(p)
             if img is None:
-                raise ImageError("unable to read dataset image of table card", p)
+                raise ImageError("Unable to read dataset image of table card", p)
 
             feat = self._extract_feature(img)
             features.append(feat)
 
             matches = re.findall(image_path_pattern, p)
             if not matches:
-                raise ImageError("unable to parse dataset image of table card", p)
+                raise ImageError("Unable to parse dataset image of table card", p)
             labels.append(matches[0])
 
         self.model.fit(features, labels)
