@@ -14,7 +14,8 @@ class TextRecognition:
     """Recognizes texts on a window frame"""
 
     regex_action: ClassVar[re.Pattern] = re.compile(
-        r"(bet|call|check|fold|raise|sittingin|waitingforbb)", flags=re.IGNORECASE
+        r"(bet|call|check|fold|raise|allin|sittingin|waitingforbb)",
+        flags=re.IGNORECASE,
     )
     regex_money: ClassVar[re.Pattern] = re.compile(r"[$€]([.\d]+)")
     regex_hand_number: ClassVar[re.Pattern] = re.compile(r"(\d{10,})")
@@ -64,7 +65,7 @@ class TextRecognition:
             return datetime.min
 
     def recognize_total_pot(self, region: Region) -> float:
-        self.tess_api.SetVariable("tessedit_char_whitelist", "pot:€.0123456789")
+        self.tess_api.SetVariable("tessedit_char_whitelist", "pot:€0123456789")
 
         dims = self._calculate_rectangle_dimensions(region)
         self.tess_api.SetRectangle(*dims)
@@ -73,7 +74,7 @@ class TextRecognition:
         matches = re.findall(type(self).regex_money, line.strip())
         if not matches:
             return 0.0
-        return float(matches[0])
+        return self._convert_digits_money(matches[0])
 
     def recognize_seat_number(self, region: Region) -> int:
         self.tess_api.SetVariable("tessedit_char_whitelist", "Seat123456")
@@ -88,7 +89,7 @@ class TextRecognition:
         return int(matches[0])
 
     def recognize_seat_money(self, region: Region) -> float:
-        self.tess_api.SetVariable("tessedit_char_whitelist", "€.0123456789")
+        self.tess_api.SetVariable("tessedit_char_whitelist", "€0123456789")
 
         dims = self._calculate_rectangle_dimensions(region)
         self.tess_api.SetRectangle(*dims)
@@ -97,7 +98,7 @@ class TextRecognition:
         matches = re.findall(type(self).regex_money, line.strip())
         if not matches:
             return 0.0
-        return float(matches[0])
+        return self._convert_digits_money(matches[0])
 
     def recognize_seat_action(self, region: Region) -> str:
         self.tess_api.SetVariable(
@@ -113,11 +114,17 @@ class TextRecognition:
             return ""
 
         match = matches[0].lower()
-        if match == "sittingin":
-            return "sitting in"
-        elif match == "waitingforbb":
-            return "waiting for bb"
-        return match
+        replacements = {
+            "allin": "all-in",
+            "sittingin": "sitting in",
+            "waitingforbb": "waiting for bb",
+        }
+        return replacements.get(match, match)
+
+    @staticmethod
+    def _convert_digits_money(digits: str) -> float:
+        cents = f"{digits:0<3}"
+        return round(float(cents) / 100, 2)
 
     @staticmethod
     def _calculate_rectangle_dimensions(region: Region) -> Tuple[int, int, int, int]:

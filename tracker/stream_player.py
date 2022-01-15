@@ -296,9 +296,13 @@ class StreamPlayer:
         for i, c in enumerate(object_data["table_cards"]):
             table_card_lines[i] = f"{c['rank']}{letter_to_suit[c['suit']]}"
 
+        hand_time = text_data["hand_time"].strftime("%H:%M%z")
+        if len(hand_time) > 5:
+            hand_time = hand_time[:-2]
+
         logging.info(
             f"{self.log_prefix} hand number: {text_data['hand_number']} "
-            + f"at {text_data['hand_time'].strftime('%H:%M%z')}\n"
+            + f"at {hand_time}\n"
             + f"{' ':<26}{self.log_prefix} table cards: "
             + " ".join(table_card_lines)
             + "\n"
