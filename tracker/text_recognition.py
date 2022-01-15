@@ -15,8 +15,8 @@ class Money:
         self.currency = currency
         self.amount = amount
 
-    def __nonzero__(self) -> bool:
-        return self.amount == 0
+    def __bool__(self) -> bool:
+        return self.amount != 0
 
     def __str__(self) -> str:
         return f"{self.currency}{self.amount: <5.2f}"

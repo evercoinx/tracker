@@ -23,7 +23,7 @@ import cv2
 import numpy as np
 from typing_extensions import TypedDict
 
-from tracker.error import FrameError
+from tracker.error import ImageError
 from tracker.image_classifier import ImageClassifier
 from tracker.object_detection import ObjectDetection, Region
 from tracker.text_recognition import Money, TextRecognition
@@ -188,7 +188,7 @@ class StreamPlayer:
         for p in sorted(raw_frame_paths, key=self._sort_path(raw_frame_path_pattern)):
             frame = cv2.imread(p, cv2.IMREAD_UNCHANGED)
             if frame is None:
-                raise FrameError(f"Unable to read frame path {p}")
+                raise ImageError("Unable to read frame", p)
 
             matches = re.findall(raw_frame_path_pattern, p)
             (window_index, frame_index) = matches[0]
@@ -208,7 +208,7 @@ class StreamPlayer:
         def match(path: str) -> Tuple[int, int]:
             matches = re.findall(pattern, path)
             if not matches:
-                raise FrameError(f"Unable to parse frame path {path}")
+                raise ImageError("Unable to parse frame path", path)
             return (
                 int(matches[0][0]),
                 int(matches[0][1]),
@@ -233,7 +233,7 @@ class StreamPlayer:
             object_data = self._process_objects(
                 inverted_frame, window_index, frame_index, text_data["hand_number"]
             )
-        except FrameError as err:
+        except ImageError as err:
             logging.warn(f"{self.log_prefix} {err}\n")
             return
 
@@ -260,7 +260,7 @@ class StreamPlayer:
 
         hand_number = self._get_hand_number(frame, window_index, frame_index)
         if not hand_number:
-            raise FrameError("Unable to recognize frame as game window")
+            raise ImageError("Unable to recognize frame as game window")
 
         if self.game_mode == GameMode.PLAY:
             self._save_frame(frame, window_index, frame_index, "raw")
@@ -301,9 +301,9 @@ class StreamPlayer:
         for i, s in enumerate(frame_data["seats"]):
             playing = "✔" if s["playing"] else " "
             dealer = "●" if frame_data["dealer_position"] == i else " "
-            number = s["number"] if s["number"] != -1 else "⨯"
-            balance = s["balance"] if playing else " "
-            stake = s["stake"] if s["stake"] else " "
+            number = str(s["number"]) if s["number"] != -1 else "⨯"
+            balance = str(s["balance"]) if (s["balance"] or s["playing"]) else " " * 6
+            stake = str(s["stake"]) if s["stake"] else " " * 6
             action = s["action"] if s["action"] else " "
 
             seat_lines.append(
@@ -525,17 +525,16 @@ class StreamPlayer:
         name: str,
         region: Optional[Region] = None,
     ) -> None:
-        cropped_frame = self._crop_frame(frame, region) if region else frame
-        saved = cv2.imwrite(
-            os.path.join(
-                self.stream_path,
-                f"window{window_index}",
-                f"{frame_index}_{name}_processed.{self.frame_format}",
-            ),
-            cropped_frame,
+        path = os.path.join(
+            self.stream_path,
+            f"window{window_index}",
+            f"{frame_index}_{name}_processed.{self.frame_format}",
         )
+        cropped_frame = self._crop_frame(frame, region) if region else frame
+
+        saved = cv2.imwrite(path, cropped_frame)
         if not saved:
-            raise FrameError(f"Unable to save {name} frame")
+            raise ImageError(f"Unable to save {name} frame", path)
 
     @staticmethod
     def _crop_frame(frame: np.ndarray, region: Region) -> np.ndarray:

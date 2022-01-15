@@ -1,22 +1,14 @@
-class ValidationError(Exception):
-    """Raises an error when user input is invalid or the environment variable has
-    an unexpected value"""
-
-
-class FrameError(Exception):
-    """Raises an error when a window frame is unable to be read or written"""
-
-
 class ImageError(Exception):
-    """Raises an error when an image is unable to be read or parsed"""
+    """Raises an error when an image cannot be read, parsed or recognized"""
 
     message: str
     path: str
 
-    def __init__(self, message: str, path: str) -> None:
+    def __init__(self, message: str, path: str = "") -> None:
         super().__init__(message)
         self.message = message
         self.path = path
 
     def __str__(self) -> str:
-        return f"{self.message} at {self.path}"
+        path = f" at path: {self.path}" if self.path else ""
+        return f"{self.message} {path}"

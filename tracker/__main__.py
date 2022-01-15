@@ -7,7 +7,6 @@ from multiprocessing import Event, Process, Queue
 from typing import Any, Dict, List
 
 from tracker import __version__
-from tracker.error import ValidationError
 from tracker.image_classifier import ImageClassifier
 from tracker.object_detection import ObjectDetection
 from tracker.screen import Screen
@@ -100,17 +99,17 @@ def validate_args(args: Dict[str, Any]) -> Dict[str, Any]:
     )
 
     if len(args["windows"]) > 4:
-        raise ValidationError(f"too many windows specified: {len(args['windows'])}")
+        raise ValueError(f"too many windows specified: {len(args['windows'])}")
 
     # the environment variable formatted as hostname:display.screen
     display_env = os.environ.get("DISPLAY", "").strip()
     if not display_env:
-        raise ValidationError("display is not set")
+        raise ValueError("display is not set")
 
     parsed_display = display_env.split(":")
     display = f":{parsed_display[1]}"
     if not args["replay"] and display != args["display"]:
-        raise ValidationError(f"display is {display}; want {args['display']}")
+        raise ValueError(f"display is {display}; want {args['display']}")
 
     save_regions = os.environ.get("SAVE_REGIONS", "").split(",")
 
