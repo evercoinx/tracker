@@ -45,10 +45,10 @@ class TextRecognition:
     def __del__(self) -> None:
         self.tess_api.End()
 
-    def set_frame(self, frame: np.ndarray) -> None:
-        self.tess_api.SetImage(Image.fromarray(frame))
+    def set_image(self, image: np.ndarray) -> None:
+        self.tess_api.SetImage(Image.fromarray(image))
 
-    def clear_frame_results(self) -> None:
+    def clear_image_results(self) -> None:
         self.tess_api.Clear()
 
     def recognize_hand_number(self, region: Region) -> int:

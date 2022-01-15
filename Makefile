@@ -57,12 +57,9 @@ play: targetonly cleanall
 	$(PKG_NAME) --windows 0 --display $(DISPLAY) --top-margin $(SCREEN_TOP_MARGIN) --stream-path $(STREAM_PATH)
 
 play4: targetonly cleanall
-	$(PKG_NAME) --windows 1234 --display $(DISPLAY) --top-margin $(SCREEN_TOP_MARGIN) --stream-path $(STREAM_PATH)
+	$(PKG_NAME) --windows 0123 --display $(DISPLAY) --top-margin $(SCREEN_TOP_MARGIN) --stream-path $(STREAM_PATH)
 
 replay: targetonly cleanproc
-	$(PKG_NAME) --windows 0 --replay --stream-path $(STREAM_PATH)
-
-replay4: targetonly cleanproc
 	$(PKG_NAME) --windows 0123 --replay --stream-path $(STREAM_PATH)
 
 version: targetonly

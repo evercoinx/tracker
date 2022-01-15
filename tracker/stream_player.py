@@ -1,13 +1,13 @@
 import logging
 import os
 import re
+import time
 from collections import defaultdict
 from datetime import datetime
 from enum import Enum
 from glob import glob
 from multiprocessing import Queue, current_process
 from multiprocessing.synchronize import Event
-from pprint import pformat
 from typing import (
     Callable,
     ClassVar,
@@ -81,6 +81,23 @@ class FrameData(TypedDict):
 class GameMode(Enum):
     PLAY = 0
     REPLAY = 1
+
+
+def elapsed_time(name: str):
+    def decorator(func):
+        def wrapper(*args, **kwargs):
+            start_time = time.perf_counter()
+            ret = func(*args, **kwargs)
+            elapsed_time = time.perf_counter() - start_time
+            logging.debug(
+                f"{'Performance':<14} - {name.capitalize() + ':': <16} "
+                + f"{elapsed_time:.3f}s"
+            )
+            return ret
+
+        return wrapper
+
+    return decorator
 
 
 class StreamPlayer:
@@ -215,7 +232,7 @@ class StreamPlayer:
                 full_frame = self._highlight_frame_region(full_frame, r)
             self._save_frame(full_frame, window_index, frame_index, "full")
 
-        self.text_recognition.set_frame(frame)
+        self.text_recognition.set_image(frame)
 
         hand_number = self._get_hand_number(frame, window_index, frame_index)
         if not hand_number:
@@ -232,17 +249,18 @@ class StreamPlayer:
         dealer_position = self._get_dealer_position(
             frame, window_index, frame_index, hand_number
         )
-        total_pot = self._get_total_pot(frame, window_index, frame_index)
+
         board = self._get_board(frame, window_index, frame_index, hand_number)
+        total_pot = self._get_total_pot(frame, window_index, frame_index)
 
         playing_seats = self._get_playing_seats(
             frame, window_index, frame_index, hand_number
         )
-        seats = self._get_seats(frame, window_index, frame_index, hand_number)
-        for i, s in enumerate(seats):
-            s["playing"] = playing_seats[i]
+        seats = self._get_seats(
+            frame, window_index, frame_index, hand_number, playing_seats
+        )
 
-        self.text_recognition.clear_frame_results()
+        self.text_recognition.clear_image_results()
 
         frame_data: FrameData = {
             "window_index": window_index,
@@ -294,10 +312,7 @@ class StreamPlayer:
             + "\n"
         )
 
-        logging.debug(
-            f"{self.log_prefix} session data:\n" + f"{pformat(self.session, indent=4)}"
-        )
-
+    @elapsed_time("hand number")
     def _get_hand_number(
         self, frame: np.ndarray, window_index: int, frame_index: int
     ) -> int:
@@ -306,6 +321,7 @@ class StreamPlayer:
             self._save_frame(frame, window_index, frame_index, "hand_number", region)
         return self.text_recognition.recognize_hand_number(region)
 
+    @elapsed_time("hand time")
     def _get_hand_time(
         self, frame: np.ndarray, window_index: int, frame_index: int
     ) -> datetime:
@@ -314,6 +330,7 @@ class StreamPlayer:
             self._save_frame(frame, window_index, frame_index, "hand_time", region)
         return self.text_recognition.recognize_hand_time(region)
 
+    @elapsed_time("total pot")
     def _get_total_pot(
         self, frame: np.ndarray, window_index: int, frame_index: int
     ) -> Money:
@@ -322,16 +339,22 @@ class StreamPlayer:
             self._save_frame(frame, window_index, frame_index, "total_pot", region)
         return self.text_recognition.recognize_total_pot(region)
 
+    @elapsed_time("seats")
     def _get_seats(
-        self, frame: np.ndarray, window_index: int, frame_index: int, hand_number: int
+        self,
+        frame: np.ndarray,
+        window_index: int,
+        frame_index: int,
+        hand_number: int,
+        playing_seats: List[bool],
     ) -> List[SeatData]:
-        frame_data = self._get_latest_frame_data(hand_number)
+        frame_data = self._extract_last_frame_data(hand_number)
         seats: List[SeatData] = []
 
         for i in range(6):
             seat_data = (
                 frame_data["seats"][i]
-                if frame_data and i in frame_data["seats"]
+                if frame_data and i < len(frame_data["seats"])
                 else None
             )
 
@@ -345,7 +368,7 @@ class StreamPlayer:
                         frame, window_index, frame_index, f"seat_number_{i}", region
                     )
 
-            if seat_data and not seat_data["playing"]:
+            if seat_data and not playing_seats[i]:
                 seats.append(
                     {
                         "number": number,
@@ -390,10 +413,11 @@ class StreamPlayer:
 
         return seats
 
+    @elapsed_time("dealer position")
     def _get_dealer_position(
         self, frame: np.ndarray, window_index: int, frame_index: int, hand_number: int
     ) -> int:
-        frame_data = self._get_latest_frame_data(hand_number)
+        frame_data = self._extract_last_frame_data(hand_number)
         if frame_data:
             return frame_data["dealer_position"]
 
@@ -411,10 +435,11 @@ class StreamPlayer:
 
         return -1
 
+    @elapsed_time("playing seats")
     def _get_playing_seats(
         self, frame: np.ndarray, window_index: int, frame_index: int, hand_number: int
     ) -> List[bool]:
-        frame_data = self._get_latest_frame_data(hand_number)
+        frame_data = self._extract_last_frame_data(hand_number)
 
         (h, w) = frame.shape[:2]
         seat_regions = self.object_detection.get_seat_regions(w, h)
@@ -423,7 +448,7 @@ class StreamPlayer:
         for i, r in enumerate(seat_regions):
             if (
                 frame_data
-                and i in frame_data["seats"]
+                and i < len(frame_data["seats"])
                 and not frame_data["seats"][i]["playing"]
             ):
                 playing_seats.append(False)
@@ -446,14 +471,15 @@ class StreamPlayer:
 
         return playing_seats
 
+    @elapsed_time("board")
     def _get_board(
         self, frame: np.ndarray, window_index: int, frame_index: int, hand_number: int
     ) -> List[Card]:
-        frame_data = self._get_latest_frame_data(hand_number)
+        frame_data = self._extract_last_frame_data(hand_number)
         board: List[Card] = []
 
         for i in range(5):
-            if frame_data and i in frame_data["board"]:
+            if frame_data and i < len(frame_data["board"]):
                 card = frame_data["board"][i]
                 board.append(card)
                 continue
@@ -470,7 +496,7 @@ class StreamPlayer:
 
         return board
 
-    def _get_latest_frame_data(self, hand_number: int) -> Optional[FrameData]:
+    def _extract_last_frame_data(self, hand_number: int) -> Optional[FrameData]:
         if hand_number in self.session and self.session[hand_number]:
             return self.session[hand_number][-1]
         return None
