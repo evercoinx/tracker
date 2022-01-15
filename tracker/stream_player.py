@@ -68,19 +68,6 @@ class SeatData(TypedDict):
     playing: bool
 
 
-class TextData(TypedDict):
-    hand_number: int
-    hand_time: datetime
-    total_pot: Money
-    seats: List[SeatData]
-
-
-class ObjectData(TypedDict):
-    dealer_position: int
-    playing_seats: List[bool]
-    board: List[Card]
-
-
 class FrameData(TypedDict):
     window_index: int
     frame_index: int
@@ -219,82 +206,56 @@ class StreamPlayer:
     def _process_frame(
         self, frame: np.ndarray, window_index: int, frame_index: int
     ) -> None:
-        inverted_frame = cv2.bitwise_not(frame)
+        frame = cv2.bitwise_not(frame)
 
         if self._should_save_frame("full"):
-            full_frame = inverted_frame.copy()
+            full_frame = frame.copy()
             (h, w) = frame.shape[:2]
             for r in self.object_detection.get_seat_regions(w, h):
                 full_frame = self._highlight_frame_region(full_frame, r)
             self._save_frame(full_frame, window_index, frame_index, "full")
 
-        try:
-            text_data = self._process_texts(inverted_frame, window_index, frame_index)
-            object_data = self._process_objects(
-                inverted_frame, window_index, frame_index, text_data["hand_number"]
-            )
-        except ImageError as err:
-            logging.warn(f"{self.log_prefix} {err}\n")
-            return
-
-        for i, s in enumerate(text_data["seats"]):
-            s["playing"] = object_data["playing_seats"][i]
-
-        frame_data: FrameData = {
-            "window_index": window_index,
-            "frame_index": frame_index,
-            "hand_time": text_data["hand_time"],
-            "total_pot": text_data["total_pot"],
-            "dealer_position": object_data["dealer_position"],
-            "seats": text_data["seats"],
-            "board": object_data["board"],
-        }
-
-        self.session[text_data["hand_number"]].append(frame_data)
-        self._print_frame_data(frame_data, text_data["hand_number"])
-
-    def _process_texts(
-        self, frame: np.ndarray, window_index: int, frame_index: int
-    ) -> TextData:
         self.text_recognition.set_frame(frame)
 
         hand_number = self._get_hand_number(frame, window_index, frame_index)
         if not hand_number:
-            raise ImageError("Unable to recognize frame as game window")
+            logging.warn(
+                f"{self.log_prefix} Unable to recognize frame as game window\n"
+            )
+            return
 
         if self.game_mode == GameMode.PLAY:
             self._save_frame(frame, window_index, frame_index, "raw")
             logging.debug(f"{self.log_prefix} raw frame saved")
 
         hand_time = self._get_hand_time(frame, window_index, frame_index)
-        total_pot = self._get_total_pot(frame, window_index, frame_index)
-        seats = self._get_seats(frame, window_index, frame_index, hand_number)
-
-        self.text_recognition.clear_frame_results()
-
-        return {
-            "hand_number": hand_number,
-            "hand_time": hand_time,
-            "total_pot": total_pot,
-            "seats": seats,
-        }
-
-    def _process_objects(
-        self, frame: np.ndarray, window_index: int, frame_index: int, hand_number: int
-    ) -> ObjectData:
         dealer_position = self._get_dealer_position(
             frame, window_index, frame_index, hand_number
         )
+        total_pot = self._get_total_pot(frame, window_index, frame_index)
+        board = self._get_board(frame, window_index, frame_index, hand_number)
+
         playing_seats = self._get_playing_seats(
             frame, window_index, frame_index, hand_number
         )
-        board = self._get_board(frame, window_index, frame_index, hand_number)
+        seats = self._get_seats(frame, window_index, frame_index, hand_number)
+        for i, s in enumerate(seats):
+            s["playing"] = playing_seats[i]
 
-        return {
+        self.text_recognition.clear_frame_results()
+
+        frame_data: FrameData = {
+            "window_index": window_index,
+            "frame_index": frame_index,
+            "hand_time": hand_time,
+            "total_pot": total_pot,
             "dealer_position": dealer_position,
-            "playing_seats": playing_seats,
+            "seats": seats,
             "board": board,
         }
+
+        self.session[hand_number].append(frame_data)
+        self._print_frame_data(frame_data, hand_number)
 
     def _print_frame_data(self, frame_data: FrameData, hand_number: int):
         seat_lines: List[str] = []
