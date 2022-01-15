@@ -5,7 +5,7 @@ from typing import ClassVar, Tuple
 import numpy as np
 from dateutil import parser as dateparser
 from PIL import Image
-from tesserocr import OEM, PSM, PyTessBaseAPI  # pytype: disable=import-error
+from tesserocr import OEM, PSM, PyTessBaseAPI
 
 from tracker.object_detection import Region
 
@@ -20,6 +20,8 @@ class TextRecognition:
     regex_hand_number: ClassVar[re.Pattern] = re.compile(r"(\d{10,})")
     regex_seat_number: ClassVar[re.Pattern] = re.compile(r"([123456])")
     regex_time_with_zone: ClassVar[re.Pattern] = re.compile(r"\d{2}:\d{2}\+\d{2}")
+
+    tess_api: PyTessBaseAPI
 
     def __init__(self) -> None:
         self.tess_api = PyTessBaseAPI(psm=PSM.SINGLE_LINE, oem=OEM.LSTM_ONLY)

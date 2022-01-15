@@ -1,12 +1,13 @@
 import logging
-from multiprocessing import current_process, synchronize
+from multiprocessing import current_process
 from multiprocessing.queues import Queue
+from multiprocessing.synchronize import Event
 from typing import List
 
 import cv2
 import numpy as np
 from mss.linux import MSS as mss
-from typing_extensions import TypedDict  # pytype: disable=not-supported-yet
+from typing_extensions import TypedDict
 
 
 class WindowScreen(TypedDict):
@@ -20,7 +21,7 @@ class Screen:
     """Capture a window of a screen"""
 
     queue: Queue
-    events: List[synchronize.Event]
+    events: List[Event]
     stream_path: str
     frame_format: str
     log_prefix: str
@@ -28,7 +29,7 @@ class Screen:
     def __init__(
         self,
         queue: Queue,
-        events: List[synchronize.Event],
+        events: List[Event],
         stream_path: str,
         frame_format: str,
     ) -> None:
@@ -76,7 +77,7 @@ class Screen:
         window_width = screen_width // 2
         window_height = (screen_height - top_margin) // 2
 
-        window_coords = [
+        window_coords: List[WindowScreen] = [
             # top left window, index 0
             {
                 "left": left_margin,

@@ -5,13 +5,14 @@ from collections import defaultdict
 from datetime import datetime
 from enum import Enum
 from glob import glob
-from multiprocessing import Queue, current_process, synchronize
+from multiprocessing import Queue, current_process
+from multiprocessing.synchronize import Event
 from pprint import pformat
 from typing import Callable, DefaultDict, List, Optional, Tuple
 
 import cv2
 import numpy as np
-from typing_extensions import TypedDict  # pytype: disable=not-supported-yet
+from typing_extensions import TypedDict
 
 from tracker.error import FrameError
 from tracker.image_classifier import ImageClassifier
@@ -63,8 +64,8 @@ class GameMode(Enum):
 class StreamPlayer:
     """Plays a live stream or replays a saved one"""
 
-    queue: Queue
-    events: List[synchronize.Event]
+    queue: Optional[Queue]
+    events: List[Event]
     stream_path: str
     frame_format: str
     game_mode: GameMode
@@ -77,8 +78,8 @@ class StreamPlayer:
 
     def __init__(
         self,
-        queue: Queue,
-        events: List[synchronize.Event],
+        queue: Optional[Queue],
+        events: List[Event],
         stream_path: str,
         frame_format: str,
         game_mode: GameMode,
@@ -86,7 +87,8 @@ class StreamPlayer:
         text_recognition: TextRecognition,
         object_detection: ObjectDetection,
         image_classifier: ImageClassifier,
-    ):
+    ) -> None:
+
         self.queue = queue
         self.events = events
         self.stream_path = stream_path
@@ -100,13 +102,18 @@ class StreamPlayer:
         self.session = defaultdict(list)
 
     def play(self) -> None:
+        if self.queue is None:
+            raise Exception("Queue must be specified")
+        if not self.events:
+            raise Exception("Events cannot be empty")
+
         frame_index = 0
 
         while True:
             try:
                 window_index, frame = self.queue.get()
                 self.log_prefix = self._get_log_prefix(window_index, frame_index)
-                self.process_frame(frame, window_index, frame_index)
+                self._process_frame(frame, window_index, frame_index)
 
                 frame_index += 1
                 self.events[window_index].set()
@@ -138,7 +145,7 @@ class StreamPlayer:
             (window_index, frame_index) = matches[0]
 
             self.log_prefix = self._get_log_prefix(window_index, frame_index)
-            self.process_frame(frame, int(window_index), int(frame_index))
+            self._process_frame(frame, int(window_index), int(frame_index))
 
     @staticmethod
     def _get_log_prefix(window_index: int, frame_index: int) -> str:
@@ -147,7 +154,6 @@ class StreamPlayer:
             proc_name = "player"
         return f"{proc_name}-w{window_index}-f{frame_index:<5} -"
 
-    # pytype: disable=bad-return-type
     @staticmethod
     def _sort_path(pattern: re.Pattern) -> Callable[[str], Tuple[int, int]]:
         def match(path: str) -> Tuple[int, int]:
@@ -161,9 +167,7 @@ class StreamPlayer:
 
         return match
 
-    # pytype: enable=bad-return-type
-
-    def process_frame(
+    def _process_frame(
         self, frame: np.ndarray, window_index: int, frame_index: int
     ) -> None:
         inverted_frame = cv2.bitwise_not(frame)
@@ -224,14 +228,12 @@ class StreamPlayer:
 
         self.text_recognition.clear_frame_results()
 
-        # pytype: disable=bad-return-type
         return {
             "hand_number": hand_number,
             "hand_time": hand_time,
             "total_pot": total_pot,
             "seats": seats,
         }
-        # pytype: enable=bad-return-type
 
     def _process_objects(
         self, frame: np.ndarray, window_index: int, frame_index: int
@@ -240,13 +242,11 @@ class StreamPlayer:
         playing_seats = self._get_playing_seats(frame, window_index, frame_index)
         table_cards = self._get_table_cards(frame, window_index, frame_index)
 
-        # pytype: disable=bad-return-type
         return {
             "dealer_position": dealer_position,
             "playing_seats": playing_seats,
             "table_cards": table_cards,
         }
-        # pytype: enable=bad-return-type
 
     def _print_frame_info(self, text_data: TextData, object_data: ObjectData):
         seat_lines: List[str] = []
@@ -355,6 +355,7 @@ class StreamPlayer:
                     "action": action,
                     "stake": stake,
                     "balance": balance,
+                    "playing": False,
                 }
             )
 

@@ -22,6 +22,7 @@ exclude = [
     "stream",
     "tracker.egg-info"
 ]
+stubPath = "./typings"
 ignore = []
 venv = "tracker"
 pythonVersion = "3.7"
@@ -30,3 +31,4 @@ executionEnvironments = [
   { root = "tracker" }
 ]
 reportMissingImports = false
+reportMissingTypeStubs = false

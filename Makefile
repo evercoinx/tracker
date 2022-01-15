@@ -1,6 +1,7 @@
 PKG_NAME = tracker
+CHECK_FILES = $(PKG_NAME) setup.py
+SYNC_FILES = $(PKG_NAME) dataset template Makefile requirements.txt requirements-prod.txt setup.py setup.cfg
 NAMESPACE = ~/Workspace/evercoinx
-SOURCE_FILES = $(PKG_NAME) setup.py
 
 SOURCE_HOST = fedora
 TARGET_HOST = raspberry
@@ -24,19 +25,19 @@ targetonly:
 		exit 1; \
 	fi
 
-check: format imports lint
+check: format imports lint typecheck
 
 format:
-	black $(SOURCE_FILES)
+	black $(CHECK_FILES)
 
 imports:
-	isort $(SOURCE_FILES)
+	isort $(CHECK_FILES)
 
 lint:
-	flake8 $(SOURCE_FILES)
+	flake8 $(CHECK_FILES)
 
 typecheck:
-	pytype $(SOURCE_FILES)
+	pyright
 
 .PHONY: test
 test: typecheck
@@ -50,8 +51,7 @@ install: targetonly
 	pip install -e .
 
 deploy: sourceonly
-	rsync -avh --delete $(PKG_NAME) dataset template Makefile requirements.txt requirements-prod.txt setup.py \
-		pi@$(TARGET_HOST):$(NAMESPACE)/$(PKG_NAME)
+	rsync -avh --delete $(SYNC_FILES) pi@$(TARGET_HOST):$(NAMESPACE)/$(PKG_NAME)
 
 play: targetonly cleanall
 	$(PKG_NAME) --windows 0 --display $(DISPLAY) --top-margin $(SCREEN_TOP_MARGIN) --stream-path $(STREAM_PATH)

@@ -1,6 +1,6 @@
 import re
 from glob import glob
-from typing import ClassVar, List, Optional, Tuple
+from typing import ClassVar, List, Tuple
 
 import cv2
 import numpy as np
@@ -15,14 +15,14 @@ class ImageClassifier:
 
     dataset_path: str
     image_format: str
-    model: Optional[KNeighborsClassifier]
+    model: KNeighborsClassifier
 
     def __init__(self, dataset_path: str, image_format: str) -> None:
         self.dataset_path = dataset_path
         self.image_format = image_format
-        self.model = None
+        self.model = self._train_model()
 
-    def train(self) -> None:
+    def _train_model(self) -> KNeighborsClassifier:
         image_path_pattern = re.compile(
             r"/([\d\w]{2})_\d." + re.escape(self.image_format) + r"$",
             flags=re.IGNORECASE,
@@ -47,8 +47,9 @@ class ImageClassifier:
                 raise ImageError("unable to parse dataset image of table card", p)
             labels.append(matches[0])
 
-        self.model = KNeighborsClassifier(n_neighbors=1, n_jobs=1)
-        self.model.fit(features, labels)
+        model = KNeighborsClassifier(n_neighbors=1, n_jobs=1)
+        model.fit(features, labels)
+        return model
 
     def predict(self, image: np.ndarray) -> str:
         feat = self._extract_feature(image)
