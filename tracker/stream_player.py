@@ -487,7 +487,7 @@ class StreamPlayer:
                 )
 
             cropped_frame = self._crop_frame(frame, region)
-            cards_str = self.image_classifier.predict(cropped_frame)
+            cards_str = self.image_classifier.classify(cropped_frame)
             if cards_str:
                 table_cards.append(
                     {

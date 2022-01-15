@@ -23,6 +23,7 @@ def main() -> None:
     tr = TextRecognition()
     od = ObjectDetection(TEMPLATE_PATH, IMAGE_FORMAT)
     ic = ImageClassifier(DATASET_PATH, IMAGE_FORMAT)
+    ic.train()
 
     try:
         args = validate_args(parse_args())

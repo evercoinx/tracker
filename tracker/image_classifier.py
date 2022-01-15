@@ -20,9 +20,9 @@ class ImageClassifier:
     def __init__(self, dataset_path: str, image_format: str) -> None:
         self.dataset_path = dataset_path
         self.image_format = image_format
-        self.model = self._train_model()
+        self.model = KNeighborsClassifier(n_neighbors=1, n_jobs=1)
 
-    def _train_model(self) -> KNeighborsClassifier:
+    def train(self) -> None:
         image_path_pattern = re.compile(
             r"/([\d\w]{2})_\d." + re.escape(self.image_format) + r"$",
             flags=re.IGNORECASE,
@@ -47,11 +47,9 @@ class ImageClassifier:
                 raise ImageError("unable to parse dataset image of table card", p)
             labels.append(matches[0])
 
-        model = KNeighborsClassifier(n_neighbors=1, n_jobs=1)
-        model.fit(features, labels)
-        return model
+        self.model.fit(features, labels)
 
-    def predict(self, image: np.ndarray) -> str:
+    def classify(self, image: np.ndarray) -> str:
         feat = self._extract_feature(image)
         labels = self.model.predict([feat])
         return "" if labels[0] == type(self).placeholder_label else labels[0]
