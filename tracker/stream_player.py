@@ -8,7 +8,7 @@ from glob import glob
 from multiprocessing import Queue, current_process
 from multiprocessing.synchronize import Event
 from pprint import pformat
-from typing import Callable, DefaultDict, List, Optional, Tuple
+from typing import Callable, DefaultDict, List, NoReturn, Optional, Tuple
 
 import cv2
 import numpy as np
@@ -103,17 +103,18 @@ class StreamPlayer:
         self.log_prefix = ""
         self.session = defaultdict(list)
 
-    def run(self) -> None:
+    def run(self) -> NoReturn:
         if self.game_mode == GameMode.PLAY:
             self._play()
         elif self.game_mode == GameMode.REPLAY:
             self._replay()
+        raise ValueError(f"Unexpected game mode: {self.game_mode}")
 
     def _play(self) -> None:
         if self.queue is None:
-            raise Exception("Queue must be specified")
+            raise ValueError("Queue is not set")
         if not self.events:
-            raise Exception("Events cannot be empty")
+            raise ValueError("Events are empty")
 
         frame_index = 0
 
@@ -132,6 +133,9 @@ class StreamPlayer:
                 return
 
     def _replay(self) -> None:
+        if not self.events:
+            raise ValueError("Replay windows are empty")
+
         raw_frame_path_pattern = re.compile(
             r"window(["
             + re.escape(",".join(self.replay_windows))
