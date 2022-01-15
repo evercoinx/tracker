@@ -21,8 +21,8 @@ IMAGE_FORMAT = "png"
 
 def main() -> None:
     tr = TextRecognition()
-    od = ObjectDetection(template_path=TEMPLATE_PATH, image_format=IMAGE_FORMAT)
-    ic = ImageClassifier(dataset_path=DATASET_PATH, image_format=IMAGE_FORMAT)
+    od = ObjectDetection(TEMPLATE_PATH, IMAGE_FORMAT)
+    ic = ImageClassifier(DATASET_PATH, IMAGE_FORMAT)
 
     try:
         args = validate_args(parse_args())
@@ -136,21 +136,21 @@ def play_session(
         args["screen_width"],
         args["screen_height"],
     )
-    win_count = len(win_screens)
 
+    win_count = len(win_screens)
     queue = Queue(win_count)
     events = [Event() for _ in range(win_count)]
 
     player = StreamPlayer(
         game_mode=GameMode.PLAY,
-        queue=queue,
-        events=events,
         stream_path=args["stream_path"],
         frame_format=IMAGE_FORMAT,
         save_regions=args["save_regions"],
         text_recognition=text_recognition,
         object_detection=object_detection,
         image_classifier=image_classifier,
+        queue=queue,
+        events=events,
     )
 
     screen = Screen(
@@ -187,15 +187,13 @@ def replay_session(
 ) -> None:
     player = StreamPlayer(
         game_mode=GameMode.REPLAY,
-        queue=None,
-        events=[],
         stream_path=args["stream_path"],
         frame_format=IMAGE_FORMAT,
-        replay_windows=args["windows"],
         save_regions=args["save_regions"],
         text_recognition=text_recognition,
         object_detection=object_detection,
         image_classifier=image_classifier,
+        replay_windows=args["windows"],
     )
     player.run()
 

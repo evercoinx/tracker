@@ -7,14 +7,7 @@ from typing import List
 import cv2
 import numpy as np
 from mss.linux import MSS as mss
-from typing_extensions import TypedDict
-
-
-class WindowScreen(TypedDict):
-    left: int
-    top: int
-    width: int
-    height: int
+from mss.models import Monitor
 
 
 class Screen:
@@ -39,9 +32,7 @@ class Screen:
         self.frame_format = frame_format
         self.log_prefix = ""
 
-    def capture(
-        self, display: str, window_coords: List[dict], window_index: int
-    ) -> None:
+    def capture(self, display: str, window_coords: Monitor, window_index: int) -> None:
         frame_index = 0
         self.log_prefix = self._get_log_prefix(window_index, frame_index)
 
@@ -73,11 +64,11 @@ class Screen:
         top_margin: int,
         screen_width: int,
         screen_height: int,
-    ) -> List[WindowScreen]:
+    ) -> List[Monitor]:
         window_width = screen_width // 2
         window_height = (screen_height - top_margin) // 2
 
-        window_coords: List[WindowScreen] = [
+        window_coords: List[Monitor] = [
             # top left window, index 0
             {
                 "left": left_margin,

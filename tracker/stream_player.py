@@ -65,30 +65,30 @@ class StreamPlayer:
     """Plays a live stream or replays a saved one"""
 
     game_mode: GameMode
-    queue: Optional[Queue]
-    events: List[Event]
     stream_path: str
     frame_format: str
-    replay_windows: List[str]
     save_regions: List[str]
     text_recognition: TextRecognition
     object_detection: ObjectDetection
     image_classifier: ImageClassifier
     log_prefix: str
     session: DefaultDict[int, List[SessionData]]
+    queue: Optional[Queue]
+    events: List[Event]
+    replay_windows: List[str]
 
     def __init__(
         self,
         game_mode: GameMode,
-        queue: Optional[Queue],
-        events: List[Event],
         stream_path: str,
         frame_format: str,
-        replay_windows: List[str],
         save_regions: List[str],
         text_recognition: TextRecognition,
         object_detection: ObjectDetection,
         image_classifier: ImageClassifier,
+        queue: Optional[Queue] = None,
+        events: List[Event] = [],
+        replay_windows: List[str] = [],
     ) -> None:
         self.game_mode = game_mode
         self.queue = queue

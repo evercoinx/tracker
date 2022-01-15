@@ -1,5 +1,5 @@
 {
-  "python.defaultInterpreterPath": "~/.virtualenvs/tracker/bin/python",
+  "python.defaultInterpreterPath": "~/.local/virtualenvs/tracker/bin/python",
   "python.analysis.extraPaths": ["."],
   "python.formatting.provider": "black",
   "python.formatting.blackArgs": [],

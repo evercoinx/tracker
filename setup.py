@@ -20,6 +20,6 @@ setup(
         "scikit-learn",
         "tesserocr",
     ],
-    python_requires=">=3.7",
+    python_requires="3.7",
     entry_points={"console_scripts": [f"{pkg_name} = {pkg_name}.__main__:main"]},
 )

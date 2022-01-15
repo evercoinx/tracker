@@ -25,10 +25,11 @@ exclude = [
 stubPath = "./typings"
 ignore = []
 venv = "tracker"
+venvPath = "../../../.local/virtualenvs"
 pythonVersion = "3.7"
 pythonPlatform = "Linux"
 executionEnvironments = [
   { root = "tracker" }
 ]
 reportMissingImports = false
-reportMissingTypeStubs = false
+reportMissingTypeStubs = true
