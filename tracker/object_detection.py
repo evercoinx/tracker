@@ -2,7 +2,6 @@ from typing import ClassVar, Dict, List, NamedTuple, Optional, Tuple
 
 import cv2
 import numpy as np
-from typing_extensions import Literal
 
 from tracker.error import ImageError
 
@@ -61,7 +60,7 @@ class ObjectDetection:
         self.dealer_template = dealer_template
 
         self.pocket_cards_templates = []
-        for i in range(self.seat_count):
+        for i in range(6):
             card_path = f"{self.template_path}/pocket_cards_{i}.{self.image_format}"
             pocket_cards_template = cv2.imread(card_path, cv2.IMREAD_UNCHANGED)
             if pocket_cards_template is None:
@@ -69,14 +68,6 @@ class ObjectDetection:
                     "unable to read template image of pocket card", card_path
                 )
             self.pocket_cards_templates.append(pocket_cards_template)
-
-    @property
-    def seat_count(self) -> int:
-        return len(type(self).seat_region_percentages) // 2
-
-    @property
-    def table_card_count(self) -> Literal[5]:
-        return 5
 
     def get_seat_regions(self, frame_width: int, frame_height: int) -> List[Region]:
         cache_key = (frame_width, frame_height)

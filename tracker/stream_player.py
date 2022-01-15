@@ -20,9 +20,30 @@ from tracker.object_detection import ObjectDetection, Region
 from tracker.text_recognition import TextRecognition
 
 
-class CardData(TypedDict):
+class Card:
+    letter_to_suit = {
+        "c": "♣",
+        "d": "♦",
+        "h": "♥",
+        "s": "♠",
+    }
+
+    ranks = frozenset(["2", "3", "4", "5", "6", "7", "8", "9", "T", "J", "Q", "K", "A"])
+
     rank: str
     suit: str
+
+    def __init__(self, rank: str, suit: str):
+        if rank not in type(self).ranks:
+            raise ValueError(f"Unexpected rank: {rank}")
+        if suit not in type(self).letter_to_suit:
+            raise ValueError(f"Unexpected suit: {suit}")
+
+        self.rank = rank
+        self.suit = suit
+
+    def __str__(self) -> str:
+        return f"{self.rank}{self.letter_to_suit[self.suit]}"
 
 
 class SeatData(TypedDict):
@@ -43,17 +64,17 @@ class TextData(TypedDict):
 class ObjectData(TypedDict):
     dealer_position: int
     playing_seats: List[bool]
-    table_cards: List[CardData]
+    board: List[Card]
 
 
-class SessionData(TypedDict):
+class FrameData(TypedDict):
     window_index: int
     frame_index: int
     hand_time: datetime
     total_pot: float
     dealer_position: int
     seats: List[SeatData]
-    table_cards: List[CardData]
+    board: List[Card]
 
 
 class GameMode(Enum):
@@ -72,7 +93,7 @@ class StreamPlayer:
     object_detection: ObjectDetection
     image_classifier: ImageClassifier
     log_prefix: str
-    session: DefaultDict[int, List[SessionData]]
+    session: DefaultDict[int, List[FrameData]]
     queue: Optional[Queue]
     events: List[Event]
     replay_windows: List[str]
@@ -202,26 +223,21 @@ class StreamPlayer:
             logging.warn(f"{self.log_prefix} {err}\n")
             return
 
-        if len(text_data["seats"]) != len(object_data["playing_seats"]):
-            logging.warn(
-                "invalid number of seats detected: "
-                + f"{text_data['seats']} != {object_data['playing_seats']}"
-            )
-            return
+        for i, s in enumerate(text_data["seats"]):
+            s["playing"] = object_data["playing_seats"][i]
 
-        self.session[text_data["hand_number"]].append(
-            {
-                "window_index": window_index,
-                "frame_index": frame_index,
-                "hand_time": text_data["hand_time"],
-                "total_pot": text_data["total_pot"],
-                "dealer_position": object_data["dealer_position"],
-                "seats": text_data["seats"],
-                "table_cards": object_data["table_cards"],
-            }
-        )
+        frame_data: FrameData = {
+            "window_index": window_index,
+            "frame_index": frame_index,
+            "hand_time": text_data["hand_time"],
+            "total_pot": text_data["total_pot"],
+            "dealer_position": object_data["dealer_position"],
+            "seats": text_data["seats"],
+            "board": object_data["board"],
+        }
 
-        self._print_frame_info(text_data, object_data)
+        self.session[text_data["hand_number"]].append(frame_data)
+        self._print_frame_data(frame_data, text_data["hand_number"])
 
     def _process_texts(
         self, frame: np.ndarray, window_index: int, frame_index: int
@@ -258,21 +274,19 @@ class StreamPlayer:
         playing_seats = self._get_playing_seats(
             frame, window_index, frame_index, hand_number
         )
-        table_cards = self._get_table_cards(
-            frame, window_index, frame_index, hand_number
-        )
+        board = self._get_board(frame, window_index, frame_index, hand_number)
 
         return {
             "dealer_position": dealer_position,
             "playing_seats": playing_seats,
-            "table_cards": table_cards,
+            "board": board,
         }
 
-    def _print_frame_info(self, text_data: TextData, object_data: ObjectData):
+    def _print_frame_data(self, frame_data: FrameData, hand_number: int):
         seat_lines: List[str] = []
-        for i, s in enumerate(text_data["seats"]):
-            playing = "✔" if object_data["playing_seats"][i] else " "
-            dealer = "●" if object_data["dealer_position"] == i else " "
+        for i, s in enumerate(frame_data["seats"]):
+            playing = "✔" if s["playing"] else " "
+            dealer = "●" if frame_data["dealer_position"] == i else " "
             number = s["number"] if s["number"] != -1 else "⨯"
             balance = f"${s['balance']:.2f}" if playing else " "
             stake = f"${s['stake']:.2f}" if s["stake"] > 0 else " "
@@ -281,31 +295,25 @@ class StreamPlayer:
             seat_lines.append(
                 f"{' ':<26}{self.log_prefix[:-2]} {i} {dealer} Seat {number}:  "
                 + f"playing {playing}  "
-                + f"balance {balance: <5} "
-                + f"stake {stake: <5} "
+                + f"balance {balance: <6} "
+                + f"stake {stake: <6} "
                 + f"action {action: <14}"
             )
 
-        letter_to_suit = {
-            "c": "♣",
-            "d": "♦",
-            "h": "♥",
-            "s": "♠",
-        }
-        table_card_lines = ["—" for _ in range(self.object_detection.table_card_count)]
-        for i, c in enumerate(object_data["table_cards"]):
-            table_card_lines[i] = f"{c['rank']}{letter_to_suit[c['suit']]}"
+        board_lines = ["—" for _ in range(5)]
+        for i, c in enumerate(frame_data["board"]):
+            board_lines[i] = str(c)
 
-        hand_time = text_data["hand_time"].strftime("%H:%M%z")
+        hand_time = frame_data["hand_time"].strftime("%H:%M%z")
         if len(hand_time) > 5:
             hand_time = hand_time[:-2]
 
         logging.info(
-            f"{self.log_prefix} Hand number #{text_data['hand_number']} "
+            f"{self.log_prefix} Hand number #{hand_number} "
             + f"at {hand_time}\n"
-            + f"{' ':<26}{self.log_prefix} Total pot ${text_data['total_pot']:.2f}\n"
+            + f"{' ':<26}{self.log_prefix} Total pot ${frame_data['total_pot']:.2f}\n"
             + f"{' ':<26}{self.log_prefix} Board     "
-            + " ".join(table_card_lines)
+            + " ".join(board_lines)
             + "\n"
             + "\n".join(seat_lines)
             + "\n"
@@ -345,7 +353,7 @@ class StreamPlayer:
         frame_data = self._get_latest_frame_data(hand_number)
         seats: List[SeatData] = []
 
-        for i in range(self.object_detection.seat_count):
+        for i in range(6):
             seat_data = (
                 frame_data["seats"][i]
                 if frame_data and i in frame_data["seats"]
@@ -463,42 +471,31 @@ class StreamPlayer:
 
         return playing_seats
 
-    def _get_table_cards(
+    def _get_board(
         self, frame: np.ndarray, window_index: int, frame_index: int, hand_number: int
-    ) -> List[CardData]:
+    ) -> List[Card]:
         frame_data = self._get_latest_frame_data(hand_number)
-        table_cards: List[CardData] = []
+        board: List[Card] = []
 
-        for i in range(self.object_detection.table_card_count):
-            if frame_data and i in frame_data["table_cards"]:
-                cards_data = frame_data["table_cards"][i]
-                table_cards.append(
-                    {
-                        "rank": cards_data["rank"],
-                        "suit": cards_data["suit"],
-                    }
-                )
+        for i in range(5):
+            if frame_data and i in frame_data["board"]:
+                card = frame_data["board"][i]
+                board.append(card)
                 continue
 
             region = self.object_detection.detect_table_card(frame, i)
-            if self._should_save_frame("table_cards"):
-                self._save_frame(
-                    frame, window_index, frame_index, f"table_card_{i}", region
-                )
+            if self._should_save_frame("board"):
+                self._save_frame(frame, window_index, frame_index, f"board_{i}", region)
 
             cropped_frame = self._crop_frame(frame, region)
-            cards_str = self.image_classifier.classify(cropped_frame)
-            if cards_str:
-                table_cards.append(
-                    {
-                        "rank": cards_str[0],
-                        "suit": cards_str[1],
-                    }
-                )
+            card_str = self.image_classifier.classify(cropped_frame)
+            if card_str:
+                c = Card(card_str[0], card_str[1])
+                board.append(c)
 
-        return table_cards
+        return board
 
-    def _get_latest_frame_data(self, hand_number: int) -> Optional[SessionData]:
+    def _get_latest_frame_data(self, hand_number: int) -> Optional[FrameData]:
         if hand_number in self.session and self.session[hand_number]:
             return self.session[hand_number][-1]
         return None
