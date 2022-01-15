@@ -64,11 +64,12 @@ class GameMode(Enum):
 class StreamPlayer:
     """Plays a live stream or replays a saved one"""
 
+    game_mode: GameMode
     queue: Optional[Queue]
     events: List[Event]
     stream_path: str
     frame_format: str
-    game_mode: GameMode
+    replay_windows: List[str]
     save_regions: List[str]
     text_recognition: TextRecognition
     object_detection: ObjectDetection
@@ -78,22 +79,23 @@ class StreamPlayer:
 
     def __init__(
         self,
+        game_mode: GameMode,
         queue: Optional[Queue],
         events: List[Event],
         stream_path: str,
         frame_format: str,
-        game_mode: GameMode,
+        replay_windows: List[str],
         save_regions: List[str],
         text_recognition: TextRecognition,
         object_detection: ObjectDetection,
         image_classifier: ImageClassifier,
     ) -> None:
-
+        self.game_mode = game_mode
         self.queue = queue
         self.events = events
         self.stream_path = stream_path
         self.frame_format = frame_format
-        self.game_mode = game_mode
+        self.replay_windows = replay_windows
         self.save_regions = save_regions
         self.text_recognition = text_recognition
         self.object_detection = object_detection
@@ -101,7 +103,13 @@ class StreamPlayer:
         self.log_prefix = ""
         self.session = defaultdict(list)
 
-    def play(self) -> None:
+    def run(self) -> None:
+        if self.game_mode == GameMode.PLAY:
+            self._play()
+        elif self.game_mode == GameMode.REPLAY:
+            self._replay()
+
+    def _play(self) -> None:
         if self.queue is None:
             raise Exception("Queue must be specified")
         if not self.events:
@@ -123,16 +131,17 @@ class StreamPlayer:
                 logging.warn(f"{self.log_prefix} interruption; exiting...")
                 return
 
-    def replay(self, windows: List[str]) -> None:
+    def _replay(self) -> None:
         raw_frame_path_pattern = re.compile(
             r"window(["
-            + re.escape(",".join(windows))
+            + re.escape(",".join(self.replay_windows))
             + r"])\/(\d+)_raw."
             + re.escape(self.frame_format)
             + r"$"
         )
         raw_frame_paths = glob(
-            f"{self.stream_path}/window[{''.join(windows)}]/*_raw.{self.frame_format}",
+            f"{self.stream_path}/window[{''.join(self.replay_windows)}]/"
+            + f"*_raw.{self.frame_format}",
             recursive=True,
         )
 

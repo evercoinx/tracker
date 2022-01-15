@@ -123,26 +123,6 @@ def validate_args(args: Dict[str, Any]) -> Dict[str, Any]:
     }
 
 
-def replay_session(
-    args: Dict[str, Any],
-    text_recognition: TextRecognition,
-    object_detection: ObjectDetection,
-    image_classifier: ImageClassifier,
-) -> None:
-    player = StreamPlayer(
-        queue=None,
-        events=[],
-        stream_path=args["stream_path"],
-        frame_format=IMAGE_FORMAT,
-        game_mode=GameMode.REPLAY,
-        save_regions=args["save_regions"],
-        text_recognition=text_recognition,
-        object_detection=object_detection,
-        image_classifier=image_classifier,
-    )
-    player.replay(args["windows"])
-
-
 def play_session(
     args: Dict[str, Any],
     text_recognition: TextRecognition,
@@ -162,11 +142,11 @@ def play_session(
     events = [Event() for _ in range(win_count)]
 
     player = StreamPlayer(
+        game_mode=GameMode.PLAY,
         queue=queue,
         events=events,
         stream_path=args["stream_path"],
         frame_format=IMAGE_FORMAT,
-        game_mode=GameMode.PLAY,
         save_regions=args["save_regions"],
         text_recognition=text_recognition,
         object_detection=object_detection,
@@ -189,7 +169,7 @@ def play_session(
         )
         procs.append(sp)
 
-        pp = Process(name=f"player-{i}", target=player.play, args=())
+        pp = Process(name=f"player-{i}", target=player.run, args=())
         procs.append(pp)
 
     for p in procs:
@@ -197,6 +177,27 @@ def play_session(
 
     for p in procs:
         p.join()
+
+
+def replay_session(
+    args: Dict[str, Any],
+    text_recognition: TextRecognition,
+    object_detection: ObjectDetection,
+    image_classifier: ImageClassifier,
+) -> None:
+    player = StreamPlayer(
+        game_mode=GameMode.REPLAY,
+        queue=None,
+        events=[],
+        stream_path=args["stream_path"],
+        frame_format=IMAGE_FORMAT,
+        replay_windows=args["windows"],
+        save_regions=args["save_regions"],
+        text_recognition=text_recognition,
+        object_detection=object_detection,
+        image_classifier=image_classifier,
+    )
+    player.run()
 
 
 if __name__ == "__main__":
