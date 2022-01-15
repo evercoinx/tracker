@@ -8,7 +8,7 @@ from glob import glob
 from multiprocessing import Queue, current_process
 from multiprocessing.synchronize import Event
 from pprint import pformat
-from typing import Callable, DefaultDict, List, NoReturn, Optional, Tuple
+from typing import Callable, DefaultDict, List, Optional, Tuple
 
 import cv2
 import numpy as np
@@ -62,7 +62,7 @@ class GameMode(Enum):
 
 
 class StreamPlayer:
-    """Plays a live stream or replays a saved one"""
+    """Plays a live stream or replays a saved one into the console"""
 
     game_mode: GameMode
     stream_path: str
@@ -103,12 +103,13 @@ class StreamPlayer:
         self.log_prefix = ""
         self.session = defaultdict(list)
 
-    def run(self) -> NoReturn:
+    def run(self) -> None:
         if self.game_mode == GameMode.PLAY:
             self._play()
         elif self.game_mode == GameMode.REPLAY:
             self._replay()
-        raise ValueError(f"Unexpected game mode: {self.game_mode}")
+        else:
+            raise ValueError(f"Unexpected game mode: {self.game_mode}")
 
     def _play(self) -> None:
         if self.queue is None:
@@ -133,7 +134,7 @@ class StreamPlayer:
                 return
 
     def _replay(self) -> None:
-        if not self.events:
+        if not self.replay_windows:
             raise ValueError("Replay windows are empty")
 
         raw_frame_path_pattern = re.compile(
@@ -195,10 +196,10 @@ class StreamPlayer:
         try:
             text_data = self._process_texts(inverted_frame, window_index, frame_index)
             object_data = self._process_objects(
-                inverted_frame, window_index, frame_index
+                inverted_frame, window_index, frame_index, text_data["hand_number"]
             )
         except FrameError as err:
-            logging.warn(f"{self.log_prefix} {err}")
+            logging.warn(f"{self.log_prefix} {err}\n")
             return
 
         if len(text_data["seats"]) != len(object_data["playing_seats"]):
@@ -237,7 +238,7 @@ class StreamPlayer:
 
         hand_time = self._get_hand_time(frame, window_index, frame_index)
         total_pot = self._get_total_pot(frame, window_index, frame_index)
-        seats = self._get_seats(frame, window_index, frame_index)
+        seats = self._get_seats(frame, window_index, frame_index, hand_number)
 
         self.text_recognition.clear_frame_results()
 
@@ -249,11 +250,17 @@ class StreamPlayer:
         }
 
     def _process_objects(
-        self, frame: np.ndarray, window_index: int, frame_index: int
+        self, frame: np.ndarray, window_index: int, frame_index: int, hand_number: int
     ) -> ObjectData:
-        dealer_position = self._get_dealer_position(frame, window_index, frame_index)
-        playing_seats = self._get_playing_seats(frame, window_index, frame_index)
-        table_cards = self._get_table_cards(frame, window_index, frame_index)
+        dealer_position = self._get_dealer_position(
+            frame, window_index, frame_index, hand_number
+        )
+        playing_seats = self._get_playing_seats(
+            frame, window_index, frame_index, hand_number
+        )
+        table_cards = self._get_table_cards(
+            frame, window_index, frame_index, hand_number
+        )
 
         return {
             "dealer_position": dealer_position,
@@ -329,17 +336,39 @@ class StreamPlayer:
         return self.text_recognition.recognize_total_pot(region)
 
     def _get_seats(
-        self, frame: np.ndarray, window_index: int, frame_index: int
+        self, frame: np.ndarray, window_index: int, frame_index: int, hand_number: int
     ) -> List[SeatData]:
+        frame_data = self._get_latest_frame_data(hand_number)
         seats: List[SeatData] = []
 
         for i in range(self.object_detection.seat_count):
-            region = self.object_detection.detect_seat_number(frame, i)
-            number = self.text_recognition.recognize_seat_number(region)
-            if self._should_save_frame("seat_numbers"):
-                self._save_frame(
-                    frame, window_index, frame_index, f"seat_number_{i}", region
+            seat_data = (
+                frame_data["seats"][i]
+                if frame_data and i in frame_data["seats"]
+                else None
+            )
+
+            if seat_data and seat_data["number"] >= 0:
+                number = seat_data["number"]
+            else:
+                region = self.object_detection.detect_seat_number(frame, i)
+                number = self.text_recognition.recognize_seat_number(region)
+                if self._should_save_frame("seat_numbers"):
+                    self._save_frame(
+                        frame, window_index, frame_index, f"seat_number_{i}", region
+                    )
+
+            if seat_data and not seat_data["playing"]:
+                seats.append(
+                    {
+                        "number": number,
+                        "action": "",
+                        "stake": 0,
+                        "balance": 0,
+                        "playing": False,
+                    }
                 )
+                continue
 
             region = self.object_detection.detect_seat_action(frame, i)
             action = self.text_recognition.recognize_seat_action(region)
@@ -368,15 +397,19 @@ class StreamPlayer:
                     "action": action,
                     "stake": stake,
                     "balance": balance,
-                    "playing": False,
+                    "playing": True,
                 }
             )
 
         return seats
 
     def _get_dealer_position(
-        self, frame: np.ndarray, window_index: int, frame_index: int
+        self, frame: np.ndarray, window_index: int, frame_index: int, hand_number: int
     ) -> int:
+        frame_data = self._get_latest_frame_data(hand_number)
+        if frame_data:
+            return frame_data["dealer_position"]
+
         (h, w) = frame.shape[:2]
         seat_regions = self.object_detection.get_seat_regions(w, h)
 
@@ -392,13 +425,23 @@ class StreamPlayer:
         return -1
 
     def _get_playing_seats(
-        self, frame: np.ndarray, window_index: int, frame_index: int
+        self, frame: np.ndarray, window_index: int, frame_index: int, hand_number: int
     ) -> List[bool]:
+        frame_data = self._get_latest_frame_data(hand_number)
+
         (h, w) = frame.shape[:2]
         seat_regions = self.object_detection.get_seat_regions(w, h)
 
         playing_seats: List[bool] = []
         for i, r in enumerate(seat_regions):
+            if (
+                frame_data
+                and i in frame_data["seats"]
+                and not frame_data["seats"][i]["playing"]
+            ):
+                playing_seats.append(False)
+                continue
+
             cropped_frame = self._crop_frame(frame, r)
             region = self.object_detection.detect_pocket_cards(cropped_frame, i)
             if region:
@@ -417,11 +460,22 @@ class StreamPlayer:
         return playing_seats
 
     def _get_table_cards(
-        self, frame: np.ndarray, window_index: int, frame_index: int
+        self, frame: np.ndarray, window_index: int, frame_index: int, hand_number: int
     ) -> List[CardData]:
+        frame_data = self._get_latest_frame_data(hand_number)
         table_cards: List[CardData] = []
 
         for i in range(self.object_detection.table_card_count):
+            if frame_data and i in frame_data["table_cards"]:
+                cards_data = frame_data["table_cards"][i]
+                table_cards.append(
+                    {
+                        "rank": cards_data["rank"],
+                        "suit": cards_data["suit"],
+                    }
+                )
+                continue
+
             region = self.object_detection.detect_table_card(frame, i)
             if self._should_save_frame("table_cards"):
                 self._save_frame(
@@ -429,16 +483,21 @@ class StreamPlayer:
                 )
 
             cropped_frame = self._crop_frame(frame, region)
-            card_data = self.image_classifier.predict(cropped_frame)
-            if card_data:
+            cards_str = self.image_classifier.predict(cropped_frame)
+            if cards_str:
                 table_cards.append(
                     {
-                        "rank": card_data[0],
-                        "suit": card_data[1],
+                        "rank": cards_str[0],
+                        "suit": cards_str[1],
                     }
                 )
 
         return table_cards
+
+    def _get_latest_frame_data(self, hand_number: int) -> Optional[SessionData]:
+        if hand_number in self.session and self.session[hand_number]:
+            return self.session[hand_number][-1]
+        return None
 
     def _should_save_frame(self, region_name: str) -> bool:
         return region_name in self.save_regions or "all" in self.save_regions
