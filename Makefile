@@ -69,8 +69,8 @@ version: targetonly
 .PHONY: proto
 proto:
 	python -m grpc_tools.protoc -I$(PROTO_DIR) --python_out=$(PROTO_DIR) --grpc_python_out=$(PROTO_DIR) \
-		$(PROTO_DIR)/session.proto
-	sed -i -Ee "s/^import (session_pb2)(.*)/import $(PKG_NAME).proto.\1\2/" $(PROTO_DIR)/session_pb2_grpc.py
+		$(PROTO_DIR)/analyzer.proto
+	sed -i -Ee "s/^import (analyzer_pb2)(.*)/import $(PKG_NAME).proto.\1\2/" $(PROTO_DIR)/analyzer_pb2_grpc.py
 	black $(PROTO_DIR)
 	isort $(PROTO_DIR)
 

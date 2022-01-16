@@ -1,8 +1,8 @@
 syntax = "proto3";
 
-package evercoinx.session;
+package evercoinx.analyzer;
 
-service Session {
+service Analyzer {
     rpc SendFrame(FrameRequest) returns (EmptyReponse) {}
 }
 

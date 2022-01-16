@@ -2,10 +2,10 @@
 """Client and server classes corresponding to protobuf-defined services."""
 import grpc
 
-import tracker.proto.session_pb2 as session__pb2
+import tracker.proto.analyzer_pb2 as analyzer__pb2
 
 
-class SessionStub(object):
+class AnalyzerStub(object):
     """Missing associated documentation comment in .proto file."""
 
     def __init__(self, channel):
@@ -15,13 +15,13 @@ class SessionStub(object):
             channel: A grpc.Channel.
         """
         self.SendFrame = channel.unary_unary(
-            "/evercoinx.session.Session/SendFrame",
-            request_serializer=session__pb2.FrameRequest.SerializeToString,
-            response_deserializer=session__pb2.EmptyReponse.FromString,
+            "/evercoinx.analyzer.Analyzer/SendFrame",
+            request_serializer=analyzer__pb2.FrameRequest.SerializeToString,
+            response_deserializer=analyzer__pb2.EmptyReponse.FromString,
         )
 
 
-class SessionServicer(object):
+class AnalyzerServicer(object):
     """Missing associated documentation comment in .proto file."""
 
     def SendFrame(self, request, context):
@@ -31,22 +31,22 @@ class SessionServicer(object):
         raise NotImplementedError("Method not implemented!")
 
 
-def add_SessionServicer_to_server(servicer, server):
+def add_AnalyzerServicer_to_server(servicer, server):
     rpc_method_handlers = {
         "SendFrame": grpc.unary_unary_rpc_method_handler(
             servicer.SendFrame,
-            request_deserializer=session__pb2.FrameRequest.FromString,
-            response_serializer=session__pb2.EmptyReponse.SerializeToString,
+            request_deserializer=analyzer__pb2.FrameRequest.FromString,
+            response_serializer=analyzer__pb2.EmptyReponse.SerializeToString,
         ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
-        "evercoinx.session.Session", rpc_method_handlers
+        "evercoinx.analyzer.Analyzer", rpc_method_handlers
     )
     server.add_generic_rpc_handlers((generic_handler,))
 
 
 # This class is part of an EXPERIMENTAL API.
-class Session(object):
+class Analyzer(object):
     """Missing associated documentation comment in .proto file."""
 
     @staticmethod
@@ -65,9 +65,9 @@ class Session(object):
         return grpc.experimental.unary_unary(
             request,
             target,
-            "/evercoinx.session.Session/SendFrame",
-            session__pb2.FrameRequest.SerializeToString,
-            session__pb2.EmptyReponse.FromString,
+            "/evercoinx.analyzer.Analyzer/SendFrame",
+            analyzer__pb2.FrameRequest.SerializeToString,
+            analyzer__pb2.EmptyReponse.FromString,
             options,
             channel_credentials,
             insecure,

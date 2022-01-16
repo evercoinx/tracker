@@ -24,10 +24,10 @@ import grpc
 import numpy as np
 from typing_extensions import TypedDict
 
-import tracker.proto.session_pb2 as pbsession
+import tracker.proto.analyzer_pb2 as pbanalyzer
 from tracker.image_classifier import ImageClassifier
 from tracker.object_detection import ObjectDetection, Region
-from tracker.proto.session_pb2_grpc import SessionStub
+from tracker.proto.analyzer_pb2_grpc import AnalyzerStub
 from tracker.text_recognition import Currency, Money, TextRecognition
 
 
@@ -117,7 +117,7 @@ class StreamPlayer:
     queue: Optional[Queue]
     events: List[Event]
     replay_windows: List[str]
-    session_stub: SessionStub
+    analyzer_stub: AnalyzerStub
 
     def __init__(
         self,
@@ -146,7 +146,7 @@ class StreamPlayer:
         self.session = defaultdict(list)
 
         chan = grpc.insecure_channel("localhost:50051")
-        self.session_stub = SessionStub(chan)
+        self.analyzer_stub = AnalyzerStub(chan)
 
     def run(self) -> None:
         if self.game_mode == GameMode.PLAY:
@@ -280,7 +280,7 @@ class StreamPlayer:
         self.session[hand_number].append(frame_data)
         self._print_frame_data(frame_data, hand_number)
 
-        req = pbsession.FrameRequest(
+        req = pbanalyzer.FrameRequest(
             window_index=window_index,
             frame_index=frame_index,
             hand_number=hand_number,
@@ -290,10 +290,10 @@ class StreamPlayer:
             seats=[self._to_pb_seat(s) for s in seats],
             board=[f"{c.rank}{c.suit}" for c in board],
         )
-        self.session_stub.SendFrame(req)
+        self.analyzer_stub.SendFrame(req)
 
-    def _to_pb_seat(self, seat: SeatData) -> pbsession.Seat:
-        return pbsession.Seat(
+    def _to_pb_seat(self, seat: SeatData) -> pbanalyzer.Seat:
+        return pbanalyzer.Seat(
             number=seat["number"],
             action=seat["action"],
             stake=self._to_pb_money(seat["stake"]),
@@ -301,15 +301,15 @@ class StreamPlayer:
             playing=seat["playing"],
         )
 
-    def _to_pb_money(self, money: Money) -> pbsession.Money:
+    def _to_pb_money(self, money: Money) -> pbanalyzer.Money:
         if money.currency == Currency.EURO:
-            currency = pbsession.Money.Currency.EURO
+            currency = pbanalyzer.Money.Currency.EURO
         elif money.currency == Currency.DOLLAR:
-            currency = pbsession.Money.Currency.DOLLAR
+            currency = pbanalyzer.Money.Currency.DOLLAR
         else:
-            currency = pbsession.Money.Currency.UNSET
+            currency = pbanalyzer.Money.Currency.UNSET
 
-        return pbsession.Money(
+        return pbanalyzer.Money(
             currency=currency,
             amount=money.amount,
         )
@@ -413,7 +413,7 @@ class StreamPlayer:
                         "number": number,
                         "action": "",
                         "stake": Money(),
-                        "balance": Money(),
+                        "balance": seat_data["balance"],
                         "playing": playing_seats[i],
                     }
                 )
