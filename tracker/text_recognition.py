@@ -11,6 +11,9 @@ from tracker.object_detection import Region
 
 
 class Money:
+    currency: str
+    amount: float
+
     def __init__(self, currency: str = "€", amount: float = 0) -> None:
         self.currency = currency
         self.amount = amount

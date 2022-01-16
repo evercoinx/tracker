@@ -7,10 +7,10 @@ import numpy as np
 from sklearn.neighbors import KNeighborsClassifier
 from typing_extensions import Literal
 
-from tracker.error import ImageError
-
 
 class ImageClassifier:
+    """Classifies board images based on a k-NN model"""
+
     placeholder_label: ClassVar[Literal["0x"]] = "0x"
 
     dataset_path: str
@@ -37,14 +37,14 @@ class ImageClassifier:
         for p in sorted(board_image_paths):
             img = cv2.imread(p)
             if img is None:
-                raise ImageError("Unable to read dataset image of table card", p)
+                raise OSError(f"Unable to read board dataset image at {p}")
 
             feat = self._extract_feature(img)
             features.append(feat)
 
             matches = re.findall(image_path_pattern, p)
             if not matches:
-                raise ImageError("Unable to parse dataset image of table card", p)
+                raise Exception(f"Unable to parse board dataset image at {p}")
             labels.append(matches[0])
 
         self.model.fit(features, labels)

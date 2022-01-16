@@ -23,23 +23,21 @@ import cv2
 import numpy as np
 from typing_extensions import TypedDict
 
-from tracker.error import ImageError
 from tracker.image_classifier import ImageClassifier
 from tracker.object_detection import ObjectDetection, Region
 from tracker.text_recognition import Money, TextRecognition
 
 
 class Card:
-    letter_to_suit: ClassVar[Dict[str, str]] = {
+    ranks: ClassVar[FrozenSet[str]] = frozenset(
+        ["2", "3", "4", "5", "6", "7", "8", "9", "T", "J", "Q", "K", "A"]
+    )
+    suit_to_sign: ClassVar[Dict[str, str]] = {
         "c": "♣",
         "d": "♦",
         "h": "♥",
         "s": "♠",
     }
-
-    ranks: ClassVar[FrozenSet[str]] = frozenset(
-        ["2", "3", "4", "5", "6", "7", "8", "9", "T", "J", "Q", "K", "A"]
-    )
 
     rank: str
     suit: str
@@ -47,14 +45,14 @@ class Card:
     def __init__(self, rank: str, suit: str):
         if rank not in type(self).ranks:
             raise ValueError(f"Unexpected rank: {rank}")
-        if suit not in type(self).letter_to_suit:
+        if suit not in type(self).suit_to_sign:
             raise ValueError(f"Unexpected suit: {suit}")
 
         self.rank = rank
         self.suit = suit
 
     def __str__(self) -> str:
-        return f"{self.rank}{self.letter_to_suit[self.suit]}"
+        return f"{self.rank}{self.suit_to_sign[self.suit]}"
 
     def __repr__(self) -> str:
         return f"Card('{self.rank}', '{self.suit}')"
@@ -101,7 +99,7 @@ def elapsed_time(name: str):
 
 
 class StreamPlayer:
-    """Plays a live stream or replays a saved one into the console"""
+    """Plays a live stream or replays a saved one into the console window"""
 
     game_mode: GameMode
     stream_path: str
@@ -192,7 +190,7 @@ class StreamPlayer:
         for p in sorted(raw_frame_paths, key=self._sort_path(raw_frame_path_pattern)):
             frame = cv2.imread(p, cv2.IMREAD_UNCHANGED)
             if frame is None:
-                raise ImageError("Unable to read frame", p)
+                raise OSError(f"Unable to read frame at {p}")
 
             matches = re.findall(raw_frame_path_pattern, p)
             (window_index, frame_index) = matches[0]
@@ -212,7 +210,7 @@ class StreamPlayer:
         def match(path: str) -> Tuple[int, int]:
             matches = re.findall(pattern, path)
             if not matches:
-                raise ImageError("Unable to parse frame path", path)
+                raise Exception(f"Unable to parse frame at {path}")
             return (
                 int(matches[0][0]),
                 int(matches[0][1]),
@@ -348,7 +346,7 @@ class StreamPlayer:
         hand_number: int,
         playing_seats: List[bool],
     ) -> List[SeatData]:
-        frame_data = self._extract_last_frame_data(hand_number)
+        frame_data = self._get_last_frame_data(hand_number)
         seats: List[SeatData] = []
 
         for i in range(6):
@@ -417,7 +415,7 @@ class StreamPlayer:
     def _get_dealer_position(
         self, frame: np.ndarray, window_index: int, frame_index: int, hand_number: int
     ) -> int:
-        frame_data = self._extract_last_frame_data(hand_number)
+        frame_data = self._get_last_frame_data(hand_number)
         if frame_data:
             return frame_data["dealer_position"]
 
@@ -439,7 +437,7 @@ class StreamPlayer:
     def _get_playing_seats(
         self, frame: np.ndarray, window_index: int, frame_index: int, hand_number: int
     ) -> List[bool]:
-        frame_data = self._extract_last_frame_data(hand_number)
+        frame_data = self._get_last_frame_data(hand_number)
 
         (h, w) = frame.shape[:2]
         seat_regions = self.object_detection.get_seat_regions(w, h)
@@ -475,7 +473,7 @@ class StreamPlayer:
     def _get_board(
         self, frame: np.ndarray, window_index: int, frame_index: int, hand_number: int
     ) -> List[Card]:
-        frame_data = self._extract_last_frame_data(hand_number)
+        frame_data = self._get_last_frame_data(hand_number)
         board: List[Card] = []
 
         for i in range(5):
@@ -496,7 +494,7 @@ class StreamPlayer:
 
         return board
 
-    def _extract_last_frame_data(self, hand_number: int) -> Optional[FrameData]:
+    def _get_last_frame_data(self, hand_number: int) -> Optional[FrameData]:
         if hand_number in self.session and self.session[hand_number]:
             return self.session[hand_number][-1]
         return None
@@ -521,7 +519,7 @@ class StreamPlayer:
 
         saved = cv2.imwrite(path, cropped_frame)
         if not saved:
-            raise ImageError(f"Unable to save {name} frame", path)
+            raise OSError(f"Unable to save frame at path {path}")
 
     @staticmethod
     def _crop_frame(frame: np.ndarray, region: Region) -> np.ndarray:

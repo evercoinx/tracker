@@ -3,8 +3,6 @@ from typing import ClassVar, Dict, List, NamedTuple, Optional, Tuple
 import cv2
 import numpy as np
 
-from tracker.error import ImageError
-
 
 class Point(NamedTuple):
     x: int
@@ -56,16 +54,16 @@ class ObjectDetection:
         dealer_path = f"{self.template_path}/dealer.{self.image_format}"
         dealer_template = cv2.imread(dealer_path, cv2.IMREAD_UNCHANGED)
         if dealer_template is None:
-            raise ImageError("Unable to read template image of dealer", dealer_path)
+            raise OSError(f"Unable to read template image of dealer at {dealer_path}")
         self.dealer_template = dealer_template
 
         self.pocket_cards_templates = []
         for i in range(6):
-            card_path = f"{self.template_path}/pocket_cards_{i}.{self.image_format}"
+            card_path = f"{self.template_path}/pocket_{i}.{self.image_format}"
             pocket_cards_template = cv2.imread(card_path, cv2.IMREAD_UNCHANGED)
             if pocket_cards_template is None:
-                raise ImageError(
-                    "Unable to read template image of pocket card", card_path
+                raise OSError(
+                    f"Unable to read template image of pocket card at {card_path}"
                 )
             self.pocket_cards_templates.append(pocket_cards_template)
 

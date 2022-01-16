@@ -11,7 +11,7 @@ from mss.models import Monitor
 
 
 class Screen:
-    """Capture a window of a screen"""
+    """Captures a selected window of a screen"""
 
     queue: Queue
     events: List[Event]
