@@ -1,6 +1,7 @@
 import re
 from datetime import datetime
-from typing import ClassVar, Tuple
+from enum import Enum
+from typing import ClassVar, Dict, Tuple
 
 import numpy as np
 from dateutil import parser as dateparser
@@ -10,11 +11,23 @@ from tesserocr import OEM, PSM, PyTessBaseAPI
 from tracker.object_detection import Region
 
 
+class Currency(Enum):
+    UNSET = 0
+    EURO = 1
+    DOLLAR = 2
+
+
 class Money:
-    currency: str
+    currency_to_symbol: ClassVar[Dict[Currency, str]] = {
+        Currency.UNSET: "?",
+        Currency.EURO: "€",
+        Currency.DOLLAR: "$",
+    }
+
+    currency: Currency
     amount: float
 
-    def __init__(self, currency: str = "€", amount: float = 0) -> None:
+    def __init__(self, currency: Currency = Currency.UNSET, amount: float = 0) -> None:
         self.currency = currency
         self.amount = amount
 
@@ -22,10 +35,10 @@ class Money:
         return self.amount != 0
 
     def __str__(self) -> str:
-        return f"{self.currency}{self.amount: <5.2f}"
+        return f"{type(self).currency_to_symbol[self.currency]}{self.amount: <5.2f}"
 
     def __repr__(self) -> str:
-        return f"Money('{self.currency}', {self.amount})"
+        return f"Money({self.currency}, {self.amount})"
 
 
 class TextRecognition:
@@ -92,7 +105,9 @@ class TextRecognition:
         matches = re.findall(type(self).regex_money, line.strip())
         if not matches:
             return Money()
-        return self._to_money(currency=matches[0][0], digits=matches[0][1])
+        return self._to_money(
+            currency_symbol=matches[0][0], amount_digits=matches[0][1]
+        )
 
     def recognize_seat_number(self, region: Region) -> int:
         self.tess_api.SetVariable("tessedit_char_whitelist", "Seat123456")
@@ -103,7 +118,7 @@ class TextRecognition:
         line = self.tess_api.GetUTF8Text()
         matches = re.findall(type(self).regex_seat_number, line.strip())
         if not matches:
-            return -1
+            return 0
         return int(matches[0])
 
     def recognize_seat_money(self, region: Region) -> Money:
@@ -116,7 +131,9 @@ class TextRecognition:
         matches = re.findall(type(self).regex_money, line.strip())
         if not matches:
             return Money()
-        return self._to_money(currency=matches[0][0], digits=matches[0][1])
+        return self._to_money(
+            currency_symbol=matches[0][0], amount_digits=matches[0][1]
+        )
 
     def recognize_seat_action(self, region: Region) -> str:
         self.tess_api.SetVariable(
@@ -140,8 +157,9 @@ class TextRecognition:
         return replacements.get(match, match)
 
     @staticmethod
-    def _to_money(currency: str, digits: str) -> Money:
-        cents = f"{digits:0<3}"
+    def _to_money(currency_symbol: str, amount_digits: str) -> Money:
+        currency = Currency.DOLLAR if currency_symbol == "$" else Currency.EURO
+        cents = f"{amount_digits:0<3}"
         amount = round(float(cents) / 100, 2)
         return Money(currency, amount)
 

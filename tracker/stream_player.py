@@ -28,14 +28,14 @@ import tracker.proto.session_pb2 as pbsession
 from tracker.image_classifier import ImageClassifier
 from tracker.object_detection import ObjectDetection, Region
 from tracker.proto.session_pb2_grpc import SessionStub
-from tracker.text_recognition import Money, TextRecognition
+from tracker.text_recognition import Currency, Money, TextRecognition
 
 
 class Card:
     ranks: ClassVar[FrozenSet[str]] = frozenset(
         ["2", "3", "4", "5", "6", "7", "8", "9", "T", "J", "Q", "K", "A"]
     )
-    suit_to_sign: ClassVar[Dict[str, str]] = {
+    suit_to_symbol: ClassVar[Dict[str, str]] = {
         "c": "♣",
         "d": "♦",
         "h": "♥",
@@ -48,14 +48,14 @@ class Card:
     def __init__(self, rank: str, suit: str):
         if rank not in type(self).ranks:
             raise ValueError(f"Unexpected rank: {rank}")
-        if suit not in type(self).suit_to_sign:
+        if suit not in type(self).suit_to_symbol:
             raise ValueError(f"Unexpected suit: {suit}")
 
         self.rank = rank
         self.suit = suit
 
     def __str__(self) -> str:
-        return f"{self.rank}{self.suit_to_sign[self.suit]}"
+        return f"{self.rank}{self.suit_to_symbol[self.suit]}"
 
     def __repr__(self) -> str:
         return f"Card('{self.rank}', '{self.suit}')"
@@ -80,8 +80,9 @@ class FrameData(TypedDict):
 
 
 class GameMode(Enum):
-    PLAY = 0
-    REPLAY = 1
+    UNSET = 0
+    PLAY = 1
+    REPLAY = 2
 
 
 def elapsed_time(name: str):
@@ -153,7 +154,7 @@ class StreamPlayer:
         elif self.game_mode == GameMode.REPLAY:
             self._replay()
         else:
-            raise ValueError(f"Unexpected game mode: {self.game_mode}")
+            raise ValueError(f"Invalid game mode: {self.game_mode}")
 
     def _play(self) -> None:
         if self.queue is None:
@@ -301,8 +302,15 @@ class StreamPlayer:
         )
 
     def _to_pb_money(self, money: Money) -> pbsession.Money:
+        if money.currency == Currency.EURO:
+            currency = pbsession.Money.Currency.EURO
+        elif money.currency == Currency.DOLLAR:
+            currency = pbsession.Money.Currency.DOLLAR
+        else:
+            currency = pbsession.Money.Currency.UNSET
+
         return pbsession.Money(
-            currency=pbsession.Money.Currency.EURO,  # type: ignore
+            currency=currency,
             amount=money.amount,
         )
 
@@ -311,7 +319,7 @@ class StreamPlayer:
         for i, s in enumerate(frame_data["seats"]):
             playing = "✔" if s["playing"] else " "
             dealer = "●" if frame_data["dealer_position"] == i else " "
-            number = str(s["number"]) if s["number"] != -1 else "⨯"
+            number = str(s["number"]) if s["number"] else "⨯"
             balance = str(s["balance"]) if (s["balance"] or s["playing"]) else " " * 6
             stake = str(s["stake"]) if s["stake"] else " " * 6
             action = s["action"] if s["action"] else " "
@@ -406,7 +414,7 @@ class StreamPlayer:
                         "action": "",
                         "stake": Money(),
                         "balance": Money(),
-                        "playing": False,
+                        "playing": playing_seats[i],
                     }
                 )
                 continue
@@ -438,7 +446,7 @@ class StreamPlayer:
                     "action": action,
                     "stake": stake,
                     "balance": balance,
-                    "playing": True,
+                    "playing": playing_seats[i],
                 }
             )
 
