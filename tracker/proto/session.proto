@@ -10,7 +10,7 @@ message FrameRequest {
     int32 window_index = 1;
     int32 frame_index = 2;
     int32 hand_number = 3;
-    string hand_time = 4; // HH:MMZ
+    string hand_time = 4;
     Money total_pot = 5;
     int32 dealer_position = 6;
     repeated Seat seats = 7;

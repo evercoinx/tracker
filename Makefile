@@ -1,6 +1,7 @@
 PKG_NAME = tracker
 CHECK_FILES = $(PKG_NAME) setup.py
 SYNC_FILES = $(PKG_NAME) images Makefile requirements.txt requirements-prod.txt setup.py setup.cfg
+PROTO_DIR = $(PKG_NAME)/proto
 NAMESPACE = ~/Workspace/evercoinx
 
 SOURCE_HOST = fedora
@@ -65,8 +66,13 @@ replay: targetonly cleanproc
 version: targetonly
 	$(PKG_NAME) --version
 
+.PHONY: proto
 proto:
-	$ python -m grpc_tools.protoc -Iproto --python_out=$(PKG_NAME) --grpc_python_out=$(PKG_NAME) ./proto/session.proto
+	python -m grpc_tools.protoc -I$(PROTO_DIR) --python_out=$(PROTO_DIR) --grpc_python_out=$(PROTO_DIR) \
+		$(PROTO_DIR)/session.proto
+	sed -i -Ee "s/^import (session_pb2)(.*)/import $(PKG_NAME).proto.\1\2/" $(PROTO_DIR)/session_pb2_grpc.py
+	black $(PROTO_DIR)
+	isort $(PROTO_DIR)
 
 cleanall:
 	rm -rf $(STREAM_PATH)/window{0,1,2,3}/*

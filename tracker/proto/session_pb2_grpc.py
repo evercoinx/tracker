@@ -2,7 +2,7 @@
 """Client and server classes corresponding to protobuf-defined services."""
 import grpc
 
-import tracker.session_pb2 as session__pb2
+import tracker.proto.session_pb2 as session__pb2
 
 
 class SessionStub(object):

@@ -24,10 +24,10 @@ import grpc
 import numpy as np
 from typing_extensions import TypedDict
 
-import tracker.session_pb2 as pbsession
+import tracker.proto.session_pb2 as pbsession
 from tracker.image_classifier import ImageClassifier
 from tracker.object_detection import ObjectDetection, Region
-from tracker.session_pb2_grpc import SessionStub
+from tracker.proto.session_pb2_grpc import SessionStub
 from tracker.text_recognition import Money, TextRecognition
 
 
@@ -289,8 +289,7 @@ class StreamPlayer:
             seats=[self._to_pb_seat(s) for s in seats],
             board=[f"{c.rank}{c.suit}" for c in board],
         )
-        res = self.session_stub.SendFrame(req)
-        print(res)
+        self.session_stub.SendFrame(req)
 
     def _to_pb_seat(self, seat: SeatData) -> pbsession.Seat:
         return pbsession.Seat(
