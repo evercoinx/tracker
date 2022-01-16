@@ -65,6 +65,9 @@ replay: targetonly cleanproc
 version: targetonly
 	$(PKG_NAME) --version
 
+proto:
+	$ python -m grpc_tools.protoc -Iproto --python_out=$(PKG_NAME) --grpc_python_out=$(PKG_NAME) ./proto/session.proto
+
 cleanall:
 	rm -rf $(STREAM_PATH)/window{0,1,2,3}/*
 

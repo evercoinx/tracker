@@ -20,11 +20,14 @@ from typing import (
 )
 
 import cv2
+import grpc
 import numpy as np
 from typing_extensions import TypedDict
 
+import tracker.session_pb2 as pbsession
 from tracker.image_classifier import ImageClassifier
 from tracker.object_detection import ObjectDetection, Region
+from tracker.session_pb2_grpc import SessionStub
 from tracker.text_recognition import Money, TextRecognition
 
 
@@ -113,6 +116,7 @@ class StreamPlayer:
     queue: Optional[Queue]
     events: List[Event]
     replay_windows: List[str]
+    session_stub: SessionStub
 
     def __init__(
         self,
@@ -139,6 +143,9 @@ class StreamPlayer:
         self.image_classifier = image_classifier
         self.log_prefix = ""
         self.session = defaultdict(list)
+
+        chan = grpc.insecure_channel("localhost:50051")
+        self.session_stub = SessionStub(chan)
 
     def run(self) -> None:
         if self.game_mode == GameMode.PLAY:
@@ -269,9 +276,36 @@ class StreamPlayer:
             "seats": seats,
             "board": board,
         }
-
         self.session[hand_number].append(frame_data)
         self._print_frame_data(frame_data, hand_number)
+
+        req = pbsession.FrameRequest(
+            window_index=window_index,
+            frame_index=frame_index,
+            hand_number=hand_number,
+            hand_time=hand_time.strftime("%H:%M%z"),
+            total_pot=self._to_pb_money(total_pot),
+            dealer_position=dealer_position,
+            seats=[self._to_pb_seat(s) for s in seats],
+            board=[f"{c.rank}{c.suit}" for c in board],
+        )
+        res = self.session_stub.SendFrame(req)
+        print(res)
+
+    def _to_pb_seat(self, seat: SeatData) -> pbsession.Seat:
+        return pbsession.Seat(
+            number=seat["number"],
+            action=seat["action"],
+            stake=self._to_pb_money(seat["stake"]),
+            balance=self._to_pb_money(seat["balance"]),
+            playing=seat["playing"],
+        )
+
+    def _to_pb_money(self, money: Money) -> pbsession.Money:
+        return pbsession.Money(
+            currency=pbsession.Money.Currency.EURO,  # type: ignore
+            amount=money.amount,
+        )
 
     def _print_frame_data(self, frame_data: FrameData, hand_number: int):
         seat_lines: List[str] = []

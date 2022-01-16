@@ -1,12 +1,13 @@
 [tool.black]
+target-version = ['py37']
 line-length = 88
 include = '\.py$'
 exclude = '''
 /(
     \.git
   | \.vscode
-  | stream
   | __pycache__
+  | tracker/session_.*\.py$
 )/
 '''
 
@@ -23,7 +24,7 @@ exclude = [
     "tracker.egg-info"
 ]
 stubPath = "./typings"
-ignore = []
+ignore = ["tracker/session_*.py"]
 venv = "tracker"
 venvPath = "../../../.local/virtualenvs"
 pythonVersion = "3.7"
