@@ -27,14 +27,14 @@ class ImageClassifier:
             r"/([\d\w]{2})_\d." + re.escape(self.image_format) + r"$",
             flags=re.IGNORECASE,
         )
-        image_paths = glob(
-            f"{self.dataset_path}/*.{self.image_format}", recursive=False
+        board_image_paths = glob(
+            f"{self.dataset_path}/board/*.{self.image_format}", recursive=False
         )
 
         features: List[np.ndarray] = []
         labels: List[str] = []
 
-        for p in sorted(image_paths):
+        for p in sorted(board_image_paths):
             img = cv2.imread(p)
             if img is None:
                 raise ImageError("Unable to read dataset image of table card", p)

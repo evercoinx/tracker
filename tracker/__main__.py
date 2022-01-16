@@ -13,8 +13,8 @@ from tracker.screen import Screen
 from tracker.stream_player import GameMode, StreamPlayer
 from tracker.text_recognition import TextRecognition
 
-TEMPLATE_PATH = "./template"
-DATASET_PATH = "./dataset"
+TEMPLATE_PATH = "./images/templates"
+DATASET_PATH = "./images/datasets"
 IMAGE_FORMAT = "png"
 
 

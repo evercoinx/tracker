@@ -1,6 +1,6 @@
 PKG_NAME = tracker
 CHECK_FILES = $(PKG_NAME) setup.py
-SYNC_FILES = $(PKG_NAME) dataset template Makefile requirements.txt requirements-prod.txt setup.py setup.cfg
+SYNC_FILES = $(PKG_NAME) images Makefile requirements.txt requirements-prod.txt setup.py setup.cfg
 NAMESPACE = ~/Workspace/evercoinx
 
 SOURCE_HOST = fedora
@@ -9,7 +9,7 @@ EFFECTIVE_HOST = $(shell hostname)
 
 DISPLAY = :10.0
 SCREEN_TOP_MARGIN = 98
-STREAM_PATH=/mnt/usb1/stream
+STREAM_PATH=/mnt/usb1/streams
 
 all: check deploy
 
