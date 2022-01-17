@@ -11,6 +11,18 @@ from tesserocr import OEM, PSM, PyTessBaseAPI
 from tracker.object_detection import Region
 
 
+class Action(Enum):
+    UNSET = 0
+    BET = 1
+    RAISE = 2
+    CALL = 3
+    FOLD = 4
+    CHECK = 5
+    ALL_IN = 6
+    SITTING_IN = 7
+    WAITING_FOR_BB = 8
+
+
 class Currency(Enum):
     UNSET = 0
     EURO = 1
@@ -44,9 +56,19 @@ class Money:
 class TextRecognition:
     """Recognizes texts on a window frame"""
 
+    action_mappings: ClassVar[Dict[str, Action]] = {
+        "bet": Action.BET,
+        "raise": Action.RAISE,
+        "call": Action.CALL,
+        "fold": Action.FOLD,
+        "check": Action.CHECK,
+        "allin": Action.ALL_IN,
+        "sittingin": Action.SITTING_IN,
+        "waitingforbb": Action.WAITING_FOR_BB,
+    }
+
     regex_action: ClassVar[re.Pattern] = re.compile(
-        r"(bet|call|check|fold|raise|allin|sittingin|waitingforbb)",
-        flags=re.IGNORECASE,
+        r"(" + "|".join(action_mappings) + r")", flags=re.IGNORECASE
     )
     regex_money: ClassVar[re.Pattern] = re.compile(r"([$€])([.\d]+)")
     regex_hand_number: ClassVar[re.Pattern] = re.compile(r"(\d{10,})")
@@ -135,7 +157,7 @@ class TextRecognition:
             currency_symbol=matches[0][0], amount_digits=matches[0][1]
         )
 
-    def recognize_seat_action(self, region: Region) -> str:
+    def recognize_seat_action(self, region: Region) -> Action:
         self.tess_api.SetVariable(
             "tessedit_char_whitelist", "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
         )
@@ -146,15 +168,10 @@ class TextRecognition:
         line = self.tess_api.GetUTF8Text()
         matches = re.findall(type(self).regex_action, line.strip())
         if not matches:
-            return ""
+            return Action.UNSET
 
-        match = matches[0].lower()
-        replacements = {
-            "allin": "all-in",
-            "sittingin": "sitting in",
-            "waitingforbb": "waiting for bb",
-        }
-        return replacements.get(match, match)
+        action = matches[0].lower()
+        return type(self).action_mappings.get(action, Action.UNSET)
 
     @staticmethod
     def _to_money(currency_symbol: str, amount_digits: str) -> Money:

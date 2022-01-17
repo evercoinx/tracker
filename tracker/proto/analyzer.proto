@@ -31,8 +31,20 @@ message Money {
 }
 
 message Seat {
+    enum Action {
+        UNSET = 0;
+        BET = 1;
+        RAISE = 2;
+        CALL = 3;
+        FOLD = 4;
+        CHECK = 5;
+        ALL_IN = 6;
+        SITTING_IN = 7;
+        WAITING_FOR_BB = 8;
+    }
+
     sint32 number = 1;
-    string action = 2;
+    Action action = 2;
     Money stake = 3;
     Money balance = 4;
     bool playing = 5;

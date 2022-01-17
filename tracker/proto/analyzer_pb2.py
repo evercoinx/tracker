@@ -18,7 +18,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
     syntax="proto3",
     serialized_options=None,
     create_key=_descriptor._internal_create_key,
-    serialized_pb=b'\n\x0e\x61nalyzer.proto\x12\x12\x65vercoinx.analyzer"\xe0\x01\n\x0c\x46rameRequest\x12\x14\n\x0cwindow_index\x18\x01 \x01(\x05\x12\x13\n\x0b\x66rame_index\x18\x02 \x01(\x05\x12\x13\n\x0bhand_number\x18\x03 \x01(\x05\x12\x11\n\thand_time\x18\x04 \x01(\t\x12,\n\ttotal_pot\x18\x05 \x01(\x0b\x32\x19.evercoinx.analyzer.Money\x12\x17\n\x0f\x64\x65\x61ler_position\x18\x06 \x01(\x05\x12\'\n\x05seats\x18\x07 \x03(\x0b\x32\x18.evercoinx.analyzer.Seat\x12\r\n\x05\x62oard\x18\x08 \x03(\t"\x0f\n\rEmptyResponse"z\n\x05Money\x12\x34\n\x08\x63urrency\x18\x01 \x01(\x0e\x32".evercoinx.analyzer.Money.Currency\x12\x0e\n\x06\x61mount\x18\x02 \x01(\x01"+\n\x08\x43urrency\x12\t\n\x05UNSET\x10\x00\x12\x08\n\x04\x45URO\x10\x01\x12\n\n\x06\x44OLLAR\x10\x02"\x8d\x01\n\x04Seat\x12\x0e\n\x06number\x18\x01 \x01(\x11\x12\x0e\n\x06\x61\x63tion\x18\x02 \x01(\t\x12(\n\x05stake\x18\x03 \x01(\x0b\x32\x19.evercoinx.analyzer.Money\x12*\n\x07\x62\x61lance\x18\x04 \x01(\x0b\x32\x19.evercoinx.analyzer.Money\x12\x0f\n\x07playing\x18\x05 \x01(\x08\x32^\n\x08\x41nalyzer\x12R\n\tSendFrame\x12 .evercoinx.analyzer.FrameRequest\x1a!.evercoinx.analyzer.EmptyResponse"\x00\x62\x06proto3',
+    serialized_pb=b'\n\x0e\x61nalyzer.proto\x12\x12\x65vercoinx.analyzer"\xe0\x01\n\x0c\x46rameRequest\x12\x14\n\x0cwindow_index\x18\x01 \x01(\x05\x12\x13\n\x0b\x66rame_index\x18\x02 \x01(\x05\x12\x13\n\x0bhand_number\x18\x03 \x01(\x05\x12\x11\n\thand_time\x18\x04 \x01(\t\x12,\n\ttotal_pot\x18\x05 \x01(\x0b\x32\x19.evercoinx.analyzer.Money\x12\x17\n\x0f\x64\x65\x61ler_position\x18\x06 \x01(\x05\x12\'\n\x05seats\x18\x07 \x03(\x0b\x32\x18.evercoinx.analyzer.Seat\x12\r\n\x05\x62oard\x18\x08 \x03(\t"\x0f\n\rEmptyResponse"z\n\x05Money\x12\x34\n\x08\x63urrency\x18\x01 \x01(\x0e\x32".evercoinx.analyzer.Money.Currency\x12\x0e\n\x06\x61mount\x18\x02 \x01(\x01"+\n\x08\x43urrency\x12\t\n\x05UNSET\x10\x00\x12\x08\n\x04\x45URO\x10\x01\x12\n\n\x06\x44OLLAR\x10\x02"\xa6\x02\n\x04Seat\x12\x0e\n\x06number\x18\x01 \x01(\x11\x12/\n\x06\x61\x63tion\x18\x02 \x01(\x0e\x32\x1f.evercoinx.analyzer.Seat.Action\x12(\n\x05stake\x18\x03 \x01(\x0b\x32\x19.evercoinx.analyzer.Money\x12*\n\x07\x62\x61lance\x18\x04 \x01(\x0b\x32\x19.evercoinx.analyzer.Money\x12\x0f\n\x07playing\x18\x05 \x01(\x08"v\n\x06\x41\x63tion\x12\t\n\x05UNSET\x10\x00\x12\x07\n\x03\x42\x45T\x10\x01\x12\t\n\x05RAISE\x10\x02\x12\x08\n\x04\x43\x41LL\x10\x03\x12\x08\n\x04\x46OLD\x10\x04\x12\t\n\x05\x43HECK\x10\x05\x12\n\n\x06\x41LL_IN\x10\x06\x12\x0e\n\nSITTING_IN\x10\x07\x12\x12\n\x0eWAITING_FOR_BB\x10\x08\x32^\n\x08\x41nalyzer\x12R\n\tSendFrame\x12 .evercoinx.analyzer.FrameRequest\x1a!.evercoinx.analyzer.EmptyResponse"\x00\x62\x06proto3',
 )
 
 
@@ -60,6 +60,93 @@ _MONEY_CURRENCY = _descriptor.EnumDescriptor(
     serialized_end=404,
 )
 _sym_db.RegisterEnumDescriptor(_MONEY_CURRENCY)
+
+_SEAT_ACTION = _descriptor.EnumDescriptor(
+    name="Action",
+    full_name="evercoinx.analyzer.Seat.Action",
+    filename=None,
+    file=DESCRIPTOR,
+    create_key=_descriptor._internal_create_key,
+    values=[
+        _descriptor.EnumValueDescriptor(
+            name="UNSET",
+            index=0,
+            number=0,
+            serialized_options=None,
+            type=None,
+            create_key=_descriptor._internal_create_key,
+        ),
+        _descriptor.EnumValueDescriptor(
+            name="BET",
+            index=1,
+            number=1,
+            serialized_options=None,
+            type=None,
+            create_key=_descriptor._internal_create_key,
+        ),
+        _descriptor.EnumValueDescriptor(
+            name="RAISE",
+            index=2,
+            number=2,
+            serialized_options=None,
+            type=None,
+            create_key=_descriptor._internal_create_key,
+        ),
+        _descriptor.EnumValueDescriptor(
+            name="CALL",
+            index=3,
+            number=3,
+            serialized_options=None,
+            type=None,
+            create_key=_descriptor._internal_create_key,
+        ),
+        _descriptor.EnumValueDescriptor(
+            name="FOLD",
+            index=4,
+            number=4,
+            serialized_options=None,
+            type=None,
+            create_key=_descriptor._internal_create_key,
+        ),
+        _descriptor.EnumValueDescriptor(
+            name="CHECK",
+            index=5,
+            number=5,
+            serialized_options=None,
+            type=None,
+            create_key=_descriptor._internal_create_key,
+        ),
+        _descriptor.EnumValueDescriptor(
+            name="ALL_IN",
+            index=6,
+            number=6,
+            serialized_options=None,
+            type=None,
+            create_key=_descriptor._internal_create_key,
+        ),
+        _descriptor.EnumValueDescriptor(
+            name="SITTING_IN",
+            index=7,
+            number=7,
+            serialized_options=None,
+            type=None,
+            create_key=_descriptor._internal_create_key,
+        ),
+        _descriptor.EnumValueDescriptor(
+            name="WAITING_FOR_BB",
+            index=8,
+            number=8,
+            serialized_options=None,
+            type=None,
+            create_key=_descriptor._internal_create_key,
+        ),
+    ],
+    containing_type=None,
+    serialized_options=None,
+    serialized_start=583,
+    serialized_end=701,
+)
+_sym_db.RegisterEnumDescriptor(_SEAT_ACTION)
 
 
 _FRAMEREQUEST = _descriptor.Descriptor(
@@ -351,11 +438,11 @@ _SEAT = _descriptor.Descriptor(
             full_name="evercoinx.analyzer.Seat.action",
             index=1,
             number=2,
-            type=9,
-            cpp_type=9,
+            type=14,
+            cpp_type=8,
             label=1,
             has_default_value=False,
-            default_value=b"".decode("utf-8"),
+            default_value=0,
             message_type=None,
             enum_type=None,
             containing_type=None,
@@ -425,22 +512,26 @@ _SEAT = _descriptor.Descriptor(
     ],
     extensions=[],
     nested_types=[],
-    enum_types=[],
+    enum_types=[
+        _SEAT_ACTION,
+    ],
     serialized_options=None,
     is_extendable=False,
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
     serialized_start=407,
-    serialized_end=548,
+    serialized_end=701,
 )
 
 _FRAMEREQUEST.fields_by_name["total_pot"].message_type = _MONEY
 _FRAMEREQUEST.fields_by_name["seats"].message_type = _SEAT
 _MONEY.fields_by_name["currency"].enum_type = _MONEY_CURRENCY
 _MONEY_CURRENCY.containing_type = _MONEY
+_SEAT.fields_by_name["action"].enum_type = _SEAT_ACTION
 _SEAT.fields_by_name["stake"].message_type = _MONEY
 _SEAT.fields_by_name["balance"].message_type = _MONEY
+_SEAT_ACTION.containing_type = _SEAT
 DESCRIPTOR.message_types_by_name["FrameRequest"] = _FRAMEREQUEST
 DESCRIPTOR.message_types_by_name["EmptyResponse"] = _EMPTYRESPONSE
 DESCRIPTOR.message_types_by_name["Money"] = _MONEY
@@ -499,8 +590,8 @@ _ANALYZER = _descriptor.ServiceDescriptor(
     index=0,
     serialized_options=None,
     create_key=_descriptor._internal_create_key,
-    serialized_start=550,
-    serialized_end=644,
+    serialized_start=703,
+    serialized_end=797,
     methods=[
         _descriptor.MethodDescriptor(
             name="SendFrame",

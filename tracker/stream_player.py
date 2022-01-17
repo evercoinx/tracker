@@ -28,7 +28,7 @@ import tracker.proto.analyzer_pb2 as pbanalyzer
 from tracker.image_classifier import ImageClassifier
 from tracker.object_detection import ObjectDetection, Region
 from tracker.proto.analyzer_pb2_grpc import AnalyzerStub
-from tracker.text_recognition import Currency, Money, TextRecognition
+from tracker.text_recognition import Action, Currency, Money, TextRecognition
 
 
 class Card:
@@ -63,7 +63,7 @@ class Card:
 
 class SeatData(TypedDict):
     number: int
-    action: str
+    action: Action
     stake: Money
     balance: Money
     playing: bool
@@ -186,9 +186,9 @@ class StreamPlayer:
 
         raw_frame_path_pattern = re.compile(
             r"window(["
-            + re.escape(",".join(self.replay_windows))
+            + ",".join(self.replay_windows)
             + r"])\/(\d+)_raw."
-            + re.escape(self.frame_format)
+            + self.frame_format
             + r"$"
         )
         raw_frame_paths = glob(
@@ -297,22 +297,34 @@ class StreamPlayer:
     def _to_pb_seat(self, seat: SeatData) -> pbanalyzer.Seat:
         return pbanalyzer.Seat(
             number=seat["number"],
-            action=seat["action"],
+            action=self._to_pb_action(seat["action"]),
             stake=self._to_pb_money(seat["stake"]),
             balance=self._to_pb_money(seat["balance"]),
             playing=seat["playing"],
         )
 
-    def _to_pb_money(self, money: Money) -> pbanalyzer.Money:
-        if money.currency == Currency.EURO:
-            currency = pbanalyzer.Money.Currency.EURO
-        elif money.currency == Currency.DOLLAR:
-            currency = pbanalyzer.Money.Currency.DOLLAR
-        else:
-            currency = pbanalyzer.Money.Currency.UNSET
+    def _to_pb_action(self, action: Action) -> pbanalyzer.Seat.Action:
+        mappings = {
+            Action.UNSET: pbanalyzer.Seat.Action.UNSET,
+            Action.BET: pbanalyzer.Seat.Action.BET,
+            Action.RAISE: pbanalyzer.Seat.Action.RAISE,
+            Action.CALL: pbanalyzer.Seat.Action.CALL,
+            Action.FOLD: pbanalyzer.Seat.Action.FOLD,
+            Action.CHECK: pbanalyzer.Seat.Action.CHECK,
+            Action.ALL_IN: pbanalyzer.Seat.Action.ALL_IN,
+            Action.SITTING_IN: pbanalyzer.Seat.Action.SITTING_IN,
+            Action.WAITING_FOR_BB: pbanalyzer.Seat.Action.WAITING_FOR_BB,
+        }
+        return mappings.get(action, pbanalyzer.Seat.Action.UNSET)
 
+    def _to_pb_money(self, money: Money) -> pbanalyzer.Money:
+        mappings = {
+            Currency.UNSET: pbanalyzer.Money.Currency.UNSET,
+            Currency.EURO: pbanalyzer.Money.Currency.EURO,
+            Currency.DOLLAR: pbanalyzer.Money.Currency.DOLLAR,
+        }
         return pbanalyzer.Money(
-            currency=currency,
+            currency=mappings.get(money.currency, pbanalyzer.Money.Currency.UNSET),
             amount=money.amount,
         )
 
@@ -410,10 +422,15 @@ class StreamPlayer:
                     )
 
             if seat_data and not playing_seats[i]:
+                action = (
+                    seat_data["action"]
+                    if seat_data["action"] in (Action.SITTING_IN, Action.WAITING_FOR_BB)
+                    else Action.UNSET
+                )
                 seats.append(
                     {
                         "number": number,
-                        "action": "",
+                        "action": action,
                         "stake": Money(),
                         "balance": seat_data["balance"],
                         "playing": playing_seats[i],
