@@ -40,51 +40,57 @@ def main() -> None:
 def parse_args() -> Dict[str, Any]:
     ap = argparse.ArgumentParser()
     ap.add_argument(
-        "--replay",
-        dest="replay",
-        action="store_true",
-        help="replay saved session",
-    )
-    ap.add_argument(
         "--stream-path",
         type=str,
         required=True,
-        help="stream path",
+        help="Stream path",
+    )
+    ap.add_argument("--version", action="version", version=f"%(prog)s {__version__}")
+    ap.add_argument(
+        "--replay",
+        dest="replay",
+        action="store_true",
+        help="Replay already saved session",
     )
     ap.add_argument(
-        "--display", type=str, default=":0.0", help="display number; defaults to :0.0"
+        "--display", type=str, default=":0.0", help="Display number; defaults to :0.0"
     )
     ap.add_argument(
         "--windows",
         type=list,
         default=["0", "1", "2", "3"],
-        help="windows to watch; defaults to 0123",
+        help="Windows to watch; defaults to 0123",
     )
     ap.add_argument(
         "--screen-width",
         type=int,
         default=1920,
-        help="screen width in px; defaults to 1920",
+        help="Screen width in pixels; defaults to 1920",
     )
     ap.add_argument(
         "--screen-height",
         type=int,
         default=1080,
-        help="screen height in px; defaults to 1080",
+        help="Screen height in pixels; defaults to 1080",
     )
     ap.add_argument(
         "--left-margin",
         type=int,
         default=0,
-        help="left margin of screen in px; defaults to 0",
+        help="Left margin of screen in pixels; defaults to 0",
     )
     ap.add_argument(
         "--top-margin",
         type=int,
         default=0,
-        help="top margin of screen in px; defaults to 0",
+        help="Top margin of screen in pixels; defaults to 0",
     )
-    ap.add_argument("--version", action="version", version=f"%(prog)s {__version__}")
+    ap.add_argument(
+        "--analyzer-address",
+        type=str,
+        default="localhost:50051",
+        help="GRPC address of analyzer; defaults to localhost:50051",
+    )
 
     return vars(ap.parse_args())
 
@@ -99,17 +105,17 @@ def validate_args(args: Dict[str, Any]) -> Dict[str, Any]:
     )
 
     if len(args["windows"]) > 4:
-        raise ValueError(f"too many windows specified: {len(args['windows'])}")
+        raise ValueError(f"Too many windows specified: {len(args['windows'])}")
 
     # the environment variable formatted as hostname:display.screen
     display_env = os.environ.get("DISPLAY", "").strip()
     if not display_env:
-        raise ValueError("display is not set")
+        raise ValueError("Display is not set")
 
     parsed_display = display_env.split(":")
     display = f":{parsed_display[1]}"
     if not args["replay"] and display != args["display"]:
-        raise ValueError(f"display is {display}; want {args['display']}")
+        raise ValueError(f"Display is {display}; want {args['display']}")
 
     save_regions = os.environ.get("SAVE_REGIONS", "").split(",")
 
@@ -149,6 +155,7 @@ def play_session(
         text_recognition=text_recognition,
         object_detection=object_detection,
         image_classifier=image_classifier,
+        analyzer_address=args["analyzer_address"],
         queue=queue,
         events=events,
     )
@@ -193,6 +200,7 @@ def replay_session(
         text_recognition=text_recognition,
         object_detection=object_detection,
         image_classifier=image_classifier,
+        analyzer_address=args["analyzer_address"],
         replay_windows=args["windows"],
     )
     player.run()

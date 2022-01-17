@@ -117,6 +117,7 @@ class StreamPlayer:
     queue: Optional[Queue]
     events: List[Event]
     replay_windows: List[str]
+    analyzer_address: str
     analyzer_stub: AnalyzerStub
 
     def __init__(
@@ -128,6 +129,7 @@ class StreamPlayer:
         text_recognition: TextRecognition,
         object_detection: ObjectDetection,
         image_classifier: ImageClassifier,
+        analyzer_address: str,
         queue: Optional[Queue] = None,
         events: List[Event] = [],
         replay_windows: List[str] = [],
@@ -145,7 +147,7 @@ class StreamPlayer:
         self.log_prefix = ""
         self.session = defaultdict(list)
 
-        chan = grpc.insecure_channel("localhost:50051")
+        chan = grpc.insecure_channel(analyzer_address)
         self.analyzer_stub = AnalyzerStub(chan)
 
     def run(self) -> None:

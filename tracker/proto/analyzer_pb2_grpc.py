@@ -17,7 +17,7 @@ class AnalyzerStub(object):
         self.SendFrame = channel.unary_unary(
             "/evercoinx.analyzer.Analyzer/SendFrame",
             request_serializer=analyzer__pb2.FrameRequest.SerializeToString,
-            response_deserializer=analyzer__pb2.EmptyReponse.FromString,
+            response_deserializer=analyzer__pb2.EmptyResponse.FromString,
         )
 
 
@@ -36,7 +36,7 @@ def add_AnalyzerServicer_to_server(servicer, server):
         "SendFrame": grpc.unary_unary_rpc_method_handler(
             servicer.SendFrame,
             request_deserializer=analyzer__pb2.FrameRequest.FromString,
-            response_serializer=analyzer__pb2.EmptyReponse.SerializeToString,
+            response_serializer=analyzer__pb2.EmptyResponse.SerializeToString,
         ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
@@ -67,7 +67,7 @@ class Analyzer(object):
             target,
             "/evercoinx.analyzer.Analyzer/SendFrame",
             analyzer__pb2.FrameRequest.SerializeToString,
-            analyzer__pb2.EmptyReponse.FromString,
+            analyzer__pb2.EmptyResponse.FromString,
             options,
             channel_credentials,
             insecure,

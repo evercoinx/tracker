@@ -18,7 +18,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
     syntax="proto3",
     serialized_options=None,
     create_key=_descriptor._internal_create_key,
-    serialized_pb=b'\n\x0e\x61nalyzer.proto\x12\x12\x65vercoinx.analyzer"\xe0\x01\n\x0c\x46rameRequest\x12\x14\n\x0cwindow_index\x18\x01 \x01(\x05\x12\x13\n\x0b\x66rame_index\x18\x02 \x01(\x05\x12\x13\n\x0bhand_number\x18\x03 \x01(\x05\x12\x11\n\thand_time\x18\x04 \x01(\t\x12,\n\ttotal_pot\x18\x05 \x01(\x0b\x32\x19.evercoinx.analyzer.Money\x12\x17\n\x0f\x64\x65\x61ler_position\x18\x06 \x01(\x05\x12\'\n\x05seats\x18\x07 \x03(\x0b\x32\x18.evercoinx.analyzer.Seat\x12\r\n\x05\x62oard\x18\x08 \x03(\t"\x0e\n\x0c\x45mptyReponse"z\n\x05Money\x12\x34\n\x08\x63urrency\x18\x01 \x01(\x0e\x32".evercoinx.analyzer.Money.Currency\x12\x0e\n\x06\x61mount\x18\x02 \x01(\x01"+\n\x08\x43urrency\x12\t\n\x05UNSET\x10\x00\x12\x08\n\x04\x45URO\x10\x01\x12\n\n\x06\x44OLLAR\x10\x02"\x8d\x01\n\x04Seat\x12\x0e\n\x06number\x18\x01 \x01(\x11\x12\x0e\n\x06\x61\x63tion\x18\x02 \x01(\t\x12(\n\x05stake\x18\x03 \x01(\x0b\x32\x19.evercoinx.analyzer.Money\x12*\n\x07\x62\x61lance\x18\x04 \x01(\x0b\x32\x19.evercoinx.analyzer.Money\x12\x0f\n\x07playing\x18\x05 \x01(\x08\x32]\n\x08\x41nalyzer\x12Q\n\tSendFrame\x12 .evercoinx.analyzer.FrameRequest\x1a .evercoinx.analyzer.EmptyReponse"\x00\x62\x06proto3',
+    serialized_pb=b'\n\x0e\x61nalyzer.proto\x12\x12\x65vercoinx.analyzer"\xe0\x01\n\x0c\x46rameRequest\x12\x14\n\x0cwindow_index\x18\x01 \x01(\x05\x12\x13\n\x0b\x66rame_index\x18\x02 \x01(\x05\x12\x13\n\x0bhand_number\x18\x03 \x01(\x05\x12\x11\n\thand_time\x18\x04 \x01(\t\x12,\n\ttotal_pot\x18\x05 \x01(\x0b\x32\x19.evercoinx.analyzer.Money\x12\x17\n\x0f\x64\x65\x61ler_position\x18\x06 \x01(\x05\x12\'\n\x05seats\x18\x07 \x03(\x0b\x32\x18.evercoinx.analyzer.Seat\x12\r\n\x05\x62oard\x18\x08 \x03(\t"\x0f\n\rEmptyResponse"z\n\x05Money\x12\x34\n\x08\x63urrency\x18\x01 \x01(\x0e\x32".evercoinx.analyzer.Money.Currency\x12\x0e\n\x06\x61mount\x18\x02 \x01(\x01"+\n\x08\x43urrency\x12\t\n\x05UNSET\x10\x00\x12\x08\n\x04\x45URO\x10\x01\x12\n\n\x06\x44OLLAR\x10\x02"\x8d\x01\n\x04Seat\x12\x0e\n\x06number\x18\x01 \x01(\x11\x12\x0e\n\x06\x61\x63tion\x18\x02 \x01(\t\x12(\n\x05stake\x18\x03 \x01(\x0b\x32\x19.evercoinx.analyzer.Money\x12*\n\x07\x62\x61lance\x18\x04 \x01(\x0b\x32\x19.evercoinx.analyzer.Money\x12\x0f\n\x07playing\x18\x05 \x01(\x08\x32^\n\x08\x41nalyzer\x12R\n\tSendFrame\x12 .evercoinx.analyzer.FrameRequest\x1a!.evercoinx.analyzer.EmptyResponse"\x00\x62\x06proto3',
 )
 
 
@@ -56,8 +56,8 @@ _MONEY_CURRENCY = _descriptor.EnumDescriptor(
     ],
     containing_type=None,
     serialized_options=None,
-    serialized_start=360,
-    serialized_end=403,
+    serialized_start=361,
+    serialized_end=404,
 )
 _sym_db.RegisterEnumDescriptor(_MONEY_CURRENCY)
 
@@ -236,9 +236,9 @@ _FRAMEREQUEST = _descriptor.Descriptor(
 )
 
 
-_EMPTYREPONSE = _descriptor.Descriptor(
-    name="EmptyReponse",
-    full_name="evercoinx.analyzer.EmptyReponse",
+_EMPTYRESPONSE = _descriptor.Descriptor(
+    name="EmptyResponse",
+    full_name="evercoinx.analyzer.EmptyResponse",
     filename=None,
     file=DESCRIPTOR,
     containing_type=None,
@@ -253,7 +253,7 @@ _EMPTYREPONSE = _descriptor.Descriptor(
     extension_ranges=[],
     oneofs=[],
     serialized_start=265,
-    serialized_end=279,
+    serialized_end=280,
 )
 
 
@@ -314,8 +314,8 @@ _MONEY = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=281,
-    serialized_end=403,
+    serialized_start=282,
+    serialized_end=404,
 )
 
 
@@ -431,8 +431,8 @@ _SEAT = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=406,
-    serialized_end=547,
+    serialized_start=407,
+    serialized_end=548,
 )
 
 _FRAMEREQUEST.fields_by_name["total_pot"].message_type = _MONEY
@@ -442,7 +442,7 @@ _MONEY_CURRENCY.containing_type = _MONEY
 _SEAT.fields_by_name["stake"].message_type = _MONEY
 _SEAT.fields_by_name["balance"].message_type = _MONEY
 DESCRIPTOR.message_types_by_name["FrameRequest"] = _FRAMEREQUEST
-DESCRIPTOR.message_types_by_name["EmptyReponse"] = _EMPTYREPONSE
+DESCRIPTOR.message_types_by_name["EmptyResponse"] = _EMPTYRESPONSE
 DESCRIPTOR.message_types_by_name["Money"] = _MONEY
 DESCRIPTOR.message_types_by_name["Seat"] = _SEAT
 _sym_db.RegisterFileDescriptor(DESCRIPTOR)
@@ -458,16 +458,16 @@ FrameRequest = _reflection.GeneratedProtocolMessageType(
 )
 _sym_db.RegisterMessage(FrameRequest)
 
-EmptyReponse = _reflection.GeneratedProtocolMessageType(
-    "EmptyReponse",
+EmptyResponse = _reflection.GeneratedProtocolMessageType(
+    "EmptyResponse",
     (_message.Message,),
     {
-        "DESCRIPTOR": _EMPTYREPONSE,
+        "DESCRIPTOR": _EMPTYRESPONSE,
         "__module__": "analyzer_pb2"
-        # @@protoc_insertion_point(class_scope:evercoinx.analyzer.EmptyReponse)
+        # @@protoc_insertion_point(class_scope:evercoinx.analyzer.EmptyResponse)
     },
 )
-_sym_db.RegisterMessage(EmptyReponse)
+_sym_db.RegisterMessage(EmptyResponse)
 
 Money = _reflection.GeneratedProtocolMessageType(
     "Money",
@@ -499,8 +499,8 @@ _ANALYZER = _descriptor.ServiceDescriptor(
     index=0,
     serialized_options=None,
     create_key=_descriptor._internal_create_key,
-    serialized_start=549,
-    serialized_end=642,
+    serialized_start=550,
+    serialized_end=644,
     methods=[
         _descriptor.MethodDescriptor(
             name="SendFrame",
@@ -508,7 +508,7 @@ _ANALYZER = _descriptor.ServiceDescriptor(
             index=0,
             containing_service=None,
             input_type=_FRAMEREQUEST,
-            output_type=_EMPTYREPONSE,
+            output_type=_EMPTYRESPONSE,
             serialized_options=None,
             create_key=_descriptor._internal_create_key,
         ),

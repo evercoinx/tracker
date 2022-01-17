@@ -3,7 +3,7 @@ syntax = "proto3";
 package evercoinx.analyzer;
 
 service Analyzer {
-    rpc SendFrame(FrameRequest) returns (EmptyReponse) {}
+    rpc SendFrame(FrameRequest) returns (EmptyResponse) {}
 }
 
 message FrameRequest {
@@ -17,7 +17,7 @@ message FrameRequest {
     repeated string board = 8;
 }
 
-message EmptyReponse {}
+message EmptyResponse {}
 
 message Money {
     enum Currency {
