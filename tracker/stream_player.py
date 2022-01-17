@@ -14,6 +14,7 @@ from typing import (
     DefaultDict,
     Dict,
     FrozenSet,
+    Iterator,
     List,
     Optional,
     Tuple,
@@ -72,6 +73,7 @@ class SeatData(TypedDict):
 class FrameData(TypedDict):
     window_index: int
     frame_index: int
+    hand_number: int
     hand_time: datetime
     total_pot: Money
     dealer_position: int
@@ -152,13 +154,33 @@ class StreamPlayer:
 
     def run(self) -> None:
         if self.game_mode == GameMode.PLAY:
-            self._play()
+            fetch_frame_data = self._play
         elif self.game_mode == GameMode.REPLAY:
-            self._replay()
+            fetch_frame_data = self._replay
         else:
             raise ValueError(f"Invalid game mode: {self.game_mode}")
 
-    def _play(self) -> None:
+        for frame_data in fetch_frame_data():
+            if frame_data is None:
+                logging.warn(f"{self.log_prefix} Unable to find any data on frame")
+                continue
+
+            self._print_frame_data(frame_data)
+
+            hand_number = frame_data["hand_number"]
+            req = pbanalyzer.FrameRequest(
+                window_index=frame_data["window_index"],
+                frame_index=frame_data["frame_index"],
+                hand_number=hand_number,
+                hand_time=frame_data["hand_time"].strftime("%H:%M%z"),
+                total_pot=self._to_pb_money(frame_data["total_pot"]),
+                dealer_position=frame_data["dealer_position"],
+                seats=[self._to_pb_seat(s) for s in frame_data["seats"]],
+                board=[f"{c.rank}{c.suit}" for c in frame_data["board"]],
+            )
+            self.analyzer_stub.SendFrame(req)
+
+    def _play(self) -> Iterator[Optional[FrameData]]:
         if self.queue is None:
             raise ValueError("Queue is not set")
         if not self.events:
@@ -170,7 +192,7 @@ class StreamPlayer:
             try:
                 window_index, frame = self.queue.get()
                 self.log_prefix = self._get_log_prefix(window_index, frame_index)
-                self._process_frame(frame, window_index, frame_index)
+                yield self._process_frame(frame, window_index, frame_index)
 
                 frame_index += 1
                 self.events[window_index].set()
@@ -180,7 +202,7 @@ class StreamPlayer:
                 logging.warn(f"{self.log_prefix} interruption; exiting...")
                 return
 
-    def _replay(self) -> None:
+    def _replay(self) -> Iterator[Optional[FrameData]]:
         if not self.replay_windows:
             raise ValueError("Replay windows are empty")
 
@@ -203,10 +225,11 @@ class StreamPlayer:
                 raise OSError(f"Unable to read frame at {p}")
 
             matches = re.findall(raw_frame_path_pattern, p)
-            (window_index, frame_index) = matches[0]
+            window_index = int(matches[0][0])
+            frame_index = int(matches[0][1])
 
             self.log_prefix = self._get_log_prefix(window_index, frame_index)
-            self._process_frame(frame, int(window_index), int(frame_index))
+            yield self._process_frame(frame, int(window_index), int(frame_index))
 
     @staticmethod
     def _get_log_prefix(window_index: int, frame_index: int) -> str:
@@ -230,7 +253,7 @@ class StreamPlayer:
 
     def _process_frame(
         self, frame: np.ndarray, window_index: int, frame_index: int
-    ) -> None:
+    ) -> Optional[FrameData]:
         frame = cv2.bitwise_not(frame)
 
         if self._should_save_frame("full"):
@@ -244,10 +267,7 @@ class StreamPlayer:
 
         hand_number = self._get_hand_number(frame, window_index, frame_index)
         if not hand_number:
-            logging.warn(
-                f"{self.log_prefix} Unable to recognize frame as game window\n"
-            )
-            return
+            return None
 
         if self.game_mode == GameMode.PLAY:
             self._save_frame(frame, window_index, frame_index, "raw")
@@ -273,26 +293,16 @@ class StreamPlayer:
         frame_data: FrameData = {
             "window_index": window_index,
             "frame_index": frame_index,
+            "hand_number": hand_number,
             "hand_time": hand_time,
             "total_pot": total_pot,
             "dealer_position": dealer_position,
             "seats": seats,
             "board": board,
         }
-        self.session[hand_number].append(frame_data)
-        self._print_frame_data(frame_data, hand_number)
 
-        req = pbanalyzer.FrameRequest(
-            window_index=window_index,
-            frame_index=frame_index,
-            hand_number=hand_number,
-            hand_time=hand_time.strftime("%H:%M%z"),
-            total_pot=self._to_pb_money(total_pot),
-            dealer_position=dealer_position,
-            seats=[self._to_pb_seat(s) for s in seats],
-            board=[f"{c.rank}{c.suit}" for c in board],
-        )
-        self.analyzer_stub.SendFrame(req)
+        self.session[hand_number].append(frame_data)
+        return frame_data
 
     def _to_pb_seat(self, seat: SeatData) -> pbanalyzer.Seat:
         return pbanalyzer.Seat(
@@ -328,7 +338,7 @@ class StreamPlayer:
             amount=money.amount,
         )
 
-    def _print_frame_data(self, frame_data: FrameData, hand_number: int):
+    def _print_frame_data(self, frame_data: FrameData):
         seat_lines: List[str] = []
         for i, s in enumerate(frame_data["seats"]):
             playing = "✔" if s["playing"] else " "
@@ -355,7 +365,7 @@ class StreamPlayer:
             hand_time = hand_time[:-2]
 
         logging.info(
-            f"{self.log_prefix} Hand number #{hand_number} "
+            f"{self.log_prefix} Hand number #{frame_data['hand_number']} "
             + f"at {hand_time}\n"
             + f"{' ':<26}{self.log_prefix} Total pot {frame_data['total_pot']}\n"
             + f"{' ':<26}{self.log_prefix} Board     "
