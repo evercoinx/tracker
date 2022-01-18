@@ -127,6 +127,7 @@ class TextRecognition:
         matches = re.findall(type(self).regex_money, line.strip())
         if not matches:
             return Money()
+
         return self._to_money(
             currency_symbol=matches[0][0], amount_digits=matches[0][1]
         )
@@ -141,6 +142,7 @@ class TextRecognition:
         matches = re.findall(type(self).regex_seat_number, line.strip())
         if not matches:
             return 0
+
         return int(matches[0])
 
     def recognize_seat_money(self, region: Region) -> Money:
@@ -153,6 +155,7 @@ class TextRecognition:
         matches = re.findall(type(self).regex_money, line.strip())
         if not matches:
             return Money()
+
         return self._to_money(
             currency_symbol=matches[0][0], amount_digits=matches[0][1]
         )
