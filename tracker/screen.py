@@ -2,18 +2,20 @@ import logging
 from multiprocessing import current_process
 from multiprocessing.queues import Queue
 from multiprocessing.synchronize import Event
-from typing import List
+from typing import List, NewType, Tuple
 
 import cv2
 import numpy as np
 from mss.linux import MSS as mss
 from mss.models import Monitor
 
+WindowFrame = NewType("WindowFrame", Tuple[int, np.ndarray])
+
 
 class Screen:
     """Captures a selected window of a screen"""
 
-    queue: Queue
+    queue: "Queue[WindowFrame]"
     events: List[Event]
     stream_path: str
     frame_format: str
@@ -21,7 +23,7 @@ class Screen:
 
     def __init__(
         self,
-        queue: Queue,
+        queue: "Queue[WindowFrame]",
         events: List[Event],
         stream_path: str,
         frame_format: str,
@@ -46,7 +48,8 @@ class Screen:
                     frame_index += 1
                     self.log_prefix = self._get_log_prefix(window_index, frame_index)
 
-                    self.queue.put((window_index, gray_frame))
+                    win_frame = WindowFrame((window_index, gray_frame))
+                    self.queue.put(win_frame)
                     self.events[window_index].wait()
 
                 except (KeyboardInterrupt, SystemExit):

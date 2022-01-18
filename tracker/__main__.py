@@ -89,7 +89,7 @@ def parse_args() -> Dict[str, Any]:
         "--analyzer-address",
         type=str,
         default="localhost:50051",
-        help="GRPC address of analyzer; defaults to localhost:50051",
+        help="address of analyzer service; defaults to localhost:50051",
     )
 
     return vars(ap.parse_args())

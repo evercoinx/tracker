@@ -37,7 +37,7 @@ class TestScreen(unittest.TestCase):
         ]
 
         for t in tests:
-            with self.subTest(f"calculate {t['name']} window coordinates"):
+            with self.subTest(f"get {t['name']} window screens"):
                 wc = Screen.get_window_screens(
                     t["windows"],
                     t["left_margin"],

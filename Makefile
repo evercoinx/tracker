@@ -1,6 +1,6 @@
 PKG_NAME = tracker
 CHECK_FILES = $(PKG_NAME) setup.py
-SYNC_FILES = $(PKG_NAME) images Makefile requirements.txt requirements-prod.txt setup.py setup.cfg
+SYNC_FILES = $(PKG_NAME) images Makefile requirements.txt requirements-prod.txt setup.py
 PROTO_DIR = $(PKG_NAME)/proto
 NAMESPACE = ~/Workspace/evercoinx
 
@@ -26,7 +26,7 @@ targetonly:
 		exit 1; \
 	fi
 
-check: format imports lint typecheck
+check: sourceonly format imports lint typecheck
 
 format:
 	black $(CHECK_FILES)
@@ -41,7 +41,7 @@ typecheck:
 	pyright
 
 .PHONY: test
-test: typecheck
+test: targetonly
 	python -m unittest discover -s $(PKG_NAME) -p "*_test.py"
 
 installdev: sourceonly

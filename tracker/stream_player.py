@@ -18,6 +18,7 @@ from typing import (
     List,
     Optional,
     Tuple,
+    TypeVar,
 )
 
 import cv2
@@ -29,6 +30,7 @@ import tracker.proto.analyzer_pb2 as pbanalyzer
 from tracker.image_classifier import ImageClassifier
 from tracker.object_detection import ObjectDetection, Region
 from tracker.proto.analyzer_pb2_grpc import AnalyzerStub
+from tracker.screen import WindowFrame
 from tracker.text_recognition import Action, Currency, Money, TextRecognition
 
 
@@ -87,9 +89,14 @@ class GameMode(Enum):
     REPLAY = 2
 
 
-def elapsed_time(name: str):
-    def decorator(func):
-        def wrapper(*args, **kwargs):
+RetType = TypeVar("RetType")
+
+
+def elapsed_time(
+    name: str,
+) -> Callable[[Callable[..., RetType]], Callable[..., RetType]]:
+    def decorator(func: Callable[..., RetType]) -> Callable[..., RetType]:
+        def wrapper(*args, **kwargs) -> RetType:
             start_time = time.perf_counter()
             ret = func(*args, **kwargs)
             elapsed_time = time.perf_counter() - start_time
@@ -116,7 +123,7 @@ class StreamPlayer:
     image_classifier: ImageClassifier
     log_prefix: str
     session: DefaultDict[int, List[FrameData]]
-    queue: Optional[Queue]
+    queue: "Optional[Queue[WindowFrame]]"
     events: List[Event]
     replay_windows: List[str]
     analyzer_address: str
@@ -132,7 +139,7 @@ class StreamPlayer:
         object_detection: ObjectDetection,
         image_classifier: ImageClassifier,
         analyzer_address: str,
-        queue: Optional[Queue] = None,
+        queue: "Optional[Queue[WindowFrame]]" = None,
         events: List[Event] = [],
         replay_windows: List[str] = [],
     ) -> None:
@@ -229,7 +236,7 @@ class StreamPlayer:
             frame_index = int(matches[0][1])
 
             self.log_prefix = self._get_log_prefix(window_index, frame_index)
-            yield self._process_frame(frame, int(window_index), int(frame_index))
+            yield self._process_frame(frame, window_index, frame_index)
 
     @staticmethod
     def _get_log_prefix(window_index: int, frame_index: int) -> str:
