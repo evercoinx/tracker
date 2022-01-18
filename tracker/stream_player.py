@@ -8,80 +8,17 @@ from enum import Enum
 from glob import glob
 from multiprocessing import Queue, current_process
 from multiprocessing.synchronize import Event
-from typing import (
-    Callable,
-    ClassVar,
-    DefaultDict,
-    Dict,
-    FrozenSet,
-    Iterator,
-    List,
-    Optional,
-    Tuple,
-    TypeVar,
-)
+from typing import Callable, DefaultDict, Iterator, List, Optional, Tuple, TypeVar
 
 import cv2
-import grpc
 import numpy as np
-from google.protobuf.timestamp_pb2 import Timestamp
-from typing_extensions import TypedDict
 
-import tracker.proto.analyzer_pb2 as pbanalyzer
+from tracker.analyzer_client import AnalyzerClient, FrameData, SeatData
+from tracker.card import Card
 from tracker.image_classifier import ImageClassifier
 from tracker.object_detection import ObjectDetection, Region
-from tracker.proto.analyzer_pb2_grpc import AnalyzerStub
 from tracker.screen import WindowFrame
-from tracker.text_recognition import Action, Currency, Money, TextRecognition
-
-
-class Card:
-    ranks: ClassVar[FrozenSet[str]] = frozenset(
-        ["2", "3", "4", "5", "6", "7", "8", "9", "T", "J", "Q", "K", "A"]
-    )
-    suit_to_symbol: ClassVar[Dict[str, str]] = {
-        "c": "♣",
-        "d": "♦",
-        "h": "♥",
-        "s": "♠",
-    }
-
-    rank: str
-    suit: str
-
-    def __init__(self, rank: str, suit: str):
-        if rank not in type(self).ranks:
-            raise ValueError(f"Unexpected rank: {rank}")
-        if suit not in type(self).suit_to_symbol:
-            raise ValueError(f"Unexpected suit: {suit}")
-
-        self.rank = rank
-        self.suit = suit
-
-    def __str__(self) -> str:
-        return f"{self.rank}{self.suit_to_symbol[self.suit]}"
-
-    def __repr__(self) -> str:
-        return f"Card('{self.rank}', '{self.suit}')"
-
-
-class SeatData(TypedDict):
-    number: int
-    action: Action
-    stake: Money
-    balance: Money
-    playing: bool
-
-
-class FrameData(TypedDict):
-    window_index: int
-    frame_index: int
-    hand_number: int
-    hand_time: datetime
-    total_pot: Money
-    dealer_position: int
-    seats: List[SeatData]
-    board: List[Card]
+from tracker.text_recognition import Action, Money, TextRecognition
 
 
 class GameMode(Enum):
@@ -127,8 +64,7 @@ class StreamPlayer:
     queue: "Optional[Queue[WindowFrame]]"
     events: List[Event]
     replay_windows: List[str]
-    analyzer_address: str
-    analyzer_stub: AnalyzerStub
+    analyzer_client: AnalyzerClient
 
     def __init__(
         self,
@@ -139,7 +75,7 @@ class StreamPlayer:
         text_recognition: TextRecognition,
         object_detection: ObjectDetection,
         image_classifier: ImageClassifier,
-        analyzer_address: str,
+        analyzer_client: AnalyzerClient,
         queue: "Optional[Queue[WindowFrame]]" = None,
         events: List[Event] = [],
         replay_windows: List[str] = [],
@@ -154,11 +90,9 @@ class StreamPlayer:
         self.text_recognition = text_recognition
         self.object_detection = object_detection
         self.image_classifier = image_classifier
+        self.analyzer_client = analyzer_client
         self.log_prefix = ""
         self.session = defaultdict(list)
-
-        chan = grpc.insecure_channel(analyzer_address)
-        self.analyzer_stub = AnalyzerStub(chan)
 
     def run(self) -> None:
         if self.game_mode == GameMode.PLAY:
@@ -174,19 +108,7 @@ class StreamPlayer:
                 continue
 
             self._print_frame_data(frame_data)
-
-            hand_number = frame_data["hand_number"]
-            req = pbanalyzer.FrameRequest(
-                window_index=frame_data["window_index"],
-                frame_index=frame_data["frame_index"],
-                hand_number=hand_number,
-                hand_time=self._to_pb_timestamp(frame_data["hand_time"]),
-                total_pot=self._to_pb_money(frame_data["total_pot"]),
-                dealer_position=frame_data["dealer_position"],
-                seats=[self._to_pb_seat(s) for s in frame_data["seats"]],
-                board=[f"{c.rank}{c.suit}" for c in frame_data["board"]],
-            )
-            self.analyzer_stub.SendFrame(req)
+            self.analyzer_client.send_frame(frame_data)
 
     def _play(self) -> Iterator[Optional[FrameData]]:
         if self.queue is None:
@@ -311,47 +233,6 @@ class StreamPlayer:
 
         self.session[hand_number].append(frame_data)
         return frame_data
-
-    def _to_pb_timestamp(self, dt: datetime) -> Timestamp:
-        ts = dt.timestamp()
-        return Timestamp(
-            seconds=int(ts),
-            nanos=int(ts % 1 * 1e9),
-        )
-
-    def _to_pb_money(self, money: Money) -> pbanalyzer.Money:
-        mappings = {
-            Currency.UNSET: pbanalyzer.Money.Currency.UNSET,
-            Currency.EURO: pbanalyzer.Money.Currency.EURO,
-            Currency.DOLLAR: pbanalyzer.Money.Currency.DOLLAR,
-        }
-        return pbanalyzer.Money(
-            currency=mappings.get(money.currency, pbanalyzer.Money.Currency.UNSET),
-            amount=money.amount,
-        )
-
-    def _to_pb_seat(self, seat: SeatData) -> pbanalyzer.Seat:
-        return pbanalyzer.Seat(
-            number=seat["number"],
-            action=self._to_pb_action(seat["action"]),
-            stake=self._to_pb_money(seat["stake"]),
-            balance=self._to_pb_money(seat["balance"]),
-            playing=seat["playing"],
-        )
-
-    def _to_pb_action(self, action: Action) -> pbanalyzer.Seat.Action:
-        mappings = {
-            Action.UNSET: pbanalyzer.Seat.Action.UNSET,
-            Action.BET: pbanalyzer.Seat.Action.BET,
-            Action.RAISE: pbanalyzer.Seat.Action.RAISE,
-            Action.CALL: pbanalyzer.Seat.Action.CALL,
-            Action.FOLD: pbanalyzer.Seat.Action.FOLD,
-            Action.CHECK: pbanalyzer.Seat.Action.CHECK,
-            Action.ALL_IN: pbanalyzer.Seat.Action.ALL_IN,
-            Action.SITTING_IN: pbanalyzer.Seat.Action.SITTING_IN,
-            Action.WAITING_FOR_BB: pbanalyzer.Seat.Action.WAITING_FOR_BB,
-        }
-        return mappings.get(action, pbanalyzer.Seat.Action.UNSET)
 
     def _print_frame_data(self, frame_data: FrameData):
         seat_lines: List[str] = []

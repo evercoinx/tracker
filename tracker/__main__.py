@@ -7,6 +7,7 @@ from multiprocessing import Event, Process, Queue
 from typing import Any, Dict, List
 
 from tracker import __version__
+from tracker.analyzer_client import AnalyzerClient
 from tracker.image_classifier import ImageClassifier
 from tracker.object_detection import ObjectDetection
 from tracker.screen import Screen
@@ -26,11 +27,13 @@ def main() -> None:
 
     try:
         args = validate_args(parse_args())
+        ac = AnalyzerClient(args["analyzer_address"])
+
         if args["replay"]:
-            replay_session(args, tr, od, ic)
+            replay_session(args, tr, od, ic, ac)
             return
 
-        play_session(args, tr, od, ic)
+        play_session(args, tr, od, ic, ac)
     except Exception as e:
         logging.critical(e)
         traceback.print_exc()
@@ -134,6 +137,7 @@ def play_session(
     text_recognition: TextRecognition,
     object_detection: ObjectDetection,
     image_classifier: ImageClassifier,
+    analyzer_client: AnalyzerClient,
 ) -> None:
     win_screens = Screen.get_window_screens(
         args["windows"],
@@ -155,7 +159,7 @@ def play_session(
         text_recognition=text_recognition,
         object_detection=object_detection,
         image_classifier=image_classifier,
-        analyzer_address=args["analyzer_address"],
+        analyzer_client=analyzer_client,
         queue=queue,
         events=events,
     )
@@ -191,6 +195,7 @@ def replay_session(
     text_recognition: TextRecognition,
     object_detection: ObjectDetection,
     image_classifier: ImageClassifier,
+    analyzer_client: AnalyzerClient,
 ) -> None:
     player = StreamPlayer(
         game_mode=GameMode.REPLAY,
@@ -200,7 +205,7 @@ def replay_session(
         text_recognition=text_recognition,
         object_detection=object_detection,
         image_classifier=image_classifier,
-        analyzer_address=args["analyzer_address"],
+        analyzer_client=analyzer_client,
         replay_windows=args["windows"],
     )
     player.run()
