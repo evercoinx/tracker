@@ -1,7 +1,7 @@
 PKG_NAME = tracker
 CHECK_FILES = $(PKG_NAME) setup.py
 SYNC_FILES = $(PKG_NAME) images Makefile requirements.txt requirements-prod.txt setup.py
-PROTO_DIR = $(PKG_NAME)/proto
+PROTO_DIR = $(PKG_NAME)/api/proto
 NAMESPACE = ~/Workspace/evercoinx
 
 SOURCE_HOST = fedora
@@ -70,7 +70,7 @@ version: targetonly
 proto:
 	python -m grpc_tools.protoc -I$(PROTO_DIR) --python_out=$(PROTO_DIR) --grpc_python_out=$(PROTO_DIR) \
 		$(PROTO_DIR)/analyzer.proto
-	sed -i -Ee "s/^import (analyzer_pb2)(.*)/import $(PKG_NAME).proto.\1\2/" $(PROTO_DIR)/analyzer_pb2_grpc.py
+	sed -i -Ee "s/^import (analyzer_pb2)(.*)/import $(PKG_NAME).api.proto.\1\2/" $(PROTO_DIR)/analyzer_pb2_grpc.py
 	black $(PROTO_DIR)
 	isort $(PROTO_DIR)
 

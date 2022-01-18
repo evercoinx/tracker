@@ -7,12 +7,12 @@ from multiprocessing import Event, Process, Queue
 from typing import Any, Dict, List
 
 from tracker import __version__
-from tracker.analyzer_client import AnalyzerClient
-from tracker.image_classifier import ImageClassifier
-from tracker.object_detection import ObjectDetection
+from tracker.api.analyzer_client import AnalyzerClient
 from tracker.screen import Screen
 from tracker.stream_player import GameMode, StreamPlayer
-from tracker.text_recognition import TextRecognition
+from tracker.vision.image_classifier import ImageClassifier
+from tracker.vision.object_detection import ObjectDetection
+from tracker.vision.text_recognition import TextRecognition
 
 TEMPLATE_PATH = "./images/templates"
 DATASET_PATH = "./images/datasets"

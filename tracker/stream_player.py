@@ -13,12 +13,12 @@ from typing import Callable, DefaultDict, Iterator, List, Optional, Tuple, TypeV
 import cv2
 import numpy as np
 
-from tracker.analyzer_client import AnalyzerClient, FrameData, SeatData
+from tracker.api.analyzer_client import AnalyzerClient, FrameData, SeatData
 from tracker.card import Card
-from tracker.image_classifier import ImageClassifier
-from tracker.object_detection import ObjectDetection, Region
 from tracker.screen import WindowFrame
-from tracker.text_recognition import Action, Money, TextRecognition
+from tracker.vision.image_classifier import ImageClassifier
+from tracker.vision.object_detection import ObjectDetection, Region
+from tracker.vision.text_recognition import Action, Money, TextRecognition
 
 
 class GameMode(Enum):

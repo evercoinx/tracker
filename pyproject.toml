@@ -7,6 +7,7 @@ exclude = '''
     \.git
   | \.vscode
   | __pycache__
+  | images
 )/
 '''
 
@@ -19,10 +20,11 @@ include = ["tracker"]
 exclude = [
     ".vscode",
     "**/__pycache__",
+    "images",
     "tracker.egg-info"
 ]
 stubPath = "./typings"
-ignore = ["tracker/proto/**/*.py"]
+ignore = ["tracker/api/proto/**/*.py"]
 venv = "tracker"
 venvPath = "../../../.local/virtualenvs"
 pythonVersion = "3.7"

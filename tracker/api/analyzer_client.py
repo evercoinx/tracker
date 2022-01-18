@@ -5,10 +5,10 @@ import grpc
 from google.protobuf.timestamp_pb2 import Timestamp
 from typing_extensions import TypedDict
 
-import tracker.proto.analyzer_pb2 as pbanalyzer
+import tracker.api.proto.analyzer_pb2 as pbanalyzer
+from tracker.api.proto.analyzer_pb2_grpc import AnalyzerStub
 from tracker.card import Card
-from tracker.proto.analyzer_pb2_grpc import AnalyzerStub
-from tracker.text_recognition import Action, Currency, Money
+from tracker.vision.text_recognition import Action, Currency, Money
 
 
 class SeatData(TypedDict):

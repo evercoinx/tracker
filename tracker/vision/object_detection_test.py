@@ -1,6 +1,6 @@
 import unittest
 
-from tracker.object_detection import ObjectDetection, Point, Region
+from tracker.vision.object_detection import ObjectDetection, Point, Region
 
 
 class TestScreen(unittest.TestCase):

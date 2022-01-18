@@ -8,7 +8,7 @@ from dateutil import parser as dateparser
 from PIL import Image
 from tesserocr import OEM, PSM, PyTessBaseAPI
 
-from tracker.object_detection import Region
+from tracker.vision.object_detection import Region
 
 
 class Action(Enum):
