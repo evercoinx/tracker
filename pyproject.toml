@@ -4,10 +4,7 @@ line-length = 88
 include = '\.py$'
 exclude = '''
 /(
-    \.git
-  | \.vscode
-  | __pycache__
-  | images
+  __pycache__
 )/
 '''
 
@@ -18,10 +15,7 @@ src_paths = ["tracker"]
 [tool.pyright]
 include = ["tracker"]
 exclude = [
-    ".vscode",
-    "**/__pycache__",
-    "images",
-    "tracker.egg-info"
+    "**/__pycache__"
 ]
 stubPath = "./typings"
 ignore = ["tracker/api/proto/**/*.py"]
