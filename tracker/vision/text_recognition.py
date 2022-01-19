@@ -1,4 +1,5 @@
 import re
+import string
 from datetime import datetime
 from enum import Enum
 from typing import ClassVar, Dict, Tuple
@@ -21,6 +22,7 @@ class Action(Enum):
     ALL_IN = 6
     SITTING_IN = 7
     WAITING_FOR_BB = 8
+    ANTE = 9
 
 
 class Currency(Enum):
@@ -65,14 +67,15 @@ class TextRecognition:
         "allin": Action.ALL_IN,
         "sittingin": Action.SITTING_IN,
         "waitingforbb": Action.WAITING_FOR_BB,
+        "ante": Action.ANTE,
     }
 
     regex_action: ClassVar[re.Pattern] = re.compile(
-        r"(" + "|".join(action_mappings) + r")", flags=re.IGNORECASE
+        r"(" + "|".join(action_mappings) + r")", flags=re.I
     )
     regex_money: ClassVar[re.Pattern] = re.compile(r"([$€])([.\d]+)")
     regex_hand_number: ClassVar[re.Pattern] = re.compile(r"(\d{10,})")
-    regex_seat_number: ClassVar[re.Pattern] = re.compile(r"([123456])")
+    regex_seat_name: ClassVar[re.Pattern] = re.compile(r"([\w\d]+)", flags=re.I)
     regex_time_with_zone: ClassVar[re.Pattern] = re.compile(r"\d{2}:\d{2}\+\d{2}")
 
     tess_api: PyTessBaseAPI
@@ -118,7 +121,7 @@ class TextRecognition:
             return datetime.min
 
     def recognize_total_pot(self, region: Region) -> Money:
-        self.tess_api.SetVariable("tessedit_char_whitelist", "pot:$€0123456789")
+        self.tess_api.SetVariable("tessedit_char_whitelist", "$€0123456789")
 
         dims = self._calculate_rectangle_dimensions(region)
         self.tess_api.SetRectangle(*dims)
@@ -132,18 +135,19 @@ class TextRecognition:
             currency_symbol=matches[0][0], amount_digits=matches[0][1]
         )
 
-    def recognize_seat_number(self, region: Region) -> int:
-        self.tess_api.SetVariable("tessedit_char_whitelist", "Seat123456")
+    def recognize_seat_name(self, region: Region) -> str:
+        whitelist = string.ascii_uppercase + string.ascii_lowercase + "0123456789"
+        self.tess_api.SetVariable("tessedit_char_whitelist", whitelist)
 
         dims = self._calculate_rectangle_dimensions(region)
         self.tess_api.SetRectangle(*dims)
 
         line = self.tess_api.GetUTF8Text()
-        matches = re.findall(type(self).regex_seat_number, line.strip())
+        matches = re.findall(type(self).regex_seat_name, line.strip())
         if not matches:
-            return 0
+            return ""
 
-        return int(matches[0])
+        return max(matches, key=len)
 
     def recognize_seat_money(self, region: Region) -> Money:
         self.tess_api.SetVariable("tessedit_char_whitelist", "$€0123456789")

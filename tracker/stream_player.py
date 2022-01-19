@@ -59,12 +59,12 @@ class StreamPlayer:
     text_recognition: TextRecognition
     object_detection: ObjectDetection
     image_classifier: ImageClassifier
-    log_prefix: str
-    session: DefaultDict[int, List[FrameData]]
+    analyzer_client: AnalyzerClient
     queue: "Optional[Queue[WindowFrame]]"
     events: List[Event]
     replay_windows: List[str]
-    analyzer_client: AnalyzerClient
+    session_cache: DefaultDict[int, List[FrameData]]
+    log_prefix: str
 
     def __init__(
         self,
@@ -81,18 +81,18 @@ class StreamPlayer:
         replay_windows: List[str] = [],
     ) -> None:
         self.game_mode = game_mode
-        self.queue = queue
-        self.events = events
         self.stream_path = stream_path
         self.frame_format = frame_format
-        self.replay_windows = replay_windows
         self.save_regions = save_regions
         self.text_recognition = text_recognition
         self.object_detection = object_detection
         self.image_classifier = image_classifier
         self.analyzer_client = analyzer_client
+        self.queue = queue
+        self.events = events
+        self.replay_windows = replay_windows
+        self.session_cache = defaultdict(list)
         self.log_prefix = ""
-        self.session = defaultdict(list)
 
     def run(self) -> None:
         if self.game_mode == GameMode.PLAY:
@@ -231,7 +231,7 @@ class StreamPlayer:
             "board": board,
         }
 
-        self.session[hand_number].append(frame_data)
+        self.session_cache[hand_number].append(frame_data)
         return frame_data
 
     def _print_frame_data(self, frame_data: FrameData):
@@ -239,13 +239,13 @@ class StreamPlayer:
         for i, s in enumerate(frame_data["seats"]):
             playing = "✔" if s["playing"] else " "
             dealer = "●" if frame_data["dealer_position"] == i else " "
-            number = str(s["number"]) if s["number"] else "⨯"
+            name = s["name"] if s["name"] else "?????"
             balance = str(s["balance"]) if (s["balance"] or s["playing"]) else " " * 6
             stake = str(s["stake"]) if s["stake"] else " " * 6
             action = s["action"] if s["action"] else " "
 
             seat_lines.append(
-                f"{' ':<26}{self.log_prefix[:-2]} {i} {dealer} Seat {number}:  "
+                f"{' ':<26}{self.log_prefix[:-2]} {i} {dealer} {name + ':':<12}"
                 + f"playing {playing}  "
                 + f"balance {balance} "
                 + f"stake {stake} "
@@ -256,9 +256,11 @@ class StreamPlayer:
         for i, c in enumerate(frame_data["board"]):
             board_lines[i] = str(c)
 
-        hand_time = frame_data["hand_time"].strftime("%H:%M%z")
-        if len(hand_time) > 5:
-            hand_time = hand_time[:-2]
+        hand_time = (
+            frame_data["hand_time"].strftime("%Y-%m-%d %H:%M:%S%z")[:-2]
+            if frame_data["hand_time"] != datetime.min
+            else "??-??-?? 00:00:00+00"
+        )
 
         logging.info(
             f"{self.log_prefix} Hand number #{frame_data['hand_number']} "
@@ -307,7 +309,7 @@ class StreamPlayer:
         hand_number: int,
         playing_seats: List[bool],
     ) -> List[SeatData]:
-        frame_data = self._get_last_frame_data(hand_number)
+        frame_data = self._get_latest_frame_data(hand_number)
         seats: List[SeatData] = []
 
         for i in range(6):
@@ -317,14 +319,14 @@ class StreamPlayer:
                 else None
             )
 
-            if seat_data and seat_data["number"] >= 0:
-                number = seat_data["number"]
+            if seat_data and seat_data["name"]:
+                name = seat_data["name"]
             else:
-                region = self.object_detection.detect_seat_number(frame, i)
-                number = self.text_recognition.recognize_seat_number(region)
-                if self._should_save_frame("seat_numbers"):
+                region = self.object_detection.detect_seat_name(frame, i)
+                name = self.text_recognition.recognize_seat_name(region)
+                if self._should_save_frame("seat_names"):
                     self._save_frame(
-                        frame, window_index, frame_index, f"seat_number_{i}", region
+                        frame, window_index, frame_index, f"seat_name_{i}", region
                     )
 
             if seat_data and not playing_seats[i]:
@@ -335,7 +337,7 @@ class StreamPlayer:
                 )
                 seats.append(
                     {
-                        "number": number,
+                        "name": name,
                         "action": action,
                         "stake": Money(),
                         "balance": seat_data["balance"],
@@ -367,7 +369,7 @@ class StreamPlayer:
 
             seats.append(
                 {
-                    "number": number,
+                    "name": name,
                     "action": action,
                     "stake": stake,
                     "balance": balance,
@@ -381,7 +383,7 @@ class StreamPlayer:
     def _get_dealer_position(
         self, frame: np.ndarray, window_index: int, frame_index: int, hand_number: int
     ) -> int:
-        frame_data = self._get_last_frame_data(hand_number)
+        frame_data = self._get_latest_frame_data(hand_number)
         if frame_data:
             return frame_data["dealer_position"]
 
@@ -403,7 +405,7 @@ class StreamPlayer:
     def _get_playing_seats(
         self, frame: np.ndarray, window_index: int, frame_index: int, hand_number: int
     ) -> List[bool]:
-        frame_data = self._get_last_frame_data(hand_number)
+        frame_data = self._get_latest_frame_data(hand_number)
 
         (h, w) = frame.shape[:2]
         seat_regions = self.object_detection.get_seat_regions(w, h)
@@ -439,7 +441,7 @@ class StreamPlayer:
     def _get_board(
         self, frame: np.ndarray, window_index: int, frame_index: int, hand_number: int
     ) -> List[Card]:
-        frame_data = self._get_last_frame_data(hand_number)
+        frame_data = self._get_latest_frame_data(hand_number)
         board: List[Card] = []
 
         for i in range(5):
@@ -460,9 +462,9 @@ class StreamPlayer:
 
         return board
 
-    def _get_last_frame_data(self, hand_number: int) -> Optional[FrameData]:
-        if hand_number in self.session and self.session[hand_number]:
-            return self.session[hand_number][-1]
+    def _get_latest_frame_data(self, hand_number: int) -> Optional[FrameData]:
+        if hand_number in self.session_cache and self.session_cache[hand_number]:
+            return self.session_cache[hand_number][-1]
         return None
 
     def _should_save_frame(self, region_name: str) -> bool:

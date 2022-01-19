@@ -132,7 +132,7 @@ class ObjectDetection:
             percent_height=0.03,
         )
 
-    def detect_seat_number(self, frame: np.ndarray, index: int) -> Region:
+    def detect_seat_name(self, frame: np.ndarray, index: int) -> Region:
         start_percents = [
             (0.18, 0.23),
             (0.455, 0.165),

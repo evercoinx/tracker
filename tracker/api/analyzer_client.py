@@ -12,7 +12,7 @@ from tracker.vision.text_recognition import Action, Currency, Money
 
 
 class SeatData(TypedDict):
-    number: int
+    name: str
     action: Action
     stake: Money
     balance: Money
@@ -71,7 +71,7 @@ class AnalyzerClient:
 
     def _to_pb_seat(self, seat: SeatData) -> pbanalyzer.Seat:
         return pbanalyzer.Seat(
-            number=seat["number"],
+            name=seat["name"],
             action=self._to_pb_action(seat["action"]),
             stake=self._to_pb_money(seat["stake"]),
             balance=self._to_pb_money(seat["balance"]),
@@ -89,6 +89,7 @@ class AnalyzerClient:
             Action.ALL_IN: pbanalyzer.Seat.Action.ALL_IN,
             Action.SITTING_IN: pbanalyzer.Seat.Action.SITTING_IN,
             Action.WAITING_FOR_BB: pbanalyzer.Seat.Action.WAITING_FOR_BB,
+            Action.ANTE: pbanalyzer.Seat.Action.ANTE,
         }
         return mappings.get(action, pbanalyzer.Seat.Action.UNSET)
 

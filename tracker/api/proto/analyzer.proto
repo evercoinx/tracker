@@ -43,9 +43,10 @@ message Seat {
         ALL_IN = 6;
         SITTING_IN = 7;
         WAITING_FOR_BB = 8;
+        ANTE = 9;
     }
 
-    sint32 number = 1;
+    string name = 1;
     Action action = 2;
     Money stake = 3;
     Money balance = 4;
